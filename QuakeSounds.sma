@@ -745,7 +745,7 @@ public client_putinserver(Player)
 public QuakeSoundsPrint(Player)
 {
 	if (is_user_connected(Player))
-		client_print(0, print_chat, ">> TYPE 'sounds' TO TURN QUAKE SOUNDS ON OR OFF.");
+		client_print(Player, print_chat, ">> TYPE 'sounds' TO TURN QUAKE SOUNDS ON OR OFF.");
 }
 
 // EXECUTED ON PLAYER DEATH
