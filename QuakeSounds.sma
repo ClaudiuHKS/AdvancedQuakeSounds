@@ -31,6 +31,10 @@
 #include <amxmodx>
 #include <amxmisc>
 
+// FAKE META
+//
+#include <fakemeta>
+
 // REQUIRES XSTATS MODULE IF AVAILABLE
 //
 #pragma reqclass xstats
@@ -55,7 +59,7 @@
 
 // VERSION
 //
-#define QS_VERSION "6.0"
+#define QS_VERSION "5.0"
 
 // INVALID PLAYER
 //
@@ -456,9 +460,25 @@ new bool:g_bRandomBlue = false;
 //
 new g_ModName[8];
 
+// ON DEATHMSG
+//
+new bool:g_bOnDeathMsg = false;
+
+// DEATHMSG BYTE STATUS
+//
+new g_DeathMsgByteStatus = 0;
+
 // DEATHMSG ONLY AVAILABLE
 //
 new bool:g_bDeathMsgOnly = false;
+
+// CACHED KILLER ID
+//
+new g_Killer = 0;
+
+// CACHED VICTIM ID
+//
+new g_Victim = 0;
 
 // CACHED WEAPON ID
 //
@@ -747,6 +767,12 @@ public plugin_init()
 	if (!g_bON)
 		return;
 
+	// REGISTERS FAKE META FORWARDS
+	//
+	register_forward(FM_MessageBegin, "OnMessageBegin", 1);
+	register_forward(FM_WriteByte, "OnWriteByte", 1);
+	register_forward(FM_MessageEnd, "OnMessageEnd", 1);
+
 	// GETS MAXIMUM PLAYERS
 	//
 	g_maxPlayers = get_maxplayers();
@@ -754,10 +780,6 @@ public plugin_init()
 	// GETS MOD NAME
 	//
 	get_modname(g_ModName, charsmax(g_ModName));
-
-	// GETS DEATHMSG READY
-	//
-	register_event("DeathMsg", "OnDeathMsg", "a");
 
 	// DEATHMSG IS THE ONLY AVAILABLE FOR ESF, NS AND VALVE
 	// THESE MODS HAVE NO XSTATS MODULE
@@ -831,57 +853,6 @@ public plugin_init()
 	g_pHudMsg[HUDMSG_STREAK] = CreateHudSyncObj();
 	g_pHudMsg[HUDMSG_EVENT] = CreateHudSyncObj();
 	g_pHudMsg[HUDMSG_ROUND] = CreateHudSyncObj();
-}
-
-// WHEN A PLAYER DIES
-// THIS IS EXECUTED AFTER XSTATS MODULE "client_death" FORWARD
-//
-public OnDeathMsg()
-{
-	// DEFINES VARIABLES
-	//
-	static Killer, Victim, wpnID, Place;
-
-	// RETRIEVES KILLER ID
-	//
-	Killer = read_data(1);
-
-	// RETRIEVES VICTIM ID
-	//
-	Victim = read_data(2);
-
-	// PREPARES WEAPON ID AND PLACE
-	//
-	if (g_wpnID < 1)
-	{
-		get_user_attacker(Victim, wpnID, Place);
-
-		// POSSIBLE FIX
-		//
-		if (wpnID < 1 && g_bConnected[Killer])
-			wpnID = get_user_weapon(Killer);
-
-		g_wpnID = wpnID;
-	}
-
-	// HIT PLACE IS ZERO RIGHT NOW
-	//
-	else
-		Place = 0;
-
-	// POSSIBLE HIT PLACE FIX
-	//
-	if (g_Place < 1 && Place > 0)
-		g_Place = Place;
-
-	// PREPARES TEAM KILL BOOLEAN
-	//
-	if (g_bDeathMsgOnly && g_bConnected[Killer])
-		g_TK = get_user_team(Killer) == get_user_team(Victim) ? 1 : 0;
-
-	// PROCESSES DEATH
-	//
-	__Death(Killer, Victim, g_wpnID, g_Place, g_TK);
 }
 
 // pfnServerActivate_Post()
@@ -1176,6 +1147,103 @@ public __Flawless()
 
 		qs_client_cmd(0, "SPK ^"%a^"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_FlawlessSize - 1)));
 	}
+}
+
+// pfnMessageBegin()
+// FIRED WHEN A MESSAGE BEGINS
+//
+public OnMessageBegin(Destination, Type)
+{
+	static deathMsg = 0;
+
+	// GETS DEATHMSG ID
+	//
+	if (deathMsg == 0)
+		deathMsg = get_user_msgid("DeathMsg");
+
+	// IF GLOBALLY SENT
+	//
+	if (deathMsg > 0 && Type == deathMsg && (Destination == MSG_ALL || Destination == MSG_BROADCAST))
+	{
+		g_bOnDeathMsg = true;
+		g_DeathMsgByteStatus = 0;
+	}
+}
+
+// pfnWriteByte()
+// FIRED WHEN A BYTE IS BEING WRITTEN
+//
+public OnWriteByte(Byte)
+{
+	// OUR DEATHMSG
+	//
+	if (g_bOnDeathMsg)
+	{
+		// GETS DATA
+		//
+		switch (++g_DeathMsgByteStatus)
+		{
+			case 1: g_Killer = Byte;
+			case 2: g_Victim = Byte;
+		}
+	}
+}
+
+// pfnMessageEnd()
+// FIRED WHEN A MESSAGE ENDS
+//
+public OnMessageEnd()
+{
+	// OUR DEATHMSG
+	//
+	if (g_bOnDeathMsg)
+	{
+		g_bOnDeathMsg = false;
+		g_DeathMsgByteStatus = 0;
+
+		// FIRES
+		//
+		set_task(0.0, "__DeathMsg");
+	}
+}
+
+// WHEN A PLAYER DIES
+// THIS IS EXECUTED AFTER XSTATS MODULE "client_death" FORWARD
+//
+public __DeathMsg()
+{
+	// HIT PLACE
+	//
+	new Place = 0;
+
+	// PREPARES WEAPON ID AND PLACE
+	//
+	if (g_wpnID < 1)
+	{
+		new wpnID = 0;
+		get_user_attacker(g_Victim, wpnID, Place);
+
+		// POSSIBLE FIX
+		//
+		if (wpnID < 1 && g_bConnected[g_Killer])
+			wpnID = get_user_weapon(g_Killer);
+
+		g_wpnID = wpnID;
+	}
+
+	// POSSIBLE HIT PLACE FIX
+	//
+	if (g_Place < 1 && Place > 0)
+		g_Place = Place;
+
+	// PREPARES TEAM KILL BOOLEAN
+	//
+	if (g_bDeathMsgOnly && g_bConnected[g_Killer])
+		g_TK = get_user_team(g_Killer) == get_user_team(g_Victim) ? 1 : 0;
+
+	// PROCESSES DEATH
+	//
+	__Death(g_Killer, g_Victim, g_wpnID, g_Place, g_TK);
 }
 
 
