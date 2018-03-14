@@ -1,2 +1,2 @@
-## AdvancedQuakeSounds
+# AdvancedQuakeSounds
 AdvancedQuakeSounds
