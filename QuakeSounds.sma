@@ -537,7 +537,7 @@ new bool: g_bDisabled [ QS_MAXPLRS + 1 ];
 
 // LAST KILL TIME STAMP (GAME TIME)
 //
-new Float:g_fLastKillTimeStamp [ QS_MAXPLRS + 1 ];
+new Float: g_fLastKillTimeStamp [ QS_MAXPLRS + 1 ];
 
 
 /*************************************************************************************
@@ -1256,7 +1256,7 @@ __Death ( Killer, Victim, wpnID, Place, TK )
 {
 	// VARIABLES
 	//
-	static Iterator, Float:gameTime, Weapon [ 32 ], Sound [ 128 ], Message [ 256 ];
+	static Iterator, Float: gameTime, Weapon [ 32 ], Sound [ 128 ], Message [ 256 ];
 
 	// RESETS KILLS FOR VICTIM
 	//
