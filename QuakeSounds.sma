@@ -754,7 +754,7 @@ public plugin_init ( )
 
 	// REGISTERS CONSOLE VARIABLE
 	//
-	new pCVar = register_cvar ( "advanced_quake_sounds", QS_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED | FCVAR_SPONLY );
+	new pCVar = register_cvar ( "advanced_quake_sounds", QS_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_SPONLY );
 
 	// SETS CONSOLE VARIABLE STRING
 	//
