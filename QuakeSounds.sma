@@ -902,9 +902,9 @@ public client_infochanged(Player)
 }
 
 // pfnClientDisconnect()
-// EXECUTES WHEN CLIENT DISCONNECTS
+// EXECUTES AFTER CLIENT DISCONNECTS
 //
-public client_disconnect(Player)
+public client_disconnected(Player)
 {
 	// NO MORE KILLS
 	//
