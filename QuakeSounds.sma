@@ -1216,6 +1216,9 @@ public OnMessageEnd ( )
 		g_bOnDeathMsg =				false;
 		g_DeathMsgByteStatus =		0;
 
+		if ( g_bDeathMsgOnly )
+			g_wpnID = g_Place =		0;
+
 		// FIRES
 		//
 		set_task ( 0.0, "__DeathMsg" );
@@ -1253,7 +1256,7 @@ public __DeathMsg ( )
 
 	// PREPARES TEAM KILL BOOLEAN
 	//
-	if ( g_bDeathMsgOnly && g_bConnected [ g_Killer ] )
+	if ( g_bDeathMsgOnly )
 		g_TK = ( get_user_team ( g_Killer ) == get_user_team ( g_Victim ) ) ? 1 : 0;
 
 	// PROCESSES DEATH
