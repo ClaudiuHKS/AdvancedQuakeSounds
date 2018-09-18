@@ -58,17 +58,21 @@
 //
 #define QS_PLUGIN_INFORMATION_DELAY		( 6.0 )				// 6
 
-// HUD MESSAGES' MAXIMUM LENGTH
+// HUD MESSAGE'S MAXIMUM LENGTH
 //
 #define QS_HUD_MESSAGE_MAX_LENGTH		( 256 + 32 )		// 288
 
-// CENTERED HUD MESSAGE "X" POSITION
+// CENTERED HUD MESSAGE'S "X" POSITION
 //
 #define QS_CENTERED_HUD_X_POSITION		( -1.0 )			// -1
 
+// HUD MESSAGE'S HOLD TIME (SECONDS TO BE DISPLAYED)
+//
+#define QS_HUD_MESSAGE_HOLD_TIME		( 5.0 )				// 5
+
 // PLUGIN'S VERSION
 //
-#define QS_PLUGIN_VERSION				"5.0"				// 5
+#define QS_PLUGIN_VERSION				( "5.0" )			// "5"
 
 // INVALID PLAYER
 //
@@ -85,6 +89,26 @@
 // INVALID TEAM
 //
 #define QS_INVALID_TEAM					( 0x000000FF )		// 255
+
+// [ MONSTER KILL, MULTI KILL, UNSTOPPABLE, .. ] HUD MESSAGE'S "X" (VERTICAL) POSITION
+//
+#define QS_STREAK_Y_POSITION			( 0.2215 )			// .2215
+
+// [ SUICIDE, KNIFE, GRENADE, .. ] HUD MESSAGE'S "X" (VERTICAL) POSITION
+//
+#define QS_MINOR_EVENTS_Y_POSITION		( 0.2415 )			// .2415
+
+// [ PREPARE TO FIGHT, .. ] HUD MESSAGE'S "X" (VERTICAL) POSITION
+//
+#define QS_ROUND_START_Y_POSITION		( 0.2615 )			// .2615
+
+// [ FLAWLESS VICTORY EVENT ] HUD MESSAGE'S "X" (VERTICAL) POSITION
+//
+#define QS_FLAWLESS_Y_POSITION			( 0.2815 )			// .2815
+
+// [ HATTRICK ( THE LEADER OF THE ROUND ) ] HUD MESSAGE'S "X" (VERTICAL) POSITION
+//
+#define QS_HATTRICK_Y_POSITION			( 0.2015 )			// .2015
 
 // HUD MESSAGE PURPOSES
 //
@@ -759,12 +783,12 @@ public plugin_init ( )
 {
 	// REGISTERS CONSOLE VARIABLE
 	//
-	new pCVar = register_cvar ( "advanced_quake_sounds", QS_PLUGIN_VERSION, ( FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_SPONLY ) );
+	new pCVar = register_cvar ( "advanced_quake_sounds",	QS_PLUGIN_VERSION, ( FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_SPONLY ) );
 
 	// SETS CONSOLE VARIABLE STRING
 	//
 	if ( pCVar )
-		set_pcvar_string ( pCVar, QS_PLUGIN_VERSION );
+		set_pcvar_string ( pCVar,							QS_PLUGIN_VERSION );
 
 	// STOPS HERE IF THE PLUG-IN IS DISABLED
 	//
@@ -772,14 +796,14 @@ public plugin_init ( )
 	{
 		// REGISTERS PLUG-IN
 		//
-		register_plugin ( "ADV. QUAKE SOUNDS (DISABLED)", QS_PLUGIN_VERSION, "HATTRICK (HTTRCKCLDHKS)" );
+		register_plugin ( "ADV. QUAKE SOUNDS (DISABLED)",	QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
 
 		return;
 	}
 
 	// REGISTERS PLUG-IN
 	//
-	register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)", QS_PLUGIN_VERSION, "HATTRICK (HTTRCKCLDHKS)" );
+	register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)",		QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
 
 	// REGISTERS FAKE META FORWARDS
 	//
@@ -811,11 +835,11 @@ public plugin_init ( )
 
 		// ROUND START
 		//
-		register_logevent ( "OnRStart", 2, "1=Round_Start" );
+		register_logevent ( "OnRStart",	2,	"1=Round_Start" );
 
 		// ROUND END
 		//
-		register_logevent ( "OnREnd", 2, "1=Round_End" );
+		register_logevent ( "OnREnd",	2,	"1=Round_End" );
 	}
 
 	// DAY OF DEFEAT
@@ -824,11 +848,11 @@ public plugin_init ( )
 	{
 		// ROUND START
 		//
-		register_event ( "RoundState", "OnRStart", "a", "1=1" );
+		register_event ( "RoundState",	"OnRStart",	"a",	"1=1" );
 
 		// ROUND END
 		//
-		register_event ( "RoundState", "OnREnd", "a", "1=3", "1=4" );
+		register_event ( "RoundState",	"OnREnd",	"a",	"1=3",	"1=4" );
 
 		// DISABLES HATTRICK
 		//
@@ -1069,7 +1093,7 @@ public OnRStart ( )
 			if ( g_bRandomGreen )	g_Green = random_num ( 0, QS_MAX_BYTE );
 			if ( g_bRandomBlue )	g_Blue = random_num ( 0, QS_MAX_BYTE );
 
-			set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, 0.2615, _, _, 5.0 );
+			set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_ROUND_START_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 			qs_ShowSyncHudMsg ( 0, g_pHudMsg [ HUDMSG_ROUND ], g_RStartMsg );
 		}
 
@@ -1119,7 +1143,7 @@ public __Hattrick ( )
 		{
 			if ( g_bHattrickMsg )
 			{
-				set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, 0.2015, _, _, 5.0 );
+				set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_HATTRICK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 				qs_ShowSyncHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_HattrickMsg, g_Name [ Leader ] );
 			}
 
@@ -1132,20 +1156,20 @@ public __Hattrick ( )
 //
 public __Flawless ( )
 {
-	static aliveTeam_1, aliveTeam_2;
-	static allTeam_1, allTeam_2;
+	static aliveTeam_1,		aliveTeam_2;
+	static allTeam_1,		allTeam_2;
 
-	if ( g_bRandomRed ) g_Red = random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomGreen ) g_Green = random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomBlue ) g_Blue = random_num ( 0, QS_MAX_BYTE );
+	if ( g_bRandomRed )		g_Red = random_num ( 0, QS_MAX_BYTE );
+	if ( g_bRandomGreen )	g_Green = random_num ( 0, QS_MAX_BYTE );
+	if ( g_bRandomBlue )	g_Blue = random_num ( 0, QS_MAX_BYTE );
 
-	aliveTeam_1 = __Players ( true, 1 );
-	aliveTeam_2 = __Players ( true, 2 );
+	aliveTeam_1 =			__Players ( true, 1 );
+	aliveTeam_2 =			__Players ( true, 2 );
 
-	allTeam_1 = aliveTeam_1 + __Players ( false, 1 );
-	allTeam_2 = aliveTeam_2 + __Players ( false, 2 );
+	allTeam_1 =				aliveTeam_1 +	__Players ( false, 1 );
+	allTeam_2 =				aliveTeam_2 +	__Players ( false, 2 );
 
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, 0.2815, _, _, 5.0 );
+	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_FLAWLESS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 
 	if ( allTeam_1 == aliveTeam_1 )
 	{
@@ -1234,6 +1258,10 @@ public __DeathMsg ( )
 	//
 	static Place, wpnID;
 
+	// SETS THE DECLARED VARIABLES TO ZERO
+	//
+	Place = wpnID = 0;
+
 	// PREPARES THE WEAPON ID AND THE HIT PLACE
 	//
 	get_user_attacker ( g_Victim, wpnID, Place );
@@ -1254,7 +1282,7 @@ public __DeathMsg ( )
 	if ( g_Place < 1 && Place > 0 )
 		g_Place = Place;
 
-	// PREPARES TEAM KILL BOOLEAN
+	// PREPARES TEAM KILL BOOLEAN IF NEEDED
 	//
 	if ( g_bDeathMsgOnly )
 		g_TK = ( get_user_team ( g_Killer ) == get_user_team ( g_Victim ) ) ? 1 : 0;
@@ -1275,7 +1303,7 @@ __Death ( Killer, Victim, wpnID, Place, TK )
 {
 	// VARIABLES
 	//
-	static Iterator, Float: gameTime, Weapon [ 32 ], Sound [ 128 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
+	static Iterator, Float: fGameTime, Weapon [ 32 ], Sound [ 128 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
 
 	// RESETS KILLS FOR VICTIM
 	//
@@ -1295,7 +1323,7 @@ __Death ( Killer, Victim, wpnID, Place, TK )
 
 	// PREPARES HUD MESSAGE
 	//
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, 0.2415, _, _, 5.0 );
+	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_MINOR_EVENTS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 
 	// REVENGE KILLER STAMP
 	//
@@ -1400,9 +1428,9 @@ __Death ( Killer, Victim, wpnID, Place, TK )
 		{
 			// GAME TIME
 			//
-			gameTime = get_gametime ( );
+			fGameTime = get_gametime ( );
 
-			if ( g_fLastKillTimeStamp [ Killer ] > gameTime )
+			if ( g_fLastKillTimeStamp [ Killer ] > fGameTime )
 			{
 				if ( g_bDKillMsg )
 					qs_ShowSyncHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_DKillMsg, g_Name [ Killer ], g_Name [ Victim ] );
@@ -1410,7 +1438,7 @@ __Death ( Killer, Victim, wpnID, Place, TK )
 				qs_client_cmd ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pDKill, random_num ( 0, g_DKillSize - 1 ) ) );
 			}
 
-			g_fLastKillTimeStamp [ Killer ] = gameTime + 0.1;
+			g_fLastKillTimeStamp [ Killer ] = fGameTime + 0.1;
 		}
 
 		if ( g_bKStreak )
@@ -1486,10 +1514,10 @@ __Load ( )
 		// SETTINGS
 		//
 
-		if ( equali ( Key, "ENABLE/DISABLE PLUGIN" ) )			g_bON = bool: str_to_num ( Value );
-		else if ( equali ( Key, "HEADSHOT ONLY KILLER" ) )		g_bHShotOnlyKiller = bool: str_to_num ( Value );
-		else if ( equali ( Key, "MIN FRAGS FOR HATTRICK" ) )	g_MinimumKillsForHattrick = str_to_num ( Value );
-		else if ( equali ( Key, "REVENGE ONLY FOR KILLER" ) )	g_bRevengeOnlyKiller = bool: str_to_num ( Value );
+		if ( equali ( Key, "ENABLE/DISABLE PLUGIN" ) )			g_bON =							bool: str_to_num ( Value );
+		else if ( equali ( Key, "HEADSHOT ONLY KILLER" ) )		g_bHShotOnlyKiller =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "MIN FRAGS FOR HATTRICK" ) )	g_MinimumKillsForHattrick =		str_to_num ( Value );
+		else if ( equali ( Key, "REVENGE ONLY FOR KILLER" ) )	g_bRevengeOnlyKiller =			bool: str_to_num ( Value );
 
 		//
 		// HUD MESSAGES
@@ -1497,20 +1525,20 @@ __Load ( )
 
 		else if ( equali ( Key, "HUDMSG RED" ) )
 		{
-			if ( equal ( Value, "_" ) ) g_bRandomRed = true;
-			else g_Red = str_to_num ( Value );
+			if ( equal ( Value, "_" ) )		g_bRandomRed = true;
+			else g_Red =					str_to_num ( Value );
 		}
 
 		else if ( equali ( Key, "HUDMSG GREEN" ) )
 		{
-			if ( equal ( Value, "_" ) ) g_bRandomGreen = true;
-			else g_Green = str_to_num ( Value );
+			if ( equal ( Value, "_" ) )		g_bRandomGreen = true;
+			else g_Green =					str_to_num ( Value );
 		}
 
 		else if ( equali ( Key, "HUDMSG BLUE" ) )
 		{
-			if ( equal ( Value, "_" ) ) g_bRandomBlue = true;
-			else g_Blue = str_to_num ( Value );
+			if ( equal ( Value, "_" ) )		g_bRandomBlue = true;
+			else g_Blue =					str_to_num ( Value );
 		}
 
 		// KILLS STREAK SOUNDS
@@ -1541,18 +1569,18 @@ __Load ( )
 		// EVENTS ON/ OFF
 		//
 
-		else if ( equali ( Key, "KILLSTREAK EVENT" ) )		g_bKStreak = bool: str_to_num ( Value );
-		else if ( equali ( Key, "REVENGE EVENT" ) )			g_bRevenge = bool: str_to_num ( Value );
-		else if ( equali ( Key, "HEADSHOT EVENT" ) )		g_bHShot = bool: str_to_num ( Value );
-		else if ( equali ( Key, "SUICIDE EVENT" ) )			g_bSuicide = bool: str_to_num ( Value );
-		else if ( equali ( Key, "NADE EVENT" ) )			g_bGrenade = bool: str_to_num ( Value );
-		else if ( equali ( Key, "TEAMKILL EVENT" ) )		g_bTKill = bool: str_to_num ( Value );
-		else if ( equali ( Key, "KNIFE EVENT" ) )			g_bKnife = bool: str_to_num ( Value );
-		else if ( equali ( Key, "FIRSTBLOOD EVENT" ) )		g_bFBlood = bool: str_to_num ( Value );
-		else if ( equali ( Key, "ROUNDSTART EVENT" ) )		g_bRStart = bool: str_to_num ( Value );
-		else if ( equali ( Key, "DOUBLEKILL EVENT" ) )		g_bDKill = bool: str_to_num ( Value );
-		else if ( equali ( Key, "HATTRICK EVENT" ) )		g_bHattrick = bool: str_to_num ( Value );
-		else if ( equali ( Key, "FLAWLESS VICTORY" ) )		g_bFlawless = bool: str_to_num ( Value );
+		else if ( equali ( Key, "KILLSTREAK EVENT" ) )		g_bKStreak =		bool: str_to_num ( Value );
+		else if ( equali ( Key, "REVENGE EVENT" ) )			g_bRevenge =		bool: str_to_num ( Value );
+		else if ( equali ( Key, "HEADSHOT EVENT" ) )		g_bHShot =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "SUICIDE EVENT" ) )			g_bSuicide =		bool: str_to_num ( Value );
+		else if ( equali ( Key, "NADE EVENT" ) )			g_bGrenade =		bool: str_to_num ( Value );
+		else if ( equali ( Key, "TEAMKILL EVENT" ) )		g_bTKill =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "KNIFE EVENT" ) )			g_bKnife =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "FIRSTBLOOD EVENT" ) )		g_bFBlood =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "ROUNDSTART EVENT" ) )		g_bRStart =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "DOUBLEKILL EVENT" ) )		g_bDKill =			bool: str_to_num ( Value );
+		else if ( equali ( Key, "HATTRICK EVENT" ) )		g_bHattrick =		bool: str_to_num ( Value );
+		else if ( equali ( Key, "FLAWLESS VICTORY" ) )		g_bFlawless =		bool: str_to_num ( Value );
 
 		//
 		// EVENT SOUNDS
@@ -1690,7 +1718,7 @@ __Display ( Killer, Message [ ], Sound [ ] )
 	if ( g_bRandomGreen )	g_Green = random_num ( 0, QS_MAX_BYTE );
 	if ( g_bRandomBlue )	g_Blue = random_num ( 0, QS_MAX_BYTE );
 
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, 0.2215, _, _, 5.0 );
+	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_STREAK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 	qs_ShowSyncHudMsg ( 0, g_pHudMsg [ HUDMSG_STREAK ], Message, g_Name [ Killer ] );
 
 	qs_client_cmd ( 0, "SPK ^"%s^"", Sound );
