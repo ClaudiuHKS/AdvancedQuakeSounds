@@ -592,7 +592,7 @@ public plugin_natives ( )
 
 // FILTERS MODULE
 //
-public QS_Module_Filter ( const Module [ ] )
+public QS_Module_Filter ( Module [ ] )
 {
 	// XSTATS
 	//
@@ -621,7 +621,7 @@ public QS_Module_Filter ( const Module [ ] )
 
 // FILTERS NATIVE(S)
 //
-public QS_Native_Filter ( const Name [ ], Id, bTrap )
+public QS_Native_Filter ( Name [ ], Id, bTrap )
 {
 	// TRAP
 	//
