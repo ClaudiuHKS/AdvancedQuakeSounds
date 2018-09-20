@@ -9,7 +9,7 @@
 
 // WHETHER OR NOT TO INCREASE MEMORY FOR THIS SCRIPT
 //
-// #pragma dynamic		2097152
+#pragma dynamic			524288		// 128 * 128 * 32
 
 // WHETHER OR NOT TO USE '\' AS A CONTROL CHARACTER
 // INSTEAD OF THE DEFAULT ONE, WHICH IS '^'
@@ -60,7 +60,7 @@
 
 // HUD MESSAGE'S MAXIMUM LENGTH
 //
-#define QS_HUD_MESSAGE_MAX_LENGTH		( 256 + 32 )		// 288
+#define QS_HUD_MESSAGE_MAX_LENGTH		( 384 )				// 384
 
 // CENTERED HUD MESSAGE'S "X" POSITION
 //
@@ -636,18 +636,18 @@ public plugin_precache ( )
 {
 	// CREATES ARRAYS FIRST
 	//
-	g_pHShot =						ArrayCreate ( 128 );
-	g_pSuicide =					ArrayCreate ( 128 );
-	g_pGrenade =					ArrayCreate ( 128 );
-	g_pTKill =						ArrayCreate ( 128 );
-	g_pKnife =						ArrayCreate ( 128 );
-	g_pFBlood =						ArrayCreate ( 128 );
-	g_pRStart =						ArrayCreate ( 128 );
-	g_pDKill =						ArrayCreate ( 128 );
-	g_pHattrick =					ArrayCreate ( 128 );
-	g_pFlawless =					ArrayCreate ( 128 );
-	g_pRevenge =					ArrayCreate ( 128 );
-	g_pKStreakSounds =				ArrayCreate ( 128 );
+	g_pHShot =						ArrayCreate ( 256 );
+	g_pSuicide =					ArrayCreate ( 256 );
+	g_pGrenade =					ArrayCreate ( 256 );
+	g_pTKill =						ArrayCreate ( 256 );
+	g_pKnife =						ArrayCreate ( 256 );
+	g_pFBlood =						ArrayCreate ( 256 );
+	g_pRStart =						ArrayCreate ( 256 );
+	g_pDKill =						ArrayCreate ( 256 );
+	g_pHattrick =					ArrayCreate ( 256 );
+	g_pFlawless =					ArrayCreate ( 256 );
+	g_pRevenge =					ArrayCreate ( 256 );
+	g_pKStreakSounds =				ArrayCreate ( 256 );
 	g_pKStreakMessages =			ArrayCreate ( QS_HUD_MESSAGE_MAX_LENGTH );
 	g_pKStreakRequiredKills =		ArrayCreate ( 8 );
 
@@ -682,7 +682,7 @@ public plugin_precache ( )
 
 	// DEFINES SOUND FOR FURTHER USE
 	//
-	new Sound [ 128 ];
+	new Sound [ 256 ];
 
 	if ( g_bHShot )
 	{
@@ -824,15 +824,10 @@ public plugin_init ( )
 	//
 	get_modname ( g_ModName, charsmax ( g_ModName ) );
 
-	// DEATHMSG IS THE ONLY AVAILABLE FOR ESF, NS AND VALVE
-	// THESE MODS HAVE NO XSTATS MODULE
+	// CHECKS WHETHER XSTATS MODULE IS LOADED
 	//
-	if ( equali ( g_ModName, "ESF", 3 ) || \
-			equali ( g_ModName, "NS", 2 ) || \
-				equali ( g_ModName, "VALVE" ) )
-	{
+	if ( !module_exists ( "xstats" ) )
 		g_bDeathMsgOnly = true;
-	}
 
 	// COUNTER-STRIKE
 	//
@@ -1314,7 +1309,7 @@ __Death ( Killer, Victim, Weapon, Place, TeamKill )
 {
 	// VARIABLES
 	//
-	static Iterator = 0, Float: fGameTime = 0.0, WeaponName [ 32 ], Sound [ 128 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
+	static Iterator = 0, Float: fGameTime = 0.0, WeaponName [ 32 ], Sound [ 256 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
 
 	// RESETS KILLS FOR VICTIM
 	//
@@ -1500,8 +1495,7 @@ __Load ( )
 
 	// PREPARES FILE LINE
 	//
-	new Line [ QS_HUD_MESSAGE_MAX_LENGTH * 2 ], Key [ 64 ], Value [ QS_HUD_MESSAGE_MAX_LENGTH ], Type [ 32 ], \
-		Sound [ 128 ], RequiredKills [ 8 ], Dummy [ 4 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
+	new Line [ 1024 ], Key [ 256 ], Value [ 768 ], Type [ 512 ], Sound [ 256 ], RequiredKills [ 8 ], Dummy [ 4 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
 
 	// READS FILE
 	//
@@ -1716,20 +1710,20 @@ __Load ( )
 		// MESSAGE STRINGS
 		//
 
-		else if ( equali ( Key, "HEADSHOT HUDMSG" ) )			g_HShotMsg =				Value;
-		else if ( equali ( Key, "SUICIDE HUDMSG" ) )			g_SuicideMsg =				Value;
-		else if ( equali ( Key, "NADE HUDMSG" ) )				g_GrenadeMsg =				Value;
-		else if ( equali ( Key, "TEAMKILL HUDMSG" ) )			g_TKillMsg =				Value;
-		else if ( equali ( Key, "KNIFE HUDMSG" ) )				g_KnifeMsg =				Value;
-		else if ( equali ( Key, "FIRSTBLOOD HUDMSG" ) )			g_FBloodMsg =				Value;
-		else if ( equali ( Key, "ROUNDSTART HUDMSG" ) )			g_RStartMsg =				Value;
-		else if ( equali ( Key, "DOUBLEKILL HUDMSG" ) )			g_DKillMsg =				Value;
-		else if ( equali ( Key, "HATTRICK HUDMSG" ) )			g_HattrickMsg =				Value;
-		else if ( equali ( Key, "FLAWLESS VICTORY HUDMSG" ) )	g_FlawlessMsg =				Value;
-		else if ( equali ( Key, "REVENGE KILLER MESSAGE" ) )	g_RevengeMsgKiller =		Value;
-		else if ( equali ( Key, "REVENGE VICTIM MESSAGE" ) )	g_RevengeMsgVictim =		Value;
-		else if ( equali ( Key, "TERRO TEAM NAME" ) )			g_FlawlessTeamName_1 =		Value;
-		else if ( equali ( Key, "CT TEAM NAME" ) )				g_FlawlessTeamName_2 =		Value;
+		else if ( equali ( Key, "HEADSHOT HUDMSG" ) )			copy ( g_HShotMsg,				charsmax ( g_HShotMsg ),			Value );
+		else if ( equali ( Key, "SUICIDE HUDMSG" ) )			copy ( g_SuicideMsg,			charsmax ( g_SuicideMsg ),			Value );
+		else if ( equali ( Key, "NADE HUDMSG" ) )				copy ( g_GrenadeMsg,			charsmax ( g_GrenadeMsg ),			Value );
+		else if ( equali ( Key, "TEAMKILL HUDMSG" ) )			copy ( g_TKillMsg,				charsmax ( g_TKillMsg ),			Value );
+		else if ( equali ( Key, "KNIFE HUDMSG" ) )				copy ( g_KnifeMsg,				charsmax ( g_KnifeMsg ),			Value );
+		else if ( equali ( Key, "FIRSTBLOOD HUDMSG" ) )			copy ( g_FBloodMsg,				charsmax ( g_FBloodMsg ),			Value );
+		else if ( equali ( Key, "ROUNDSTART HUDMSG" ) )			copy ( g_RStartMsg,				charsmax ( g_RStartMsg ),			Value );
+		else if ( equali ( Key, "DOUBLEKILL HUDMSG" ) )			copy ( g_DKillMsg,				charsmax ( g_DKillMsg ),			Value );
+		else if ( equali ( Key, "HATTRICK HUDMSG" ) )			copy ( g_HattrickMsg,			charsmax ( g_HattrickMsg ),			Value );
+		else if ( equali ( Key, "FLAWLESS VICTORY HUDMSG" ) )	copy ( g_FlawlessMsg,			charsmax ( g_FlawlessMsg ),			Value );
+		else if ( equali ( Key, "REVENGE KILLER MESSAGE" ) )	copy ( g_RevengeMsgKiller,		charsmax ( g_RevengeMsgKiller ),	Value );
+		else if ( equali ( Key, "REVENGE VICTIM MESSAGE" ) )	copy ( g_RevengeMsgVictim,		charsmax ( g_RevengeMsgVictim ),	Value );
+		else if ( equali ( Key, "TERRO TEAM NAME" ) )			copy ( g_FlawlessTeamName_1,	charsmax ( g_FlawlessTeamName_1 ),	Value );
+		else if ( equali ( Key, "CT TEAM NAME" ) )				copy ( g_FlawlessTeamName_2,	charsmax ( g_FlawlessTeamName_2 ),	Value );
 	}
 
 	// CLOSES
