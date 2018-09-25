@@ -21,6 +21,17 @@
 //
 #pragma tabsize			0
 
+// REQUIRES XSTATS MODULE IF AVAILABLE
+//
+#pragma reqclass		xstats
+
+// XSTATS DEFAULTS
+//
+#pragma defclasslib		xstats	csx
+#pragma defclasslib		xstats	dodx
+#pragma defclasslib		xstats	tfcx
+#pragma defclasslib		xstats	tsx
+
 
 /*************************************************************************************
 ******* HEADERS **********************************************************************
@@ -28,25 +39,12 @@
 
 // AMX MOD X HEADER FILES
 //
-#include <amxmodx>
-#include <amxmisc>
+#include < amxmodx >
+#include < amxmisc >
 
 // FAKE META HEADER FILE
 //
-#include <fakemeta>
-
-// REQUIRES XSTATS MODULE IF AVAILABLE
-//
-#pragma reqclass xstats
-
-// AUTOMATICALLY LOADS
-//
-#if !defined AMXMODX_NOAUTOLOAD
-	#pragma defclasslib xstats csx
-	#pragma defclasslib xstats dodx
-	#pragma defclasslib xstats tfcx
-	#pragma defclasslib xstats tsx
-#endif
+#include < fakemeta >
 
 
 /*************************************************************************************
@@ -64,7 +62,7 @@
 
 // CENTERED HUD MESSAGE'S "X" POSITION
 //
-#define QS_CENTERED_HUD_X_POSITION		( -1.0 )			// -1
+#define QS_HUD_MESSAGE_X_POSITION		( -1.0 )			// -1
 
 // HUD MESSAGE'S HOLD TIME (SECONDS TO BE DISPLAYED)
 //
@@ -139,6 +137,7 @@ new bool: g_bPluginEnabled = false;
 new bool: g_bHShot = false;
 
 // HEAD SHOT MESSAGE ON/ OFF
+//
 new bool: g_bHShotMsg = false;
 
 // HEAD SHOT MESSAGE
@@ -584,10 +583,6 @@ public plugin_natives ( )
 	// SETS MODULE FILTER
 	//
 	set_module_filter ( "QS_Module_Filter" );
-
-	// SETS NATIVE FILTER
-	//
-	set_native_filter ( "QS_Native_Filter" );
 }
 
 // FILTERS MODULE
@@ -596,20 +591,9 @@ public QS_Module_Filter ( Module [ ] )
 {
 	// XSTATS
 	//
-	if ( equali ( Module, "xstats" ) )
+	if ( equali ( Module, "XStats" ) )
 	{
-		// AVAILABLE FOR GAMES BELOW
-		//
-		if ( equali ( g_ModName, "CS", 2 ) || \
-				equali ( g_ModName, "CZ", 2 ) || \
-					equali ( g_ModName, "DOD", 3 ) || \
-						equali ( g_ModName, "TFC", 3 ) || \
-							equali ( g_ModName, "TS", 2 ) )
-		{
-			return PLUGIN_CONTINUE;
-		}
-
-		// UNAVAILABLE
+		// LOAD
 		//
 		return PLUGIN_HANDLED;
 	}
@@ -619,21 +603,16 @@ public QS_Module_Filter ( Module [ ] )
 	return PLUGIN_CONTINUE;
 }
 
-// FILTERS NATIVE(S)
-//
-public QS_Native_Filter ( Name [ ], Id, bTrap )
-{
-	// TRAP
-	//
-	return !bTrap ? PLUGIN_HANDLED : PLUGIN_CONTINUE;
-}
-
 // plugin_precache()
 // THE RIGHT MOMENT FOR INI FILES
 // AND PRECACHING DATA
 //
 public plugin_precache ( )
 {
+	// GETS MOD NAME
+	//
+	QS_CheckMod ( );
+
 	// CREATES ARRAYS FIRST
 	//
 	g_pHShot =						ArrayCreate ( 256 );
@@ -786,14 +765,18 @@ public plugin_end ( )
 //
 public plugin_init ( )
 {
+	// GETS MOD NAME
+	//
+	QS_CheckMod ( );
+
 	// REGISTERS CONSOLE VARIABLE
 	//
-	new pCVar = register_cvar ( "advanced_quake_sounds",	QS_PLUGIN_VERSION, ( FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_SPONLY ) );
+	new pCVar = register_cvar ( "advanced_quake_sounds",		QS_PLUGIN_VERSION,	( FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED | FCVAR_SPONLY ) );
 
 	// SETS CONSOLE VARIABLE STRING
 	//
 	if ( pCVar )
-		set_pcvar_string ( pCVar,							QS_PLUGIN_VERSION );
+		set_pcvar_string ( pCVar,								QS_PLUGIN_VERSION );
 
 	// STOPS HERE IF THE PLUG-IN IS DISABLED
 	//
@@ -801,28 +784,24 @@ public plugin_init ( )
 	{
 		// REGISTERS PLUG-IN
 		//
-		register_plugin ( "ADV. QUAKE SOUNDS (DISABLED)",	QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
+		register_plugin ( "ADV. QUAKE SOUNDS (DISABLED)",		QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
 
 		return;
 	}
 
 	// REGISTERS PLUG-IN
 	//
-	register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)",		QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
+	register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)",			QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
 
 	// REGISTERS FAKE META FORWARDS
 	//
-	register_forward ( FM_MessageBegin,		"OnMessageBegin",	1 );
-	register_forward ( FM_WriteByte,		"OnWriteByte",		1 );
-	register_forward ( FM_MessageEnd,		"OnMessageEnd",		1 );
+	register_forward ( FM_MessageBegin,							"OnMessageBegin",	1 );
+	register_forward ( FM_WriteByte,							"OnWriteByte",		1 );
+	register_forward ( FM_MessageEnd,							"OnMessageEnd",		1 );
 
 	// GETS MAXIMUM PLAYERS
 	//
 	g_MaxPlayers = get_maxplayers ( );
-
-	// GETS MOD NAME
-	//
-	get_modname ( g_ModName, charsmax ( g_ModName ) );
 
 	// CHECKS WHETHER XSTATS MODULE IS LOADED
 	//
@@ -1093,7 +1072,7 @@ public OnRStart ( )
 			if ( g_bRandomGreen )	g_Green =	random_num ( 0, QS_MAX_BYTE );
 			if ( g_bRandomBlue )	g_Blue =	random_num ( 0, QS_MAX_BYTE );
 
-			set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_ROUND_START_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+			set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_ROUND_START_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 			QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_ROUND ], g_RStartMsg );
 		}
 
@@ -1143,7 +1122,7 @@ public __Hattrick ( )
 		{
 			if ( g_bHattrickMsg )
 			{
-				set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_HATTRICK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+				set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_HATTRICK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_HattrickMsg, g_Name [ Leader ] );
 			}
 
@@ -1169,7 +1148,7 @@ public __Flawless ( )
 	allTeam_1 =				aliveTeam_1 +	__Players ( false, 1 );
 	allTeam_2 =				aliveTeam_2 +	__Players ( false, 2 );
 
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_FLAWLESS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+	set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_FLAWLESS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 
 	if ( allTeam_1 == aliveTeam_1 )
 	{
@@ -1329,7 +1308,7 @@ __Death ( Killer, Victim, Weapon, Place, TeamKill )
 
 	// PREPARES HUD MESSAGE
 	//
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_MINOR_EVENTS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+	set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_MINOR_EVENTS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 
 	// REVENGE KILLER STAMP
 	//
@@ -1739,7 +1718,7 @@ __Display ( Killer, Message [ ], Sound [ ] )
 	if ( g_bRandomGreen )	g_Green =	random_num ( 0, QS_MAX_BYTE );
 	if ( g_bRandomBlue )	g_Blue =	random_num ( 0, QS_MAX_BYTE );
 
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_CENTERED_HUD_X_POSITION, QS_STREAK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+	set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_STREAK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
 	QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_STREAK ], Message, g_Name [ Killer ] );
 
 	QS_ClientCommand ( 0, "SPK ^"%s^"", Sound );
@@ -1862,9 +1841,17 @@ QS_ClientCommand ( Target, Rules [ ], any: ... )
 	}
 }
 
-// CLEANS STRING
+// CLEARS STRING
 //
 QS_ClearString ( String [ ] )
 {
 	String [ 0 ] = EOS;
+}
+
+// CHECKS MOD
+//
+QS_CheckMod ( )
+{
+	if ( g_ModName [ 0 ] == EOS )
+		get_modname ( g_ModName, charsmax ( g_ModName ) );
 }
