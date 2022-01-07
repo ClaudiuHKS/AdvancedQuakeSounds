@@ -79,7 +79,7 @@ public plugin_init ( )
         g_MsgSyncObject_TE =    CreateHudSyncObj ( );
         g_MsgSyncObject_CT =    CreateHudSyncObj ( );
 
-		register_logevent       ( "QS_OnRoundStart",                2,                  "1=Round_Start" );
+        register_logevent       ( "QS_OnRoundStart",                2,                  "1=Round_Start" );
 
         g_Done_TE =             false;
         g_Done_CT =             false;
