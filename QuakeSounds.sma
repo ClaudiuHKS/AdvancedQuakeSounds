@@ -3,120 +3,247 @@
 ******* PRAGMA ***********************************************************************
 *************************************************************************************/
 
+//
 // WHETHER OR NOT TO FORCE ';' AFTER EACH LINE
 //
-// #pragma semicolon	1
+#pragma     semicolon       1
 
+//
 // WHETHER OR NOT TO INCREASE MEMORY FOR THIS SCRIPT
 //
-#pragma dynamic			524288		// 128 * 128 * 32
+#pragma     dynamic         4194304     /// B           [[[ INCREASE THIS IF YOU ARE GETTING JUNKY ERROR LOGS ]]]
 
+//
 // WHETHER OR NOT TO USE '\' AS A CONTROL CHARACTER
 // INSTEAD OF THE DEFAULT ONE, WHICH IS '^'
 //
-// #pragma ctrlchar		'\'
+#pragma     ctrlchar        '\'
 
-// SETS THE TAB SIZE ('\t' AND ' ') TO 0
+//
+// SETS THE TAB SIZE ( '\t' AND ' ' ) TO 0
 // GLOBALLY
 //
-#pragma tabsize			0
+#pragma     tabsize         0
 
+//
 // REQUIRES XSTATS MODULE IF AVAILABLE
 //
-#pragma reqclass		xstats
+#pragma     reqclass        xstats
 
+//
 // XSTATS DEFAULTS
 //
-#pragma defclasslib		xstats	csx
-#pragma defclasslib		xstats	dodx
-#pragma defclasslib		xstats	tfcx
-#pragma defclasslib		xstats	tsx
+#pragma     defclasslib     xstats      csx
+#pragma     defclasslib     xstats      dodx
+#pragma     defclasslib     xstats      tfcx
+#pragma     defclasslib     xstats      tsx
 
 
 /*************************************************************************************
-******* HEADERS **********************************************************************
+******* INCLUDE **********************************************************************
 *************************************************************************************/
 
-// AMX MOD X HEADER FILES
 //
-#include < amxmodx >
-#include < amxmisc >
+// AMX MOD X HEADER FILE
+//
+#include    < amxmodx >                 /// plugin_init ( ) +
 
+//
+// AMX MOD X CUSTOM HEADER FILE
+//
+#include    < amxmisc >                 /// get_configsdir ( ) +
+
+//
 // FAKE META HEADER FILE
 //
-#include < fakemeta >
+#include    < fakemeta >                /// FM_MessageBegin +
+
+//
+// HAM SANDWICH HEADER FILE [[[ FOR GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg" ]]]
+//
+#include    < hamsandwich >             /// Ham_Killed +
 
 
 /*************************************************************************************
-******* DEFINITIONS ******************************************************************
+******* DEFINE ***********************************************************************
 *************************************************************************************/
 
+//
+// PLUGIN'S VERSION
+//
+#define QS_PLUGIN_VERSION                   ( "6.0" )               /// "6.0"
+
+//
+// STARTING WITH '/', THE CONFIG FILE NAME
+//
+#define QS_CFG_FILE_NAME                    ( "/quakesounds.ini" )  /// "/quakesounds.ini"
+
+//
+// THE LOG FILE NAME
+//
+#define QS_LOG_FILE_NAME                    ( "quakesounds.log" )   /// "quakesounds.log"
+
+//
+/// ###################################################################################################
+//
+
+//
+// CSTRIKE AND CZERO 'TE' TEAM NUMBER
+//
+#define QS_CSCZ_TEAM_TE                     ( 1 )                   /// 1
+
+//
+// CSTRIKE AND CZERO 'CT' TEAM NUMBER
+//
+#define QS_CSCZ_TEAM_CT                     ( 2 )                   /// 2
+
+//
+/// ###################################################################################################
+//
+
+//
 // SECONDS DELAY TO SHOW THE INFORMATION MESSAGE REGARDING '/SOUNDS' COMMAND
 // AFTER THE PLAYER JOINS THE GAME SERVER
 //
-#define QS_PLUGIN_INFORMATION_DELAY		( 6.0 )				// 6
+#define QS_PLUGIN_INFO_DELAY                ( 6.000000 )            /// 6
 
-// HUD MESSAGE'S MAXIMUM LENGTH
 //
-#define QS_HUD_MESSAGE_MAX_LENGTH		( 384 )				// 384
-
-// CENTERED HUD MESSAGE'S "X" POSITION
+// HATTRICK FEATURE :: ROUND END DELAY
 //
-#define QS_HUD_MESSAGE_X_POSITION		( -1.0 )			// -1
+#define QS_HATTRICK_ROUND_END_DELAY         ( 2.800000 )            /// 2.8
 
-// HUD MESSAGE'S HOLD TIME (SECONDS TO BE DISPLAYED)
 //
-#define QS_HUD_MESSAGE_HOLD_TIME		( 5.0 )				// 5
-
-// PLUGIN'S VERSION
+// FLAWLESS VICTORY FEATURE :: ROUND END DELAY
 //
-#define QS_PLUGIN_VERSION				( "5.0" )			// "5"
+#define QS_FLAWLESS_ROUND_END_DELAY         ( 1.200000 )            /// 1.2
 
+//
+// THE LAST MAN STANDING FEATURE :: TRIGGER DELAY
+//
+#define QS_STANDING_TRIGGER_DELAY           ( 1.000000 )            /// 1
+
+//
+/// ###################################################################################################
+//
+
+//
 // INVALID PLAYER
 //
-#define QS_INVALID_PLAYER				( 0x000000FF )		// 255
+#define QS_INVALID_PLAYER                   ( 0x000000FF )          /// 255             [[[ 0x000000FF ]]]
 
-// MAXIMUM PLAYERS
 //
-#define QS_MAX_PLAYERS					( 32 )				// 32
-
-// MAXIMUM BYTE (8 BIT)
+// INVALID MESSAGE NUMBER [[[   get_user_msgid ( )  ]]]
 //
-#define QS_MAX_BYTE						( 0x000000FF )		// 255
+#define QS_INVALID_MSG                      ( -16384 )              /// -16384
 
+//
+// INVALID REQUIRED KILLS [[[   A TRULY HUGE NUMBER     ]]]
+//
+#define QS_INVALID_REQUIRED_KILLS           ( 0x0FFFFFFF )          /// 268435455       [[[ 0x0FFFFFFF ]]]
+
+//
 // INVALID TEAM
 //
-#define QS_INVALID_TEAM					( 0x000000FF )		// 255
+#define QS_INVALID_TEAM                     ( 0x000000FF )          /// 255             [[[ 0x000000FF ]]]
 
+//
+/// ###################################################################################################
+//
+
+//
+// MAXIMUM PLAYERS
+//
+#define QS_MAX_PLAYERS                      ( 32 )                  /// 32
+
+//
+// EVERYONE ( ALL PLAYERS )
+//
+#define QS_EVERYONE                         ( 0 )                   /// 0
+
+//
+// MAXIMUM BYTE (8 BIT)
+//
+#define QS_MAX_BYTE                         ( 0x000000FF )          /// 255             [[[ 0x000000FF ]]]
+
+//
+/// ###################################################################################################
+//
+
+//
+// HUD MESSAGE'S MAXIMUM LENGTH
+//
+#define QS_HUD_MSG_MAX_LEN                  ( 384 )                 /// 384
+
+//
+// CENTERED HUD MESSAGE'S "X" POSITION
+//
+#define QS_HUD_MSG_X_POS                    ( -1.000000 )           /// -1
+
+//
+// HUD MESSAGE'S HOLD TIME (SECONDS TO BE DISPLAYED)
+//
+#define QS_HUD_MSG_HOLD_TIME                ( 5.000000 )            /// 5
+
+//
+/// ###################################################################################################
+//
+
+//
 // [ MONSTER KILL, MULTI KILL, UNSTOPPABLE, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
 //
-#define QS_STREAK_Y_POSITION			( 0.2215 )			// .2215
+#define QS_STREAK_Y_POS                     ( 0.180000 )            /// .18
 
+// @@@@
+/// ### imessage.amxx                       ( 0.200000 )            /// .2
+// @@@@
+
+//
 // [ SUICIDE, KNIFE, GRENADE, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
 //
-#define QS_MINOR_EVENTS_Y_POSITION		( 0.2415 )			// .2415
+#define QS_EVENT_Y_POS                      ( 0.220000 )            /// .22
 
-// [ PREPARE TO FIGHT, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
 //
-#define QS_ROUND_START_Y_POSITION		( 0.2615 )			// .2615
+// [ REVENGE ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+//
+#define QS_REVENGE_Y_POS                    ( 0.240000 )            /// .24
 
+//
+// [ THE LAST MAN STANDING ] CSTRIKE AND CZERO HUD MESSAGE'S "Y" (VERTICAL) POSITION
+//
+#define QS_STANDING_Y_POS                   ( 0.260000 )            /// .26
+
+//
 // [ FLAWLESS VICTORY EVENT ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
 //
-#define QS_FLAWLESS_Y_POSITION			( 0.2815 )			// .2815
+#define QS_FLAWLESS_Y_POS                   ( 0.280000 )            /// .28
 
+//
 // [ HATTRICK ( THE LEADER OF THE ROUND ) ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
 //
-#define QS_HATTRICK_Y_POSITION			( 0.2015 )			// .2015
+#define QS_HATTRICK_Y_POS                   ( 0.300000 )            /// .3
 
-// HUD MESSAGE PURPOSES
 //
-enum /* HUD MESSAGE PURPOSE */
-{
-	HUDMSG_EVENT = 0,
-	HUDMSG_STREAK,
-	HUDMSG_ROUND,
+// [ PREPARE TO FIGHT, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+//
+#define QS_ROUND_Y_POS                      ( 0.320000 )            /// .32
 
-	HUDMSG_MAX,
+//
+/// ###################################################################################################
+//
+
+//
+/// HUD MESSAGE PURPOSES
+//
+enum /** HUD MESSAGE PURPOSE */
+{
+    QS_HUD_EVENT            =   0   ,   \
+    QS_HUD_STREAK           =   1   ,   \
+    QS_HUD_HATTRICK         =   2   ,   \
+    QS_HUD_ROUND            =   3   ,   \
+    QS_HUD_STANDING         =   4   ,   \
+    QS_HUD_FLAWLESS         =   5   ,   \
+    QS_HUD_REVENGE          =   6   ,   \
+    QS_HUD_MAX              =   7   ,
 };
 
 
@@ -124,1157 +251,1918 @@ enum /* HUD MESSAGE PURPOSE */
 ******* GLOBAL VARIABLES *************************************************************
 *************************************************************************************/
 
-// PLUG-IN ON/ OFF
 //
-new bool: g_bPluginEnabled = false;
+// PLUGIN ON/ OFF
+//
+static bool: g_bEnabled = false;
+
 
 /**
-* HEAD SHOT
-*/
+ * HEAD SHOT
+ */
 
+//
 // HEAD SHOT ON/ OFF
 //
-new bool: g_bHShot = false;
+static bool: g_bHShot = false;
 
+//
 // HEAD SHOT MESSAGE ON/ OFF
 //
-new bool: g_bHShotMsg = false;
+static bool: g_bHShotMsg = false;
 
+//
 // HEAD SHOT MESSAGE
 //
-new g_HShotMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szHShotMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // HEAD SHOT SOUNDS COUNT
 //
-new g_HShotSize = 0;
+static g_nHShotSize = 0;
 
+//
 // HEAD SHOT ONLY FOR KILLER
 //
-new bool: g_bHShotOnlyKiller = false;
+static bool: g_bHShotOnlyKiller = false;
 
+//
 // HEAD SHOT SOUNDS CONTAINER
 //
-new Array: g_pHShot = Invalid_Array;
+static Array: g_pHShot = Invalid_Array;
+
 
 /**
-* REVENGE
-*/
+ * REVENGE
+ */
 
+//
 // REVENGE ON/ OFF
 //
-new bool: g_bRevenge = false;
+static bool: g_bRevenge = false;
 
+//
 // REVENGE MESSAGE FOR KILLER ON/ OFF
 //
-new bool: g_bRevengeMsgKiller = false;
+static bool: g_bRevengeMsgKiller = false;
 
+//
 // REVENGE MESSAGE FOR VICTIM ON/ OFF
 //
-new bool: g_bRevengeMsgVictim = false;
+static bool: g_bRevengeMsgVictim = false;
 
+//
 // REVENGE MESSAGE FOR KILLER (IF ENABLED)
 //
-new g_RevengeMsgKiller [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szRevengeMsgKiller [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // REVENGE MESSAGE FOR VICTIM (IF ENABLED)
 //
-new g_RevengeMsgVictim [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szRevengeMsgVictim [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // REVENGE SOUNDS COUNT
 //
-new g_RevengeSize = 0;
+static g_nRevengeSize = 0;
 
+//
 // REVENGE ONLY FOR KILER
 //
-new bool: g_bRevengeOnlyKiller = false;
+static bool: g_bRevengeOnlyKiller = false;
 
+//
 // REVENGE SOUNDS CONTAINER
 //
-new Array: g_pRevenge = Invalid_Array;
+static Array: g_pRevenge = Invalid_Array;
+
 
 /**
-* HATTRICK
-* THE LEADER OF CURRENT ROUND
-*/
+ * HATTRICK
+ *
+ * THE LEADER OF THE CURRENT ROUND
+ */
 
+//
 // HATTRICK ON/ OFF
 //
-new bool: g_bHattrick = false;
+static bool: g_bHattrick = false;
 
+//
 // HATTRICK MESSAGE ON/ OFF
 //
-new bool: g_bHattrickMsg = false;
+static bool: g_bHattrickMsg = false;
 
+//
 // HATTRICK MESSAGE
 //
-new g_HattrickMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szHattrickMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // HATTRICK SOUNDS COUNT
 //
-new g_HattrickSize = 0;
+static g_nHattrickSize = 0;
 
+//
 // MINIMUM KILLS REQUIRED FOR HATTRICK
 //
-new g_MinimumKillsForHattrick = 0;
+static g_nMinKillsForHattrick = 0;
 
+//
+// DECREASE FRAG IF SUICIDE BY 'KILL' COMMAND
+//
+static bool: g_bHattrickDecrease = false;
+
+//
 // HATTRICK SOUNDS CONTAINER
 //
-new Array: g_pHattrick = Invalid_Array;
+static Array: g_pHattrick = Invalid_Array;
+
 
 /**
-* SUICIDE
-*/
+ * THE LAST MAN STANDING
+ *
+ * CSTRIKE AND CZERO ONLY
+ */
 
+//
+// THE LAST MAN STANDING ON/ OFF
+//
+static bool: g_bTLMStanding = false;
+
+//
+// THE LAST MAN STANDING TEAM MESSAGE ON/ OFF
+//
+static bool: g_bTLMStandingTeamMsg = false;
+
+//
+// THE LAST MAN STANDING SELF MESSAGE ON/ OFF
+//
+static bool: g_bTLMStandingSelfMsg = false;
+
+//
+// THE LAST MAN STANDING TEAM MESSAGE
+//
+static g_szTLMStandingTeamMsg [ QS_HUD_MSG_MAX_LEN ];
+
+//
+// THE LAST MAN STANDING SELF MESSAGE
+//
+static g_szTLMStandingSelfMsg [ QS_HUD_MSG_MAX_LEN ];
+
+//
+// THE LAST MAN STANDING SOUNDS COUNT
+//
+static g_nTLMStandingSize = 0;
+
+//
+// THE LAST MAN STANDING SOUNDS CONTAINER
+//
+static Array: g_pTLMStanding = Invalid_Array;
+
+//
+// THE LAST MAN STANDING WORDS CONTAINER
+//
+static Array: g_pTLMStandingWords = Invalid_Array;
+
+//
+// THE LAST MAN STANDING WORDS COUNT
+//
+static g_nTLMStandingWordsSize = 0;
+
+//
+// THE LAST MAN STANDING PLAYED THIS ROUND [TE]
+//
+static bool: g_bTLMStandingDone_TE = false;
+
+//
+// THE LAST MAN STANDING PLAYED THIS ROUND [CT]
+//
+static bool: g_bTLMStandingDone_CT = false;
+
+
+/**
+ * SUICIDE
+ */
+
+//
 // SUICIDE ON/ OFF
 //
-new bool: g_bSuicide = false;
+static bool: g_bSuicide = false;
 
+//
 // SUICIDE MESSAGE ON/ OFF
 //
-new bool: g_bSuicideMsg = false;
+static bool: g_bSuicideMsg = false;
 
+//
 // SUICIDE MESSAGE
 //
-new g_SuicideMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szSuicideMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // SUICIDE SOUNDS COUNT
 //
-new g_SuicideSize = 0;
+static g_nSuicideSize = 0;
 
+//
 // SUICIDE SOUNDS CONTAINER
 //
-new Array: g_pSuicide = Invalid_Array;
+static Array: g_pSuicide = Invalid_Array;
+
 
 /**
-* GRENADE
-*/
+ * GRENADE
+ */
 
+//
 // GRENADE ON/ OFF
 //
-new bool: g_bGrenade = false;
+static bool: g_bGrenade = false;
 
+//
 // GRENADE MESSAGE ON/ OFF
 //
-new bool: g_bGrenadeMsg = false;
+static bool: g_bGrenadeMsg = false;
 
+//
 // GRENADE KILL MESSAGE
 //
-new g_GrenadeMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szGrenadeMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // GRENADE SOUNDS COUNT
 //
-new g_GrenadeSize = 0;
+static g_nGrenadeSize = 0;
 
+//
 // GRENADE SOUNDS CONTAINER
 //
-new Array: g_pGrenade = Invalid_Array;
+static Array: g_pGrenade = Invalid_Array;
+
 
 /**
-* TEAM KILL
-*/
+ * TEAM KILL
+ */
 
+//
 // TEAM KILL ON/ OFF
 //
-new bool: g_bTKill = false;
+static bool: g_bTKill = false;
 
+//
 // TEAM KILL MESSAGE ON/ OFF
 //
-new bool: g_bTKillMsg = false;
+static bool: g_bTKillMsg = false;
 
+//
 // TEAM KILL MESSAGE
 //
-new g_TKillMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szTKillMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // TEAM KILL SOUNDS COUNT
 //
-new g_TKillSize = 0;
+static g_nTKillSize = 0;
 
+//
 // TEAM KILL SOUNDS CONTAINER
 //
-new Array: g_pTKill = Invalid_Array;
+static Array: g_pTKill = Invalid_Array;
+
 
 /**
-* KNIFE
-*/
+ * KNIFE
+ */
 
+//
 // KNIFE ON/ OFF
 //
-new bool: g_bKnife = false;
+static bool: g_bKnife = false;
 
+//
 // KNIFE MESSAGE ON/ OFF
 //
-new bool: g_bKnifeMsg = false;
+static bool: g_bKnifeMsg = false;
 
+//
 // KNIFE KILL MESSAGE
 //
-new g_KnifeMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szKnifeMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // KNIFE KILL SOUNDS COUNT
 //
-new g_KnifeSize = 0;
+static g_nKnifeSize = 0;
 
+//
 // KNIFE SOUNDS CONTAINER
 //
-new Array: g_pKnife = Invalid_Array;
+static Array: g_pKnife = Invalid_Array;
+
 
 /**
-* FIRST BLOOD
-*/
+ * FIRST BLOOD
+ */
 
+//
 // FIRST BLOOD ON/ OFF
 //
-new bool: g_bFBlood = false;
+static bool: g_bFBlood = false;
 
+//
 // FIRST BLOOD MESSAGE ON/ OFF
 //
-new bool: g_bFBloodMsg = false;
+static bool: g_bFBloodMsg = false;
 
+//
 // FIRST BLOOD MESSAGE
 //
-new g_FBloodMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szFBloodMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // FIRST BLOOD SOUNDS COUNT
 //
-new g_FBloodSize = 0;
+static g_nFBloodSize = 0;
 
+//
 // FIRST BLOOD VARIABLE
 //
-new g_FBlood = 0;
+static g_nFBlood = 0;
 
+//
 // FIRST BLOOD SOUNDS CONTAINER
 //
-new Array: g_pFBlood = Invalid_Array;
+static Array: g_pFBlood = Invalid_Array;
+
 
 /**
-* KILLS STREAK
-*/
+ * KILLS STREAK
+ */
 
+//
 // KILLS STREAK ON/ OFF
 //
-new bool: g_bKStreak = false;
+static bool: g_bKStreak = false;
 
+//
 // KILL STREAK SOUNDS COUNT
 //
-new g_KStreakSoundsSize = 0;
+static g_nKStreakSize = 0;
 
+//
+// KILL STREAK REQUIRED KILLS COUNT
+//
+static g_nKStreakRKillsSize = 0;
+
+//
+// KILL STREAK MESSAGES COUNT
+//
+static g_nKStreakMsgSize = 0;
+
+//
 // KILLS STREAK SOUNDS CONTAINER
 //
-new Array: g_pKStreakSounds = Invalid_Array;
+static Array: g_pKStreakSnds = Invalid_Array;
 
+//
 // KILLS STREAK MESSAGES CONTAINER
 //
-new Array: g_pKStreakMessages = Invalid_Array;
+static Array: g_pKStreakMsgs = Invalid_Array;
 
+//
 // KILLS STREAK REQUIRED KILLS CONTAINER
 //
-new Array: g_pKStreakRequiredKills = Invalid_Array;
+static Array: g_pKStreakReqKills = Invalid_Array;
+
 
 /**
-* ROUND START
-*/
+ * ROUND START
+ */
 
+//
 // ROUND START ON/ OFF
 //
-new bool: g_bRStart = false;
+static bool: g_bRStart = false;
 
+//
 // ROUND START MESSAGE ON/ OFF
 //
-new bool: g_bRStartMsg = false;
+static bool: g_bRStartMsg = false;
 
+//
 // ROUND START MESSAGE
 //
-new g_RStartMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szRStartMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // ROUND START SOUNDS COUNT
 //
-new g_RStartSize = 0;
+static g_nRStartSize = 0;
 
+//
 // ROUND START SOUNDS CONTAINER
 //
-new Array: g_pRStart = Invalid_Array;
+static Array: g_pRStart = Invalid_Array;
+
 
 /**
-* DOUBLE KILL
-*/
+ * DOUBLE KILL
+ */
 
+//
 // DOUBLE KILL ON/ OFF
 //
-new bool: g_bDKill = false;
+static bool: g_bDKill = false;
 
+//
 // DOUBLE KILL MESSAGE ON/ OFF
 //
-new bool: g_bDKillMsg = false;
+static bool: g_bDKillMsg = false;
 
+//
 // DOUBLE KILL MESSAGE
 //
-new g_DKillMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szDKillMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // DOUBLE KILL SOUNDS COUNT
 //
-new g_DKillSize = 0;
+static g_nDKillSize = 0;
 
+//
 // DOUBLE KILL SOUNDS CONTAINER
 //
-new Array: g_pDKill = Invalid_Array;
+static Array: g_pDKill = Invalid_Array;
+
 
 /**
-* FLAWLESS
-* IF A TEAM KILLS THE OTHER ONE W/ O GETTING ANY CASUALTIES
-*/
+ * FLAWLESS
+ *
+ * IF A TEAM KILLS THE OTHER ONE W/ O GETTING ANY CASUALTIES
+ */
 
+//
 // FLAWLESS ON/ OFF
 //
-new bool: g_bFlawless = false;
+static bool: g_bFlawless = false;
 
+//
 // FLAWLESS MESSAGE ON/ OFF
 //
-new bool: g_bFlawlessMsg = false;
+static bool: g_bFlawlessMsg = false;
 
+//
 // FLAWLESS MESSAGE
 //
-new g_FlawlessMsg [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szFlawlessMsg [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // FLAWLESS TEAM NAME FOR TEAM [1]
 //
-new g_FlawlessTeamName_1 [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szFlawlessTeamName_1 [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // FLAWLESS TEAM NAME FOR TEAM [2]
 //
-new g_FlawlessTeamName_2 [ QS_HUD_MESSAGE_MAX_LENGTH ];
+static g_szFlawlessTeamName_2 [ QS_HUD_MSG_MAX_LEN ];
 
+//
 // FLAWLESS SOUNDS COUNT
 //
-new g_FlawlessSize = 0;
+static g_nFlawlessSize = 0;
 
+//
 // FLAWLESS SOUNDS CONTAINER
 //
-new Array: g_pFlawless = Invalid_Array;
+static Array: g_pFlawless = Invalid_Array;
 
 
 /**
-* HUD MESSAGE [TE_TEXTMESSAGE]
-*/
+ * HUD MESSAGE [ TE_TEXTMESSAGE ]
+ */
 
+//
 // CHANNEL HANDLES
 //
-new g_pHudMsg [ HUDMSG_MAX ];
+static g_pnHudMsgObj [ QS_HUD_MAX ];
 
+//
 // RED
 //
-new g_Red = 0;
+static g_nRed = 0;
 
+//
 // RANDOM RED
 //
-new bool: g_bRandomRed = false;
+static bool: g_bRandomRed = false;
 
+//
 // GREEN
 //
-new g_Green = 0;
+static g_nGreen = 0;
 
+//
 // RANDOM GREEN
 //
-new bool: g_bRandomGreen = false;
+static bool: g_bRandomGreen = false;
 
+//
 // BLUE
 //
-new g_Blue = 0;
+static g_nBlue = 0;
 
+//
 // RANDOM BLUE
 //
-new bool: g_bRandomBlue = false;
+static bool: g_bRandomBlue = false;
 
 
 /**
 * GAME RELATED
 */
 
+//
 // MOD NAME
 //
-new g_ModName [ 8 ];
+static g_szMod [ 64 ];
 
+//
+// MAXIMUM PLAYERS
+//
+static g_nMaxPlayers = 0;
+
+//
 // ON DEATHMSG
 //
-new bool: g_bOnDeathMsg = false;
+static bool: g_bOnDeathMsg = false;
 
+//
 // DEATHMSG BYTE STATUS
 //
-new g_DeathMsgByteStatus = 0;
+static g_nDeathMsgByteStatus = 0;
 
+//
 // DEATHMSG ONLY AVAILABLE
 //
-new bool: g_bDeathMsgOnly = false;
+static bool: g_bDeathMsgOnly = false;
 
+//
 // CACHED KILLER ID
 //
-new g_Killer = 0;
+static g_nKiller = 0;
 
+//
 // CACHED VICTIM ID
 //
-new g_Victim = 0;
+static g_nVictim = 0;
 
+//
 // CACHED WEAPON ID
 //
-new g_Weapon = 0;
+static g_nWeapon = 0;
 
+//
 // CACHED HIT PLACE
 //
-new g_Place = 0;
+static g_nPlace = 0;
 
+//
 // CACHED TEAM KILL BOOLEAN
 //
-new g_TeamKill = 0;
+static g_nTeamKill = 0;
 
 
 /**
 * PLAYERS RELATED
 */
 
-// MAXIMUM PLAYERS
 //
-new g_MaxPlayers = 0;
-
 // TOTAL KILLS PER PLAYER PER LIFE
+//
 // RESETS ON PLAYER DEATH
 //
-new g_Kills [ QS_MAX_PLAYERS + 1 ];
+static g_pnKills [ QS_MAX_PLAYERS + 1 ];
 
+//
 // TOTAL KILLS PER PLAYER PER ROUND
+//
 // RESETS NEXT ROUND
 //
-new g_KillsThisRound [ QS_MAX_PLAYERS + 1 ];
+static g_pnKillsThisRound [ QS_MAX_PLAYERS + 1 ];
 
+//
 // HLTV
 //
-new bool: g_bHLTV [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbHLTV [ QS_MAX_PLAYERS + 1 ];
 
+//
 // BOT
 //
-new bool: g_bBOT [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbBOT [ QS_MAX_PLAYERS + 1 ];
 
+//
 // CONNECTED
 //
-new bool: g_bConnected [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbConnected [ QS_MAX_PLAYERS + 1 ];
 
+//
 // NAME
 //
-new g_Name [ QS_MAX_PLAYERS + 1 ] [ 32 ];
+static g_pszName [ QS_MAX_PLAYERS + 1 ] [ 32 ];
 
+//
 // REVENGE KILL NAME STAMP
 //
-new g_RevengeStamp [ QS_MAX_PLAYERS + 1 ] [ 32 ];
+static g_pszRevengeStamp [ QS_MAX_PLAYERS + 1 ] [ 32 ];
 
+//
+// REVENGE KILL USER ID STAMP
+//
+static g_pnRevengeStamp [ QS_MAX_PLAYERS + 1 ];
+
+//
 // SOUNDS DISABLED PER PLAYER
 //
-new bool: g_bDisabled [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbDisabled [ QS_MAX_PLAYERS + 1 ];
 
+//
+// CACHED PLAYER'S USER ID
+//
+static g_pnUserId [ QS_MAX_PLAYERS + 1 ];
+
+//
 // LAST KILL TIME STAMP (GAME TIME)
 //
-new Float: g_fLastKillTimeStamp [ QS_MAX_PLAYERS + 1 ];
+static Float: g_pfLastKillTimeStamp [ QS_MAX_PLAYERS + 1 ];
 
 
 /*************************************************************************************
 ******* FORWARDS *********************************************************************
 *************************************************************************************/
 
-// PLUG-IN NATIVES
+//
+// plugin_natives ( )
+//
+// THE PLUGIN'S NATIVES
 //
 public plugin_natives ( )
 {
-	// SETS MODULE FILTER
-	//
-	set_module_filter ( "QS_Module_Filter" );
+    //
+    // SETS THE MODULE FILTER
+    //
+    set_module_filter ( "QS_ModuleFilter" );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// FILTERS MODULE
 //
-public QS_Module_Filter ( Module [ ] )
+// PERFORMS THE FILTERING
+//
+public QS_ModuleFilter ( szModule [ ] )
 {
-	// XSTATS
-	//
-	if ( equali ( Module, "XStats" ) )
-	{
-		// LOAD
-		//
-		return PLUGIN_HANDLED;
-	}
+    //
+    // XSTATS
+    //
+    if ( equali ( szModule, "XStats" ) )
+    {
+        //
+        // LOAD
+        //
+        return  PLUGIN_HANDLED;
+    }
 
-	// OK
-	//
-	return PLUGIN_CONTINUE;
+    //
+    // OK
+    //
+    return  PLUGIN_CONTINUE;
 }
 
-// plugin_precache()
+//
+// plugin_precache ( )
+//
 // THE RIGHT MOMENT FOR INI FILES
 // AND PRECACHING DATA
 //
 public plugin_precache ( )
 {
-	// GETS MOD NAME
-	//
-	QS_CheckMod ( );
+    //
+    // GETS THE MOD NAME
+    //
+    QS_CheckMod ( );
 
-	// CREATES ARRAYS FIRST
-	//
-	g_pHShot =						ArrayCreate ( 256 );
-	g_pSuicide =					ArrayCreate ( 256 );
-	g_pGrenade =					ArrayCreate ( 256 );
-	g_pTKill =						ArrayCreate ( 256 );
-	g_pKnife =						ArrayCreate ( 256 );
-	g_pFBlood =						ArrayCreate ( 256 );
-	g_pRStart =						ArrayCreate ( 256 );
-	g_pDKill =						ArrayCreate ( 256 );
-	g_pHattrick =					ArrayCreate ( 256 );
-	g_pFlawless =					ArrayCreate ( 256 );
-	g_pRevenge =					ArrayCreate ( 256 );
-	g_pKStreakSounds =				ArrayCreate ( 256 );
-	g_pKStreakMessages =			ArrayCreate ( QS_HUD_MESSAGE_MAX_LENGTH );
-	g_pKStreakRequiredKills =		ArrayCreate ( 8 );
+    //
+    // CREATES THE ARRAYS FIRST
+    //
+    g_pHShot =                      ArrayCreate ( 256 );
+    g_pSuicide =                    ArrayCreate ( 256 );
+    g_pGrenade =                    ArrayCreate ( 256 );
+    g_pTKill =                      ArrayCreate ( 256 );
+    g_pKnife =                      ArrayCreate ( 256 );
+    g_pFBlood =                     ArrayCreate ( 256 );
+    g_pRStart =                     ArrayCreate ( 256 );
+    g_pDKill =                      ArrayCreate ( 256 );
+    g_pHattrick =                   ArrayCreate ( 256 );
 
-	// READS FILE
-	//
-	__Load ( );
+    g_pTLMStanding =                ArrayCreate ( 256 );
+    {
+        g_pTLMStandingWords =       ArrayCreate ( 64 );
+    }
 
-	// PRECACHES NOTHING
-	// IF PLUG-IN IS OFF
-	//
-	if ( !g_bPluginEnabled )
-		return;
+    g_pFlawless =                   ArrayCreate ( 256 );
+    g_pRevenge =                    ArrayCreate ( 256 );
 
-	// RETRIEVES SOUNDS COUNT
-	//
-	g_HShotSize =					ArraySize ( g_pHShot );
-	g_SuicideSize =					ArraySize ( g_pSuicide );
-	g_GrenadeSize =					ArraySize ( g_pGrenade );
-	g_TKillSize =					ArraySize ( g_pTKill );
-	g_KnifeSize =					ArraySize ( g_pKnife );
-	g_FBloodSize =					ArraySize ( g_pFBlood );
-	g_RStartSize =					ArraySize ( g_pRStart );
-	g_DKillSize =					ArraySize ( g_pDKill );
-	g_HattrickSize =				ArraySize ( g_pHattrick );
-	g_FlawlessSize =				ArraySize ( g_pFlawless );
-	g_RevengeSize =					ArraySize ( g_pRevenge );
-	g_KStreakSoundsSize =			ArraySize ( g_pKStreakSounds );
+    g_pKStreakSnds =                ArrayCreate ( 256 );
+    {
+        g_pKStreakMsgs =            ArrayCreate ( QS_HUD_MSG_MAX_LEN );
+        {
+            g_pKStreakReqKills =    ArrayCreate ( 32 );
+        }
+    }
 
-	// DEFINES ITERATOR FOR FURTHER USE
-	//
-	new Iterator = 0;
+    //
+    // READS THE CONFIGURATION FILE
+    //
+    QS_LoadSettings ( );
 
-	// DEFINES SOUND FOR FURTHER USE
-	//
-	new Sound [ 256 ];
+    //
+    // PRECACHES NOTHING
+    // IF THE PLUGIN IS OFF
+    //
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
 
-	if ( g_bHShot )
-	{
-		for ( Iterator = 0; Iterator < g_HShotSize; Iterator ++ )
-			ArrayGetString ( g_pHShot, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    //
+    // RETRIEVES SOUNDS COUNT
+    //
+    g_nHShotSize =                  ArraySize ( g_pHShot );
+    g_nSuicideSize =                ArraySize ( g_pSuicide );
+    g_nGrenadeSize =                ArraySize ( g_pGrenade );
+    g_nTKillSize =                  ArraySize ( g_pTKill );
+    g_nKnifeSize =                  ArraySize ( g_pKnife );
+    g_nFBloodSize =                 ArraySize ( g_pFBlood );
+    g_nRStartSize =                 ArraySize ( g_pRStart );
+    g_nDKillSize =                  ArraySize ( g_pDKill );
+    g_nHattrickSize =               ArraySize ( g_pHattrick );
+    g_nTLMStandingSize =            ArraySize ( g_pTLMStanding );
+    g_nTLMStandingWordsSize =       ArraySize ( g_pTLMStandingWords );
+    g_nFlawlessSize =               ArraySize ( g_pFlawless );
+    g_nRevengeSize =                ArraySize ( g_pRevenge );
+    g_nKStreakSize =                ArraySize ( g_pKStreakSnds );
+    g_nKStreakRKillsSize =          ArraySize ( g_pKStreakReqKills );
+    g_nKStreakMsgSize =             ArraySize ( g_pKStreakMsgs );
 
-	if ( g_bSuicide )
-	{
-		for ( Iterator = 0; Iterator < g_SuicideSize; Iterator ++ )
-			ArrayGetString ( g_pSuicide, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    //
+    // SANITY CHECK
+    //
+    if ( g_nKStreakSize > g_nKStreakMsgSize || g_nKStreakSize < g_nKStreakMsgSize || \
+            g_nKStreakSize > g_nKStreakRKillsSize || g_nKStreakSize < g_nKStreakRKillsSize || \
+                g_nKStreakMsgSize > g_nKStreakSize || g_nKStreakMsgSize < g_nKStreakSize || \
+                    g_nKStreakMsgSize > g_nKStreakRKillsSize || g_nKStreakMsgSize < g_nKStreakRKillsSize || \
+                        g_nKStreakRKillsSize > g_nKStreakSize || g_nKStreakRKillsSize < g_nKStreakSize || \
+                            g_nKStreakRKillsSize > g_nKStreakMsgSize || g_nKStreakRKillsSize < g_nKStreakMsgSize )
+    {
+        log_to_file     ( QS_LOG_FILE_NAME, "****************************************************************************************************************" );
+        log_to_file     ( QS_LOG_FILE_NAME, "K. Streak Items (Multi Kill, Triple Kill, Rampage, ..) Will Be Disabled." );
+        log_to_file     ( QS_LOG_FILE_NAME, "Inside The Configuration File, You Should Have Same 'REQUIREDKILLS' And 'MESSAGE @'.");
+        log_to_file     ( QS_LOG_FILE_NAME, "For Example, If You Have 8 Pieces Of 'REQUIREDKILLS', You Should Have 8 Pieces Of 'MESSAGE @' As Well.");
 
-	if ( g_bGrenade )
-	{
-		for ( Iterator = 0; Iterator < g_GrenadeSize; Iterator ++ )
-			ArrayGetString ( g_pGrenade, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+        g_bKStreak =    false;
+    }
 
-	if ( g_bTKill )
-	{
-		for ( Iterator = 0; Iterator < g_TKillSize; Iterator ++ )
-			ArrayGetString ( g_pTKill, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    //
+    // DEFINES ITERATOR FOR FURTHER USE
+    //
+    new nIter = 0;
 
-	if ( g_bKnife )
-	{
-		for ( Iterator = 0; Iterator < g_KnifeSize; Iterator ++ )
-			ArrayGetString ( g_pKnife, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    //
+    // DEFINES SOUND FOR FURTHER USE
+    //
+    new szSnd [ 256 ];
 
-	if ( g_bFBlood )
-	{
-		for ( Iterator = 0; Iterator < g_FBloodSize; Iterator ++ )
-			ArrayGetString ( g_pFBlood, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    if ( g_bHShot )
+    {
+        for ( nIter = 0; nIter < g_nHShotSize; nIter ++ )
+        {
+            ArrayGetString ( g_pHShot, nIter, szSnd, charsmax ( szSnd ) );
 
-	if ( g_bRStart )
-	{
-		for ( Iterator = 0; Iterator < g_RStartSize; Iterator ++ )
-			ArrayGetString ( g_pRStart, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
 
-	if ( g_bDKill )
-	{
-		for ( Iterator = 0; Iterator < g_DKillSize; Iterator ++ )
-			ArrayGetString ( g_pDKill, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    if ( g_bSuicide )
+    {
+        for ( nIter = 0; nIter < g_nSuicideSize; nIter ++ )
+        {
+            ArrayGetString ( g_pSuicide, nIter, szSnd, charsmax ( szSnd ) );
 
-	if ( g_bHattrick )
-	{
-		for ( Iterator = 0; Iterator < g_HattrickSize; Iterator ++ )
-			ArrayGetString ( g_pHattrick, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
 
-	if ( g_bFlawless )
-	{
-		for ( Iterator = 0; Iterator < g_FlawlessSize; Iterator ++ )
-			ArrayGetString ( g_pFlawless, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    if ( g_bGrenade )
+    {
+        for ( nIter = 0; nIter < g_nGrenadeSize; nIter ++ )
+        {
+            ArrayGetString ( g_pGrenade, nIter, szSnd, charsmax ( szSnd ) );
 
-	if ( g_bRevenge )
-	{
-		for ( Iterator = 0; Iterator < g_RevengeSize; Iterator ++ )
-			ArrayGetString ( g_pRevenge, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
 
-	if ( g_bKStreak )
-	{
-		for ( Iterator = 0; Iterator < g_KStreakSoundsSize; Iterator ++ )
-			ArrayGetString ( g_pKStreakSounds, Iterator, Sound, charsmax ( Sound ) ), precache_sound ( Sound );
-	}
+    if ( g_bTKill )
+    {
+        for ( nIter = 0; nIter < g_nTKillSize; nIter ++ )
+        {
+            ArrayGetString ( g_pTKill, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bKnife )
+    {
+        for ( nIter = 0; nIter < g_nKnifeSize; nIter ++ )
+        {
+            ArrayGetString ( g_pKnife, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bFBlood )
+    {
+        for ( nIter = 0; nIter < g_nFBloodSize; nIter ++ )
+        {
+            ArrayGetString ( g_pFBlood, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bRStart )
+    {
+        for ( nIter = 0; nIter < g_nRStartSize; nIter ++ )
+        {
+            ArrayGetString ( g_pRStart, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bDKill )
+    {
+        for ( nIter = 0; nIter < g_nDKillSize; nIter ++ )
+        {
+            ArrayGetString ( g_pDKill, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bHattrick )
+    {
+        for ( nIter = 0; nIter < g_nHattrickSize; nIter ++ )
+        {
+            ArrayGetString ( g_pHattrick, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bTLMStanding )
+    {
+        for ( nIter = 0; nIter < g_nTLMStandingSize; nIter ++ )
+        {
+            ArrayGetString ( g_pTLMStanding, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bFlawless )
+    {
+        for ( nIter = 0; nIter < g_nFlawlessSize; nIter ++ )
+        {
+            ArrayGetString ( g_pFlawless, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bRevenge )
+    {
+        for ( nIter = 0; nIter < g_nRevengeSize; nIter ++ )
+        {
+            ArrayGetString ( g_pRevenge, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    if ( g_bKStreak )
+    {
+        for ( nIter = 0; nIter < g_nKStreakSize; nIter ++ )
+        {
+            ArrayGetString ( g_pKStreakSnds, nIter, szSnd, charsmax ( szSnd ) );
+
+            if ( !QS_EmptyString ( szSnd ) )
+            {
+                precache_sound ( szSnd );
+            }
+        }
+    }
+
+    copy ( g_pszName [ 0 ], charsmax ( g_pszName [ ] ), "WORLDSPAWN" );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// plugin_end()
-// PLUG-IN ENDS
+//
+// plugin_end ( )
+//
+// THE PLUGIN ENDS
 //
 public plugin_end ( )
 {
-	// DESTROYS ARRAYS
-	//
-	ArrayDestroy ( g_pHShot );
-	ArrayDestroy ( g_pSuicide );
-	ArrayDestroy ( g_pGrenade );
-	ArrayDestroy ( g_pTKill );
-	ArrayDestroy ( g_pKnife );
-	ArrayDestroy ( g_pFBlood );
-	ArrayDestroy ( g_pRStart );
-	ArrayDestroy ( g_pDKill );
-	ArrayDestroy ( g_pHattrick );
-	ArrayDestroy ( g_pFlawless );
-	ArrayDestroy ( g_pRevenge );
-	ArrayDestroy ( g_pKStreakSounds );
-	ArrayDestroy ( g_pKStreakMessages );
-	ArrayDestroy ( g_pKStreakRequiredKills );
+    //
+    // DESTROYS ARRAYS
+    //
+    ArrayDestroy ( g_pHShot );
+    ArrayDestroy ( g_pSuicide );
+    ArrayDestroy ( g_pGrenade );
+    ArrayDestroy ( g_pTKill );
+    ArrayDestroy ( g_pKnife );
+    ArrayDestroy ( g_pFBlood );
+    ArrayDestroy ( g_pRStart );
+    ArrayDestroy ( g_pDKill );
+    ArrayDestroy ( g_pHattrick );
+    ArrayDestroy ( g_pTLMStanding );
+    ArrayDestroy ( g_pTLMStandingWords );
+    ArrayDestroy ( g_pFlawless );
+    ArrayDestroy ( g_pRevenge );
+    ArrayDestroy ( g_pKStreakSnds );
+    ArrayDestroy ( g_pKStreakMsgs );
+    ArrayDestroy ( g_pKStreakReqKills );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// plugin_init()
-// PLUG-IN STARTS
+//
+// plugin_init ( )
+//
+// THE PLUGIN STARTS
 // THE RIGHT MOMENT TO REGISTER STUFF
 //
 public plugin_init ( )
 {
-	// GETS MOD NAME
-	//
-	QS_CheckMod ( );
+    //
+    // GETS THE MOD NAME
+    //
+    QS_CheckMod ( );
 
-	// REGISTERS CONSOLE VARIABLE
-	//
-	new pCVar = register_cvar ( "advanced_quake_sounds",		QS_PLUGIN_VERSION,	( FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED | FCVAR_SPONLY ) );
+    //
+    // REGISTERS THE PLUGIN'S CONSOLE VARIABLE
+    //
+    new pCVar = register_cvar ( "advanced_quake_sounds",        QS_PLUGIN_VERSION,      FCVAR_SERVER | FCVAR_SPONLY );
 
-	// SETS CONSOLE VARIABLE STRING
-	//
-	if ( pCVar )
-		set_pcvar_string ( pCVar,								QS_PLUGIN_VERSION );
+    //
+    // SETS THE CONSOLE VARIABLE STRING
+    //
+    if ( pCVar )
+    {
+        set_pcvar_string ( pCVar,                               QS_PLUGIN_VERSION );
+    }
 
-	// STOPS HERE IF THE PLUG-IN IS DISABLED
-	//
-	if ( !g_bPluginEnabled )
-	{
-		// REGISTERS PLUG-IN
-		//
-		register_plugin ( "ADV. QUAKE SOUNDS (DISABLED)",		QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
+    //
+    // STOPS HERE IF THE PLUGIN IS DISABLED
+    //
+    if ( !g_bEnabled )
+    {
+        //
+        // REGISTERS THE PLUGIN
+        //
+        register_plugin ( "ADV. QUAKE SOUNDS (DISABLED)",       QS_PLUGIN_VERSION,      "HATTRICK (HTTRCKCLDHKS)" );
 
-		return;
-	}
+        return  PLUGIN_CONTINUE;
+    }
 
-	// REGISTERS PLUG-IN
-	//
-	register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)",			QS_PLUGIN_VERSION,	"HATTRICK (HTTRCKCLDHKS)" );
+    //
+    // REGISTERS THE PLUGIN
+    //
+    register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)",            QS_PLUGIN_VERSION,      "HATTRICK (HTTRCKCLDHKS)" );
 
-	// REGISTERS FAKE META FORWARDS
-	//
-	register_forward ( FM_MessageBegin,							"OnMessageBegin",	1 );
-	register_forward ( FM_WriteByte,							"OnWriteByte",		1 );
-	register_forward ( FM_MessageEnd,							"OnMessageEnd",		1 );
+    //
+    // REGISTERS THE FAKE META FORWARDS
+    //
+    register_forward ( FM_MessageBegin,                         "QS_FM_OnMsgBegin",     1 );
+    register_forward ( FM_WriteByte,                            "QS_FM_OnWriteByte",    1 );
+    register_forward ( FM_MessageEnd,                           "QS_FM_OnMsgEnd",       1 );
 
-	// GETS MAXIMUM PLAYERS
-	//
-	g_MaxPlayers = get_maxplayers ( );
+    //
+    // GETS THE MAXIMUM PLAYERS
+    //
+    g_nMaxPlayers =         get_maxplayers ( );
 
-	// CHECKS WHETHER XSTATS MODULE IS LOADED
-	//
-	if ( !module_exists ( "xstats" ) )
-		g_bDeathMsgOnly = true;
+    //
+    // CHECKS WHETHER XSTATS MODULE IS LOADED
+    //
+    g_bDeathMsgOnly =       !QS_XStatsAvail ( );
 
-	// COUNTER-STRIKE
-	//
-	if ( equali ( g_ModName, "CS", 2 ) || \
-			equali ( g_ModName, "CZ", 2 ) )
-	{
-		// ROUND RESTART
-		//
-		register_event ( "TextMsg", "OnRRestart", "a", "2&#Game_C", "2&#Game_w" );
+    //
+    // CSTRIKE OR CZERO
+    //
+    if ( QS_CSCZRunning ( ) )
+    {
+        //
+        // ROUND RESTART
+        //
+        register_event ( "TextMsg",             "QS_OnRoundRefresh",    "a",                    "2&#Game_C",        "2&#Game_w" );
 
-		// ROUND START
-		//
-		register_logevent ( "OnRStart",	2,	"1=Round_Start" );
+        //
+        // ROUND START
+        //
+        register_logevent ( "QS_OnRoundBegin",  2,                      "1=Round_Start" );
 
-		// ROUND END
-		//
-		register_logevent ( "OnREnd",	2,	"1=Round_End" );
-	}
+        //
+        // ROUND END
+        //
+        register_logevent ( "QS_OnRoundEnd",    2,                      "1=Round_End" );
+    }
 
-	// DAY OF DEFEAT
-	//
-	else if ( equali ( g_ModName, "DOD", 3 ) )
-	{
-		// ROUND START
-		//
-		register_event ( "RoundState",	"OnRStart",	"a",	"1=1" );
+    //
+    // DAY OF DEFEAT
+    //
+    else if ( QS_DODRunning ( ) )
+    {
+        //
+        // ROUND START
+        //
+        register_event ( "RoundState",          "QS_OnRoundBegin",      "a",                    "1=1" );
 
-		// ROUND END
-		//
-		register_event ( "RoundState",	"OnREnd",	"a",	"1=3",	"1=4" );
+        //
+        // ROUND END
+        //
+        register_event ( "RoundState",          "QS_OnRoundEnd",        "a",                    "1=3",              "1=4" );
 
-		// DISABLES HATTRICK
-		//
-		g_bHattrick =				false;
+        //
+        // DISABLES HATTRICK
+        //
+        g_bHattrick =                           false;
 
-		// DISABLES FLAWLESS
-		//
-		g_bFlawless =				false;
-	}
+        //
+        // DISABLES FLAWLESS
+        //
+        g_bFlawless =                           false;
 
-	// NO CS/ CZ OR DOD
-	//
-	else
-	{
-		// DISABLES TEAM KILL
-		//
-		g_bTKill =					false;
+        //
+        // DISABLES THE LAST MAN STANDING
+        //
+        g_bTLMStanding =                        false;
+    }
 
-		// DISABLES HATTRICK
-		//
-		g_bHattrick =				false;
+    //
+    // NO CS/ CZ OR DOD
+    //
+    else
+    {
+        //
+        // DISABLES TEAM KILL
+        //
+        g_bTKill =                              false;
 
-		// DISABLES FLAWLESS
-		//
-		g_bFlawless =				false;
+        //
+        // DISABLES HATTRICK
+        //
+        g_bHattrick =                           false;
 
-		// DISABLES ROUND START
-		//
-		g_bRStart =					false;
-	}
+        //
+        // DISABLES FLAWLESS
+        //
+        g_bFlawless =                           false;
 
-	// HUD MESSAGE [TE_TEXTMESSAGE] CHANNEL HANDLES
-	//
-	g_pHudMsg [ HUDMSG_STREAK ] =	CreateHudSyncObj ( );
-	g_pHudMsg [ HUDMSG_EVENT ] =	CreateHudSyncObj ( );
-	g_pHudMsg [ HUDMSG_ROUND ] =	CreateHudSyncObj ( );
+        //
+        // DISABLES ROUND START
+        //
+        g_bRStart =                             false;
+
+        //
+        // DISABLES THE LAST MAN STANDING
+        //
+        g_bTLMStanding =                        false;
+
+        //
+        // GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg"
+        //
+        if ( g_bDeathMsgOnly )
+        {
+            RegisterHam ( Ham_Killed, "player", "QS_HAM_PlayerKilled" );
+        }
+    }
+
+    //
+    // HUD MESSAGE [ TE_TEXTMESSAGE ] CHANNEL HANDLES
+    //
+    g_pnHudMsgObj [ QS_HUD_STREAK   ]   =   CreateHudSyncObj ( );
+    g_pnHudMsgObj [ QS_HUD_EVENT    ]   =   CreateHudSyncObj ( );
+    g_pnHudMsgObj [ QS_HUD_ROUND    ]   =   CreateHudSyncObj ( );
+    g_pnHudMsgObj [ QS_HUD_FLAWLESS ]   =   CreateHudSyncObj ( );
+    g_pnHudMsgObj [ QS_HUD_STANDING ]   =   CreateHudSyncObj ( );
+    g_pnHudMsgObj [ QS_HUD_HATTRICK ]   =   CreateHudSyncObj ( );
+    g_pnHudMsgObj [ QS_HUD_REVENGE  ]   =   CreateHudSyncObj ( );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// plugin_cfg()
-// PLUG-IN EXECUTES THE CONFIGURATION FILES
-// THE RIGHT MOMENT TO RE-LOAD THE SETTINGS
+//
+// GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg"
+//
+public QS_HAM_PlayerKilled ( nVictim )
+{
+    static nWeapon =                                    0;
+
+    static nDeathMsg =                                  QS_INVALID_MSG;
+
+    static bool: bChecked =                             false;
+
+    if ( !QS_IsPlayer ( nVictim ) ||                    !g_pbConnected [ nVictim ] )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    if ( !bChecked )
+    {
+        bChecked =                                      true;
+
+        nDeathMsg =                                     get_user_msgid ( "DeathMsg" );
+    }
+
+    if ( nDeathMsg < 1 )
+    {
+        g_nVictim =                                     nVictim;
+
+        g_nWeapon = g_nPlace = g_nTeamKill =            0;
+
+        g_nKiller =                                     get_user_attacker ( g_nVictim, g_nWeapon, g_nPlace );
+
+        if ( QS_IsPlayer ( g_nKiller ) &&               g_pbConnected [ g_nKiller ] )
+        {
+            if ( g_nWeapon < 1 )
+            {
+                nWeapon =                               get_user_weapon ( g_nKiller );
+
+                if ( nWeapon > 0 )
+                {
+                    g_nWeapon =                         nWeapon;
+                }
+            }
+
+            g_nTeamKill =                               ( get_user_team ( g_nKiller ) == get_user_team ( g_nVictim ) ) ? 1 : 0;
+
+            set_task                                    ( 0.0, "QS_ProcessDeathMsg" );
+        }
+
+        else
+        {
+            g_nWeapon = g_nPlace = g_nTeamKill =        0;
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
+// plugin_cfg ( )
+//
+// THE PLUGIN EXECUTES THE CONFIGURATION FILES
+// THE RIGHT MOMENT TO RELOAD THE SETTINGS
 //
 public plugin_cfg ( )
 {
-	/**
-	* MESSAGES ON/ OFF
-	*/
+    /**
+     * MESSAGES ON/ OFF
+     */
 
-	g_bHShotMsg =			g_HShotMsg [ 0 ] ?			true : false;
-	g_bSuicideMsg =			g_SuicideMsg [ 0 ] ?		true : false;
-	g_bGrenadeMsg =			g_GrenadeMsg [ 0 ] ?		true : false;
-	g_bTKillMsg =			g_TKillMsg [ 0 ] ?			true : false;
-	g_bKnifeMsg =			g_KnifeMsg [ 0 ] ?			true : false;
-	g_bFBloodMsg =			g_FBloodMsg [ 0 ] ?			true : false;
-	g_bRStartMsg =			g_RStartMsg [ 0 ] ?			true : false;
-	g_bDKillMsg =			g_DKillMsg [ 0 ] ?			true : false;
-	g_bHattrickMsg =		g_HattrickMsg [ 0 ] ?		true : false;
-	g_bFlawlessMsg =		g_FlawlessMsg [ 0 ] ?		true : false;
-	g_bRevengeMsgVictim =	g_RevengeMsgVictim [ 0 ] ?	true : false;
-	g_bRevengeMsgKiller =	g_RevengeMsgKiller [ 0 ] ?	true : false;
+    g_bHShotMsg =                   !QS_EmptyString ( g_szHShotMsg );
+    g_bSuicideMsg =                 !QS_EmptyString ( g_szSuicideMsg );
+    g_bGrenadeMsg =                 !QS_EmptyString ( g_szGrenadeMsg );
+    g_bTKillMsg =                   !QS_EmptyString ( g_szTKillMsg );
+    g_bKnifeMsg =                   !QS_EmptyString ( g_szKnifeMsg );
+    g_bFBloodMsg =                  !QS_EmptyString ( g_szFBloodMsg );
+    g_bRStartMsg =                  !QS_EmptyString ( g_szRStartMsg );
+    g_bDKillMsg =                   !QS_EmptyString ( g_szDKillMsg );
+    g_bHattrickMsg =                !QS_EmptyString ( g_szHattrickMsg );
+    g_bTLMStandingTeamMsg =         !QS_EmptyString ( g_szTLMStandingTeamMsg );
+    g_bTLMStandingSelfMsg =         !QS_EmptyString ( g_szTLMStandingSelfMsg );
+    g_bFlawlessMsg =                !QS_EmptyString ( g_szFlawlessMsg );
+    g_bRevengeMsgVictim =           !QS_EmptyString ( g_szRevengeMsgVictim );
+    g_bRevengeMsgKiller =           !QS_EmptyString ( g_szRevengeMsgKiller );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// client_infochanged ( Player )
-// EXECUTES WHEN CLIENT CHANGES INFORMATION
 //
-public client_infochanged ( Player )
-{
-	static Name [ 32 ];
-
-	// PLAYER IS CONNECTED AND IT'S NOT A HLTV
-	//
-	if ( g_bConnected [ Player ] && !g_bHLTV [ Player ] )
-	{
-		// RETRIEVES NEW NAME (IF ANY)
-		//
-		get_user_info ( Player, "name", Name, charsmax ( Name ) );
-
-		// UPDATES IF NEEDED
-		//
-		g_Name [ Player ] = Name;
-	}
-}
-
-// client_disconnected(Player)
-// EXECUTES AFTER CLIENT DISCONNECTS
+// client_infochanged ( nPlayer )
 //
-public client_disconnected ( Player )
-{
-	// NO MORE KILLS
-	//
-	g_Kills [ Player ] = g_KillsThisRound [ Player ] =												0;
-
-	// NO MORE TRUE DATA
-	//
-	g_bHLTV [ Player ] = g_bBOT [ Player ] = g_bDisabled [ Player ] = g_bConnected [ Player ] =		false;
-
-	// NO MORE VALID STRINGS
-	//
-	QS_ClearString																					( g_Name			[ Player ] );
-	QS_ClearString																					( g_RevengeStamp	[ Player ] );
-}
-
-// client_command(Player)
-// EXECUTES WHEN CLIENT TYPES
+// EXECUTES WHEN THE CLIENT CHANGES INFORMATION
 //
-public client_command ( Player )
+public client_infochanged ( nPlayer )
 {
-	static Argument [ 16 ];
+    static szName [ 32 ];
 
-	// CONNECTED, NOT BOT AND NOT HLTV
-	//
-	if ( g_bConnected [ Player ] && !g_bBOT [ Player ] && !g_bHLTV [ Player ] )
-	{
-		// RETRIEVES THE ARGUMENT
-		//
-		read_argv ( 1, Argument, charsmax ( Argument ) );
+    //
+    // PLAYER IS CONNECTED AND IT'S NOT A HLTV
+    //
+    if ( g_pbConnected [ nPlayer ] && !g_pbHLTV [ nPlayer ] )
+    {
+        //
+        // RETRIEVES NEW NAME (IF ANY)
+        //
+        get_user_info ( nPlayer, "name", szName, charsmax ( szName ) );
 
-		// CHECKS ARGUMENT
-		//
-		if ( equali ( Argument, "/Sounds", 7 ) || equali ( Argument, "Sounds", 6 ) )
-		{
-			// ENABLES/ DISABLES SOUNDS PER CLIENT
-			//
-			client_print ( Player, print_chat, ">> QUAKE SOUNDS HAVE BEEN %s.", g_bDisabled [ Player ] ? "ENABLED" : "DISABLED" );
-			g_bDisabled [ Player ] = !g_bDisabled [ Player ];
-		}
-	}
+        //
+        // UPDATES IF NEEDED
+        //
+        g_pszName [ nPlayer ] = szName;
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
-// client_putinserver(Player)
+//
+// client_disconnected ( nPlayer )
+//
+// EXECUTES AFTER THE CLIENT DISCONNECTS
+//
+public client_disconnected ( nPlayer )
+{
+    //
+    // NO MORE KILLS AND STAMPS
+    //
+    g_pnKills [ nPlayer ] = g_pnKillsThisRound [ nPlayer ] = g_pnRevengeStamp [ nPlayer ] = g_pnUserId [ nPlayer ] =    0;
+
+    //
+    // NO MORE TRUE DATA
+    //
+    g_pbHLTV [ nPlayer ] = g_pbBOT [ nPlayer ] = g_pbDisabled [ nPlayer ] = g_pbConnected [ nPlayer ] =                 false;
+
+    //
+    // NO MORE VALID STRINGS
+    //
+    QS_ClearString  ( g_pszName             [ nPlayer ] );
+    QS_ClearString  ( g_pszRevengeStamp     [ nPlayer ] );
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
+// client_command ( nPlayer )
+//
+// EXECUTES WHEN THE CLIENT TYPES
+//
+public client_command ( nPlayer )
+{
+    static szArg [ 16 ];
+
+    //
+    // CONNECTED, NOT BOT AND NOT HLTV
+    //
+    if ( g_pbConnected [ nPlayer ]  &&  !g_pbBOT [ nPlayer ]    &&  !g_pbHLTV [ nPlayer ] )
+    {
+        //
+        // RETRIEVES THE ARGUMENT
+        //
+        read_argv ( 1, szArg, charsmax ( szArg ) );
+
+        //
+        // CHECKS ARGUMENT
+        //
+        if ( equali ( szArg, ".Sounds", 7 ) || \
+                equali ( szArg, "/Sounds", 7 ) || \
+                    equali ( szArg, "Sounds", 6 ) )
+        {
+            //
+            // ENABLES/ DISABLES SOUNDS PER CLIENT
+            //
+            client_print    ( nPlayer, print_chat, ">> QUAKE SOUNDS HAVE BEEN %s.", g_pbDisabled [ nPlayer ] ? "ENABLED" : "DISABLED" );
+
+            g_pbDisabled    [ nPlayer ]     =   !g_pbDisabled   [ nPlayer ];
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
+// client_putinserver ( nPlayer )
+//
 // EXECUTES WHEN CLIENT JOINS
 //
-public client_putinserver ( Player )
+public client_putinserver ( nPlayer )
 {
-	// RETRIEVES PLAYER NAME
-	//
-	get_user_name ( Player, g_Name [ Player ], charsmax ( g_Name [ ] ) );
+    //
+    // RETRIEVES PLAYER NAME
+    //
+    get_user_name ( nPlayer, g_pszName [ nPlayer ], charsmax ( g_pszName [ ] ) );
 
-	// HLTV
-	//
-	g_bHLTV [ Player ] =				bool: is_user_hltv ( Player );
+    //
+    // HLTV
+    //
+    g_pbHLTV [ nPlayer ] =                  bool: is_user_hltv ( nPlayer );
 
-	// BOT
-	//
-	g_bBOT [ Player ] =					bool: is_user_bot ( Player );
+    //
+    // BOT
+    //
+    g_pbBOT [ nPlayer ] =                   bool: is_user_bot ( nPlayer );
 
-	// NO KILLS
-	//
-	g_Kills [ Player ] =				0;
-	g_KillsThisRound [ Player ] =		0;
+    //
+    // NO KILLS
+    //
+    g_pnKills [ nPlayer ] =                 0;
+    g_pnKillsThisRound [ nPlayer ] =        0;
 
-	// CONNECTED
-	//
-	g_bConnected [ Player ] =			true;
+    //
+    // CONNECTED
+    //
+    g_pbConnected [ nPlayer ] =             true;
 
-	// SETTINGS ON
-	//
-	g_bDisabled [ Player ] =			false;
+    //
+    // USER ID
+    //
+    g_pnUserId [ nPlayer ] =                get_user_userid ( nPlayer );
 
-	// NO REVENGE STAMP YET
-	//
-	QS_ClearString						( g_RevengeStamp [ Player ] );
+    //
+    // SETTINGS ON
+    //
+    g_pbDisabled [ nPlayer ] =              false;
 
-	// PRINTS INFORMATION FOR VALID PLAYERS ONLY
-	//
-	if ( !g_bBOT [ Player ] && !g_bHLTV [ Player ] )
-		set_task ( QS_PLUGIN_INFORMATION_DELAY, "QuakeSoundsInfo", Player );
+    //
+    // NO REVENGE STAMP YET
+    //
+    QS_ClearString                          ( g_pszRevengeStamp [ nPlayer ] );
+
+    g_pnRevengeStamp [ nPlayer ] =          0;
+
+    //
+    // PRINTS INFORMATION FOR VALID PLAYERS ONLY
+    //
+    if ( !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] )
+    {
+        set_task ( QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", nPlayer );
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
+//
 // PRINTS INFORMATION TO PLAYER
 //
-public QuakeSoundsInfo ( Player )
+public QS_DisplayPlayerInfo ( nPlayer )
 {
-	// ONLY IF CONNECTED
-	//
-	if ( g_bConnected [ Player ] )
-		client_print ( Player, print_chat, ">> TYPE 'sounds' TO TURN QUAKE SOUNDS ON OR OFF." );
+    //
+    // ONLY IF CONNECTED
+    //
+    if ( g_pbConnected [ nPlayer ] )
+    {
+        client_print ( nPlayer, print_chat, ">> TYPE 'sounds' TO TURN QUAKE SOUNDS ON OR OFF." );
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
+//
 // EXECUTED ON PLAYER DEATH
+//
 // THIS IS ONLY REQUIRED FOR CS/ CZ, DOD, TS AND TFC
 // THIS IS EXECUTED BEFORE THE DEATH MESSAGE EVENT
 //
-public client_death ( Killer, Victim, Weapon, Place, TeamKill )
+public client_death ( nKiller, nVictim, nWeapon, nPlace, nTeamKill )
 {
-	// CACHES WEAPON ID
-	//
-	g_Weapon =		Weapon;
+    //
+    // CACHES WEAPON ID
+    //
+    g_nWeapon =     nWeapon;
 
-	// CACHES HIT PLACE
-	//
-	g_Place =		Place;
+    //
+    // CACHES HIT PLACE
+    //
+    g_nPlace =      nPlace;
 
-	// CACHES TEAM KILL
-	//
-	g_TeamKill =	TeamKill;
+    //
+    // CACHES TEAM KILL
+    //
+    g_nTeamKill =   nTeamKill;
+
+    //
+    // THE LAST MAN STANDING PREPARATION
+    //
+    if ( g_bTLMStanding )
+    {
+        set_task ( QS_STANDING_TRIGGER_DELAY,   "QS_PrepareManStanding" );
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
-// WHEN ROUND RE-STARTS
 //
-public OnRRestart ( )
-{
-	static Player;
-	for ( Player = 1; Player <= g_MaxPlayers; Player ++ )
-	{
-		// CLEARS DATA
-		//
-		g_Kills [ Player ] =				0;
-		g_KillsThisRound [ Player ] =		0;
-
-		QS_ClearString						( g_RevengeStamp [ Player ] );
-	}
-}
-
-// WHEN ROUND STARTS
+// PREPARES THE LAST MAN STANDING
 //
-public OnRStart ( )
+public QS_PrepareManStanding ( )
 {
-	static Player;
+    if ( g_bTLMStanding && ( QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_TE ) == 1 || QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_CT ) == 1 ) )
+    {
+        set_task ( 0.0, "QS_PerformManStanding" );
+    }
 
-	// RESETS FIRST BLOOD
-	//
-	if ( g_bFBlood )
-		g_FBlood = 0;
-
-	// PREPARES ROUND START EVENT
-	//
-	if ( g_bRStart )
-	{
-		if ( g_bRStartMsg )
-		{
-			if ( g_bRandomRed )		g_Red =		random_num ( 0, QS_MAX_BYTE );
-			if ( g_bRandomGreen )	g_Green =	random_num ( 0, QS_MAX_BYTE );
-			if ( g_bRandomBlue )	g_Blue =	random_num ( 0, QS_MAX_BYTE );
-
-			set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_ROUND_START_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
-			QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_ROUND ], g_RStartMsg );
-		}
-
-		QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pRStart, random_num ( 0, g_RStartSize - 1 ) ) );
-	}
-
-	// RESETS HATTRICK DATA
-	//
-	if ( g_bHattrick )
-	{
-		for ( Player = 1; Player <= g_MaxPlayers; Player ++ )
-			g_KillsThisRound [ Player ] = 0;
-	}
+    return  PLUGIN_CONTINUE;
 }
 
+//
+// PERFORMS THE LAST MAN STANDING
+//
+public QS_PerformManStanding ( )
+{
+    static nPlayer = 0, nTEGuy = 0, nTEs = 0, nCTGuy = 0, nCTs = 0;
+
+    nTEs =  QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_TE, nTEGuy );
+    nCTs =  QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_CT, nCTGuy );
+
+    if ( g_bTLMStandingDone_TE == false && nTEs == 1 && nCTs > 0 )
+    {
+        g_bTLMStandingDone_TE = true;
+
+        if ( !g_pbDisabled [ nTEGuy ] )
+        {
+            QS_ClientCmd ( nTEGuy, "SPK \"%a\"", ArrayGetStringHandle ( g_pTLMStanding, random_num ( 0, g_nTLMStandingSize - 1 ) ) );
+        }
+
+        QS_UpdateHudMsgColor ( );
+
+        set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+
+        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        {
+            if ( g_pbDisabled [ nPlayer ] || \
+                    !g_pbConnected [ nPlayer ] || \
+                        g_pbBOT [ nPlayer ] || \
+                            g_pbHLTV [ nPlayer ] || \
+                                get_user_team ( nPlayer ) != QS_CSCZ_TEAM_TE )
+            {
+                continue;
+            }
+
+            if ( nPlayer == nTEGuy )
+            {
+                if ( g_bTLMStandingSelfMsg )
+                {
+                    QS_ShowHudMsg ( nTEGuy, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingSelfMsg, \
+                                        ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
+                }
+            }
+
+            else
+            {
+                if ( g_bTLMStandingTeamMsg )
+                {
+                    QS_ShowHudMsg ( nPlayer, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingTeamMsg, \
+                                        g_pszName [ nTEGuy ], \
+                                            ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
+                }
+            }
+        }
+    }
+
+    else if ( g_bTLMStandingDone_CT == false && nCTs == 1 && nTEs > 0 )
+    {
+        g_bTLMStandingDone_CT = true;
+
+        if ( !g_pbDisabled [ nCTGuy ] )
+        {
+            QS_ClientCmd ( nCTGuy, "SPK \"%a\"", ArrayGetStringHandle ( g_pTLMStanding, random_num ( 0, g_nTLMStandingSize - 1 ) ) );
+        }
+
+        QS_UpdateHudMsgColor ( );
+
+        set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+
+        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        {
+            if ( g_pbDisabled [ nPlayer ] || \
+                    !g_pbConnected [ nPlayer ] || \
+                        g_pbBOT [ nPlayer ] || \
+                            g_pbHLTV [ nPlayer ] || \
+                                get_user_team ( nPlayer ) != QS_CSCZ_TEAM_CT )
+            {
+                continue;
+            }
+
+            if ( nPlayer == nCTGuy )
+            {
+                if ( g_bTLMStandingSelfMsg )
+                {
+                    QS_ShowHudMsg ( nCTGuy, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingSelfMsg, \
+                                        ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
+                }
+            }
+
+            else
+            {
+                if ( g_bTLMStandingTeamMsg )
+                {
+                    QS_ShowHudMsg ( nPlayer, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingTeamMsg, \
+                                        g_pszName [ nCTGuy ], \
+                                            ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
+                }
+            }
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
+// WHEN THE ROUND RESTARTS
+//
+public QS_OnRoundRefresh ( )
+{
+    static nPlayer = 0;
+
+    for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+    {
+        //
+        // CLEARS DATA
+        //
+        g_pnKills               [ nPlayer ]     =       0;
+        g_pnKillsThisRound      [ nPlayer ]     =       0;
+
+        QS_ClearString          ( g_pszRevengeStamp     [ nPlayer ] );
+
+        g_pnRevengeStamp        [ nPlayer ]     =       0;
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
+// WHEN THE ROUND STARTS
+//
+public QS_OnRoundBegin ( )
+{
+    static nPlayer = 0;
+
+    //
+    // RESETS FIRST BLOOD
+    //
+    if ( g_bFBlood )
+    {
+        g_nFBlood = 0;
+    }
+
+    //
+    // RESETS THE LAST MAN STANDING
+    //
+    if ( g_bTLMStanding )
+    {
+        g_bTLMStandingDone_TE   =   false;
+        g_bTLMStandingDone_CT   =   false;
+    }
+
+    //
+    // PREPARES ROUND START EVENT
+    //
+    if ( g_bRStart )
+    {
+        if ( g_bRStartMsg )
+        {
+            QS_UpdateHudMsgColor ( );
+
+            set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_ROUND_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+            QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_ROUND ], g_szRStartMsg );
+        }
+
+        QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pRStart, random_num ( 0, g_nRStartSize - 1 ) ) );
+    }
+
+    //
+    // RESETS HATTRICK DATA
+    //
+    if ( g_bHattrick )
+    {
+        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        {
+            g_pnKillsThisRound  [ nPlayer ]     =   0;
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
 // WHEN ROUND ENDS
 //
-public OnREnd ( )
+public QS_OnRoundEnd ( )
 {
-	// GETS HATTRICK READY
-	//
-	if ( g_bHattrick )	set_task ( 2.8, "__Hattrick" );
+    // GETS HATTRICK READY
+    //
+    if ( g_bHattrick )
+    {
+        set_task ( QS_HATTRICK_ROUND_END_DELAY, "QS_Hattrick" );
+    }
 
-	// GETS FLAWLESS READY
-	//
-	if ( g_bFlawless )	set_task ( 1.2, "__Flawless" );
+    // GETS FLAWLESS READY
+    //
+    if ( g_bFlawless )
+    {
+        set_task ( QS_FLAWLESS_ROUND_END_DELAY, "QS_Flawless" );
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
+//
 // PREPARES HATTRICK
 //
-public __Hattrick ( )
+public QS_Hattrick ( )
 {
-	// RETRIEVES THE LEADER'S ID
-	//
-	static Leader;
-	Leader = __Leader ( );
+    //
+    // RETRIEVES THE LEADER'S ID
+    //
+    static nLeader =    0;
 
-	// IF ANY
-	//
-	if ( Leader != QS_INVALID_PLAYER )
-	{
-		if ( g_bRandomRed )		g_Red =		random_num ( 0, QS_MAX_BYTE );
-		if ( g_bRandomGreen )	g_Green =	random_num ( 0, QS_MAX_BYTE );
-		if ( g_bRandomBlue )	g_Blue =	random_num ( 0, QS_MAX_BYTE );
+    nLeader =   QS_Leader   ( );
 
-		if ( g_KillsThisRound [ Leader ] >= g_MinimumKillsForHattrick )
-		{
-			if ( g_bHattrickMsg )
-			{
-				set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_HATTRICK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_HattrickMsg, g_Name [ Leader ] );
-			}
+    //
+    // IF ANY
+    //
+    if ( nLeader != QS_INVALID_PLAYER )
+    {
+        if ( g_pnKillsThisRound [ nLeader ]     >=      g_nMinKillsForHattrick )
+        {
+            if ( g_bHattrickMsg )
+            {
+                QS_UpdateHudMsgColor ( );
 
-			QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pHattrick, random_num ( 0, g_HattrickSize - 1 ) ) );
-		}
-	}
+                set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_HATTRICK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_HATTRICK ], g_szHattrickMsg, g_pszName [ nLeader ] );
+            }
+
+            QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pHattrick, random_num ( 0, g_nHattrickSize - 1 ) ) );
+        }
+    }
 }
 
+//
 // PREPARES FLAWLESS
 //
-public __Flawless ( )
+public QS_Flawless ( )
 {
-	static aliveTeam_1,		aliveTeam_2;
-	static allTeam_1,		allTeam_2;
+    static  nAliveTeam_1 = 0,   nAliveTeam_2 = 0,   nAllTeam_1 = 0,     nAllTeam_2 = 0;
 
-	if ( g_bRandomRed )		g_Red =			random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomGreen )	g_Green =		random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomBlue )	g_Blue =		random_num ( 0, QS_MAX_BYTE );
+    nAliveTeam_1    =   QS_ActivePlayersNum         ( true, 1 );
+    nAliveTeam_2    =   QS_ActivePlayersNum         ( true, 2 );
 
-	aliveTeam_1 =			__Players		( true, 1 );
-	aliveTeam_2 =			__Players		( true, 2 );
+    nAllTeam_1      =   nAliveTeam_1            +   QS_ActivePlayersNum ( false, 1 );
+    nAllTeam_2      =   nAliveTeam_2            +   QS_ActivePlayersNum ( false, 2 );
 
-	allTeam_1 =				aliveTeam_1 +	__Players ( false, 1 );
-	allTeam_2 =				aliveTeam_2 +	__Players ( false, 2 );
+    QS_UpdateHudMsgColor ( );
 
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_FLAWLESS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+    set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
-	if ( allTeam_1 == aliveTeam_1 )
-	{
-		if ( g_bFlawlessMsg )
-			QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_ROUND ], g_FlawlessMsg, g_FlawlessTeamName_1 );
+    if      ( nAllTeam_1 == nAliveTeam_1 )
+    {
+        if ( g_bFlawlessMsg )
+        {
+            QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_FLAWLESS ], g_szFlawlessMsg, g_szFlawlessTeamName_1 );
+        }
 
-		QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pFlawless, random_num ( 0, g_FlawlessSize - 1 ) ) );
-	}
+        QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pFlawless, random_num ( 0, g_nFlawlessSize - 1 ) ) );
+    }
 
-	else if ( allTeam_2 == aliveTeam_2 )
-	{
-		if ( g_bFlawlessMsg )
-			QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_ROUND ], g_FlawlessMsg, g_FlawlessTeamName_2 );
+    else if ( nAllTeam_2 == nAliveTeam_2 )
+    {
+        if ( g_bFlawlessMsg )
+        {
+            QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_FLAWLESS ], g_szFlawlessMsg, g_szFlawlessTeamName_2 );
+        }
 
-		QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pFlawless, random_num ( 0, g_FlawlessSize - 1 ) ) );
-	}
+        QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pFlawless, random_num ( 0, g_nFlawlessSize - 1 ) ) );
+    }
 }
 
-// pfnMessageBegin()
+//
+// pfnMessageBegin ( )
+//
 // FIRED WHEN A MESSAGE BEGINS
 //
-public OnMessageBegin ( Destination, Type )
+public QS_FM_OnMsgBegin (   nDestination,   nType   )
 {
-	static deathMsg = 0;
+    static nDeathMsg    =   QS_INVALID_MSG;
+    static nVar         =   1;
 
-	// GETS DEATHMSG ID
-	//
-	if ( deathMsg == 0 )
-		deathMsg = get_user_msgid ( "DeathMsg" );
+    //
+    // GETS THE DEATHMSG ID
+    //
+    if ( nDeathMsg      <   1   &&  nVar    !=  1024 )
+    {
+        nDeathMsg       =   get_user_msgid  ( "DeathMsg" );     /** DON'T CALL 'get_user_msgid ( )' FOREVER */
 
-	// IF GLOBALLY SENT
-	//
-	if ( deathMsg > 0 && \
-			Type == deathMsg && \
-				( Destination == MSG_ALL || Destination == MSG_BROADCAST ) )
-	{
-		g_bOnDeathMsg =			true;
-		g_DeathMsgByteStatus =	0;
-	}
+        nVar            ++;
+    }
+
+    //
+    // IF GLOBALLY SENT
+    //
+    if ( nDeathMsg > 0 && \
+            nType == nDeathMsg && \
+                ( nDestination == MSG_ALL   ||  nDestination == MSG_BROADCAST ) )
+    {
+        g_bOnDeathMsg =             true;
+
+        g_nDeathMsgByteStatus =     0;
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
-// pfnWriteByte()
+//
+// pfnWriteByte ( )
+//
 // FIRED WHEN A BYTE IS BEING WRITTEN
 //
-public OnWriteByte ( Byte )
+public QS_FM_OnWriteByte    ( nByte )
 {
-	// OUR DEATHMSG
-	//
-	if ( g_bOnDeathMsg )
-	{
-		// GETS DATA
-		//
-		switch ( ++ g_DeathMsgByteStatus )
-		{
-			case 1: g_Killer =	Byte;
-			case 2: g_Victim =	Byte;
-		}
-	}
+    //
+    // OUR DEATHMSG
+    //
+    if ( g_bOnDeathMsg )
+    {
+        //
+        // GETS DATA
+        //
+        switch ( ++ g_nDeathMsgByteStatus )
+        {
+            case 1: /// KILLER ID
+            {
+                g_nKiller   =   nByte;
+            }
+
+            case 2: /// VICTIM ID
+            {
+                g_nVictim   =   nByte;
+            }
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
-// pfnMessageEnd()
+//
+// pfnMessageEnd ( )
+//
 // FIRED WHEN A MESSAGE ENDS
 //
-public OnMessageEnd ( )
+public QS_FM_OnMsgEnd   ( )
 {
-	// OUR DEATHMSG
-	//
-	if ( g_bOnDeathMsg )
-	{
-		g_bOnDeathMsg =								false;
-		g_DeathMsgByteStatus =						0;
+    //
+    // OUR DEATHMSG
+    //
+    if ( g_bOnDeathMsg )
+    {
+        g_bOnDeathMsg =                             false;
 
-		if ( g_bDeathMsgOnly )
-			g_Weapon = g_Place = g_TeamKill =		0;
+        g_nDeathMsgByteStatus =                     0;
 
-		// FIRES
-		//
-		set_task ( 0.0, "__DeathMsg" );
-	}
+        if ( g_bDeathMsgOnly )
+        {
+            g_nWeapon = g_nPlace = g_nTeamKill =    0;
+        }
+
+        //
+        // FIRES
+        //
+        set_task ( 0.0, "QS_ProcessDeathMsg" );
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
-// WHEN A PLAYER DIES
-// THIS IS EXECUTED AFTER XSTATS MODULE "client_death" FORWARD
 //
-public __DeathMsg ( )
+// WHEN A PLAYER DIES
+//
+// THIS IS EXECUTED AFTER THE XSTATS MODULE'S "client_death" FORWARD
+//
+public QS_ProcessDeathMsg ( )
 {
-	// DECLARES THE HIT PLACE AND THE WEAPON ID
-	//
-	static Place, Weapon;
+    //
+    // DECLARES THE HIT PLACE AND THE WEAPON ID
+    //
+    static nPlace = 0, nWeapon = 0;
 
-	// SETS THE DECLARED VARIABLES TO ZERO
-	//
-	Place = Weapon = 0;
+    //
+    // SETS THE DECLARED VARIABLES TO ZERO
+    //
+    nPlace = nWeapon = 0;
 
-	// PREPARES THE WEAPON ID AND THE HIT PLACE
-	//
-	if ( g_bConnected [ g_Victim ] )
-		get_user_attacker ( g_Victim, Weapon, Place );
+    //
+    // SANITY CHECK
+    //
+    if ( !QS_IsPlayer ( g_nVictim ) || !g_pbConnected [ g_nVictim ] || !QS_IsPlayerOrWorld ( g_nKiller ) )
+    {
+        return  PLUGIN_CONTINUE;
+    }
 
-	// POSSIBLE WEAPON ID FIX
-	//
-	if ( g_Weapon < 1 )
-	{
-		if ( Weapon < 1 )
-		{
-			if ( g_bConnected [ g_Killer ] )
-				g_Weapon = get_user_weapon ( g_Killer );
-		}
+    //
+    // PREPARES THE WEAPON ID AND THE HIT PLACE
+    //
+    get_user_attacker   ( g_nVictim, nWeapon, nPlace );
 
-		else
-			g_Weapon = Weapon;
-	}
+    //
+    // POSSIBLE WEAPON ID FIX
+    //
+    if ( g_nWeapon < 1 )
+    {
+        if ( nWeapon < 1 )
+        {
+            if ( g_pbConnected  [ g_nKiller ] )
+            {
+                g_nWeapon   =   get_user_weapon ( g_nKiller );
+            }
+        }
 
-	// POSSIBLE HIT PLACE FIX
-	//
-	if ( g_Place < 1 && Place > 0 )
-		g_Place = Place;
+        else
+        {
+            g_nWeapon       =   nWeapon;
+        }
+    }
 
-	// PREPARES TEAM KILL BOOLEAN IF NEEDED
-	//
-	if ( g_bDeathMsgOnly && g_bConnected [ g_Killer ] && g_bConnected [ g_Victim ] )
-		g_TeamKill = ( get_user_team ( g_Killer ) == get_user_team ( g_Victim ) ) ? 1 : 0;
+    //
+    // POSSIBLE HIT PLACE FIX
+    //
+    if ( g_nPlace < 1   &&  nPlace > 0 )
+    {
+        g_nPlace    =   nPlace;
+    }
 
-	// PROCESSES DEATH
-	//
-	__Death ( g_Killer, g_Victim, g_Weapon, g_Place, g_TeamKill );
+    //
+    // PREPARES THE TEAM KILL BOOLEAN IF NEEDED
+    //
+    if ( g_bDeathMsgOnly )
+    {
+        if ( g_pbConnected [ g_nKiller ] )
+        {
+            g_nTeamKill =   ( get_user_team ( g_nKiller )   ==  get_user_team ( g_nVictim ) )   ?   1   :   0;
+        }
+
+        else
+        {
+            g_nTeamKill =   0;
+        }
+    }
+
+    //
+    // PROCESSES DEATH
+    //
+    QS_ProcessPlayerDeath   ( g_nKiller, g_nVictim, g_nWeapon, g_nPlace, g_nTeamKill );
+
+    return  PLUGIN_CONTINUE;
 }
 
 
@@ -1282,576 +2170,1117 @@ public __DeathMsg ( )
 ******* FUNCTIONS ********************************************************************
 *************************************************************************************/
 
-// PROCESSES CLIENT DEATH STUFF FOR ALL MODS
 //
-__Death ( Killer, Victim, Weapon, Place, TeamKill )
+// PROCESSES THE CLIENT DEATH STUFF FOR ALL MODS
+//
+static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &nPlace, const &nTeamKill )
 {
-	// VARIABLES
-	//
-	static Iterator = 0, Float: fGameTime = 0.0, WeaponName [ 32 ], Sound [ 256 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
+    //
+    // VARIABLES
+    //
+    static  nIter = 0, Float: fGameTime = 0.0, szWeapon [ 64 ], szSnd [ 256 ], szMsg [ QS_HUD_MSG_MAX_LEN ], \
+            bool: bKilledByWorldDamage = false /** OR BY THE 'KILL' COMMAND */;
 
-	// RESETS KILLS FOR VICTIM
-	//
-	if ( g_bKStreak )
-		g_Kills [ Victim ] = 0;
+    //
+    // RESET THE SUICIDE TYPE [ WORLD DAMAGE / 'KILL' COMMAND ]
+    //
+    bKilledByWorldDamage = false;
 
-	// INVALID KILLER (WORLD)
-	//
-	if ( !g_bConnected [ Killer ] )
-		return;
+    //
+    // RESETS KILLS FOR VICTIM
+    //
+    if ( g_bKStreak )
+    {
+        g_pnKills [ nVictim ] = 0;
+    }
 
-	// PREPARES HUD MESSAGE COLOR
-	//
-	if ( g_bRandomRed )		g_Red =		random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomGreen )	g_Green =	random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomBlue )	g_Blue =	random_num ( 0, QS_MAX_BYTE );
+    //
+    // INVALID KILLER ( WORLD, ... )
+    //
+    if ( !g_pbConnected [ nKiller ] )
+    {
+        if ( nKiller <  1 )
+        {
+            nKiller =                   nVictim;
 
-	// PREPARES HUD MESSAGE
-	//
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_MINOR_EVENTS_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
+            bKilledByWorldDamage =      true;
+        }
 
-	// REVENGE KILLER STAMP
-	//
-	if ( g_bRevenge )
-		g_RevengeStamp [ Victim ] = g_Name [ Killer ];
+        else
+        {
+            return  PLUGIN_CONTINUE;
+        }
+    }
 
-	// SUICIDE
-	//
-	if ( Victim == Killer )
-	{
-		if ( g_bSuicide )
-		{
-			if ( g_bSuicideMsg )
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_SuicideMsg, g_Name [ Victim ] );
+    //
+    // PREPARES HUD MESSAGE COLOR
+    //
+    QS_UpdateHudMsgColor ( );
 
-			QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pSuicide, random_num ( 0, g_SuicideSize - 1 ) ) );
-		}
+    //
+    // PREPARES MINOR EVENTS HUD MESSAGE
+    //
+    set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
-		if ( g_bHattrick )
-			g_KillsThisRound [ Victim ] --;
-	}
+    //
+    // REVENGE KILLER STAMP
+    //
+    if ( g_bRevenge )
+    {
+        g_pszRevengeStamp       [ nVictim ]     =       g_pszName           [ nKiller ];
 
-	// NORMAL DEATH
-	//
-	else
-	{
-		if ( g_bKStreak )
-			g_Kills				[ Killer ] ++;
+        g_pnRevengeStamp        [ nVictim ]     =       g_pnUserId          [ nKiller ];
+    }
 
-		if ( g_bHattrick )
-			g_KillsThisRound	[ Killer ] ++;
+    //
+    // SUICIDE
+    //
+    if ( nVictim == nKiller )
+    {
+        if ( g_bSuicide )
+        {
+            if ( g_bSuicideMsg )
+            {
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szSuicideMsg, g_pszName [ nVictim ] );
+            }
 
-		// WEAPON NAME
-		//
-		if ( Weapon > 0 )
-			get_weaponname ( Weapon, WeaponName, charsmax ( WeaponName ) );
+            QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pSuicide, random_num ( 0, g_nSuicideSize - 1 ) ) );
+        }
 
-		// NO WEAPON
-		//
-		else
-			QS_ClearString ( WeaponName );
+        if ( g_bHattrick )
+        {
+            if ( !bKilledByWorldDamage )
+            {
+                if ( g_bHattrickDecrease )
+                {
+                    g_pnKillsThisRound  [ nVictim ] --;
+                }
+            }
+        }
+    }
 
-		if ( g_bRevenge && equali ( g_Name [ Victim ], g_RevengeStamp [ Killer ] ) )
-		{
-			QS_ClearString ( g_RevengeStamp [ Killer ] );
+    //
+    // NORMAL DEATH
+    //
+    else
+    {
+        if ( g_bKStreak )
+        {
+            g_pnKills               [ nKiller ] ++;
+        }
 
-			if ( g_bRevengeMsgKiller )
-				QS_ShowHudMsg ( Killer, g_pHudMsg [ HUDMSG_EVENT ], g_RevengeMsgKiller, g_Name [ Victim ] );
+        if ( g_bHattrick )
+        {
+            g_pnKillsThisRound      [ nKiller ] ++;
+        }
 
-			if ( g_bRevengeMsgVictim && !g_bRevengeOnlyKiller )
-				QS_ShowHudMsg ( Victim, g_pHudMsg [ HUDMSG_EVENT ], g_RevengeMsgVictim, g_Name [ Killer ] );
+        //
+        // WEAPON NAME
+        //
+        if ( nWeapon > 0 )
+        {
+            get_weaponname  ( nWeapon, szWeapon, charsmax ( szWeapon ) );
+        }
 
-			QS_ClientCommand ( Killer, "SPK ^"%a^"", ArrayGetStringHandle ( g_pRevenge, random_num ( 0, g_RevengeSize - 1 ) ) );
+        //
+        // NO WEAPON
+        //
+        else
+        {
+            QS_ClearString  ( szWeapon );
+        }
 
-			if ( !g_bRevengeOnlyKiller )
-				QS_ClientCommand ( Victim, "SPK ^"%a^"", ArrayGetStringHandle ( g_pRevenge, random_num ( 0, g_RevengeSize - 1 ) ) );
-		}
+        if ( g_bRevenge && \
+                equali ( g_pszName [ nVictim ], g_pszRevengeStamp [ nKiller ] ) && \
+                    g_pnUserId [ nVictim ] == g_pnRevengeStamp [ nKiller ] )
+        {
+            g_pnRevengeStamp    [ nKiller ] =   0;
 
-		if ( g_bHShot && Place == HIT_HEAD )
-		{
-			if ( g_bHShotMsg )
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_HShotMsg, g_Name [ Killer ], g_Name [ Victim ] );
+            QS_ClearString      ( g_pszRevengeStamp [ nKiller ] );
 
-			QS_ClientCommand ( g_bHShotOnlyKiller ? Killer : 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pHShot, random_num ( 0, g_HShotSize - 1 ) ) );
-		}
+            //
+            // PREPARES HUD MESSAGE COLOR
+            //
+            QS_UpdateHudMsgColor ( );
 
-		if ( g_bFBlood && ++ g_FBlood == 1 )
-		{
-			if ( g_bFBloodMsg )
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_FBloodMsg, g_Name [ Killer ] );
+            //
+            // PREPARES REVENGE HUD MESSAGE
+            //
+            set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_REVENGE_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
-			QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pFBlood, random_num ( 0, g_FBloodSize - 1 ) ) );
-		}
+            if ( g_bRevengeMsgKiller )
+            {
+                QS_ShowHudMsg   ( nKiller, g_pnHudMsgObj [ QS_HUD_REVENGE ], g_szRevengeMsgKiller, g_pszName [ nVictim ] );
+            }
 
-		if ( g_bTKill && TeamKill > 0 )
-		{
-			if ( g_bTKillMsg )
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_TKillMsg, g_Name [ Killer ] );
+            if ( g_bRevengeMsgVictim    &&  !g_bRevengeOnlyKiller )
+            {
+                QS_ShowHudMsg   ( nVictim, g_pnHudMsgObj [ QS_HUD_REVENGE ], g_szRevengeMsgVictim, g_pszName [ nKiller ] );
+            }
 
-			QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pTKill, random_num ( 0, g_TKillSize - 1 ) ) );
-		}
+            QS_ClientCmd        ( nKiller, "SPK \"%a\"", ArrayGetStringHandle ( g_pRevenge, random_num ( 0, g_nRevengeSize - 1 ) ) );
 
-		if ( g_bGrenade && ( containi ( WeaponName, "RECK" ) != -1 || \
-								containi ( WeaponName, "ROCK" ) != -1 || \
-									containi ( WeaponName, "MK" ) != -1 || \
-										containi ( WeaponName, "GRANATE" ) != -1 || \
-											containi ( WeaponName, "BOMB" ) != -1 || \
-												containi ( WeaponName, "GREN" ) != -1 || \
-													containi ( WeaponName, "PIAT" ) != -1 || \
-														containi ( WeaponName, "BAZOOKA" ) != -1 || \
-															containi ( WeaponName, "PANZER" ) != -1 ) )
-		{
-			if ( g_bGrenadeMsg )
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_GrenadeMsg, g_Name [ Killer ], g_Name [ Victim ] );
+            if ( !g_bRevengeOnlyKiller )
+            {
+                QS_ClientCmd    ( nVictim, "SPK \"%a\"", ArrayGetStringHandle ( g_pRevenge, random_num ( 0, g_nRevengeSize - 1 ) ) );
+            }
 
-			QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pGrenade, random_num ( 0, g_GrenadeSize - 1 ) ) );
-		}
+            //
+            // PREPARES HUD MESSAGE COLOR
+            //
+            QS_UpdateHudMsgColor ( );
 
-		if ( g_bKnife && ( containi ( WeaponName, "KNIFE" ) != -1 || \
-								containi ( WeaponName, "SPADE" ) != -1 || \
-									containi ( WeaponName, "SATCHEL" ) != -1 ) )
-		{
-			if ( g_bKnifeMsg )
-				QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_KnifeMsg, g_Name [ Killer ], g_Name [ Victim ] );
+            //
+            // PREPARES MINOR EVENTS HUD MESSAGE
+            //
+            set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+        }
 
-			QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pKnife, random_num ( 0, g_KnifeSize - 1 ) ) );
-		}
+        if ( g_bHShot   &&  nPlace  ==  HIT_HEAD )
+        {
+            if ( g_bHShotMsg )
+            {
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szHShotMsg, g_pszName [ nKiller ], g_pszName [ nVictim ] );
+            }
 
-		if ( g_bDKill )
-		{
-			// GAME TIME
-			//
-			fGameTime = get_gametime ( );
+            QS_ClientCmd        ( g_bHShotOnlyKiller ? nKiller : QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pHShot, random_num ( 0, g_nHShotSize - 1 ) ) );
+        }
 
-			if ( g_fLastKillTimeStamp [ Killer ] > fGameTime )
-			{
-				if ( g_bDKillMsg )
-					QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_EVENT ], g_DKillMsg, g_Name [ Killer ], g_Name [ Victim ] );
+        if ( g_bFBlood  &&  ++ g_nFBlood == 1 )
+        {
+            if ( g_bFBloodMsg )
+            {
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szFBloodMsg, g_pszName [ nKiller ] );
+            }
 
-				QS_ClientCommand ( 0, "SPK ^"%a^"", ArrayGetStringHandle ( g_pDKill, random_num ( 0, g_DKillSize - 1 ) ) );
-			}
+            QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pFBlood, random_num ( 0, g_nFBloodSize - 1 ) ) );
+        }
 
-			g_fLastKillTimeStamp [ Killer ] = fGameTime + 0.1;
-		}
+        if ( g_bTKill   &&  nTeamKill > 0 )
+        {
+            if ( g_bTKillMsg )
+            {
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szTKillMsg, g_pszName [ nKiller ] );
+            }
 
-		if ( g_bKStreak )
-		{
-			for ( Iterator = 0; Iterator < g_KStreakSoundsSize; Iterator ++ )
-			{
-				if ( g_Kills [ Killer ] == ArrayGetCell ( g_pKStreakRequiredKills, Iterator ) )
-				{
-					ArrayGetString ( g_pKStreakMessages,	Iterator,	Message,	charsmax ( Message ) );
-					ArrayGetString ( g_pKStreakSounds,		Iterator,	Sound,		charsmax ( Sound ) );
+            QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pTKill, random_num ( 0, g_nTKillSize - 1 ) ) );
+        }
 
-					__Display ( Killer, Message, Sound );
+        if ( g_bGrenade && ( containi ( szWeapon, "RECK" ) != -1 || \
+                                containi ( szWeapon, "ROCK" ) != -1 || \
+                                    containi ( szWeapon, "MK" ) != -1 || \
+                                        containi ( szWeapon, "GRANATE" ) != -1 || \
+                                            containi ( szWeapon, "BOMB" ) != -1 || \
+                                                containi ( szWeapon, "GREN" ) != -1 || \
+                                                    containi ( szWeapon, "PIAT" ) != -1 || \
+                                                        containi ( szWeapon, "BAZOOKA" ) != -1 || \
+                                                            containi ( szWeapon, "PANZER" ) != -1 ) )
+        {
+            if ( g_bGrenadeMsg )
+            {
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szGrenadeMsg, g_pszName [ nKiller ], g_pszName [ nVictim ] );
+            }
 
-					break;
-				}
-			}
-		}
-	}
+            QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pGrenade, random_num ( 0, g_nGrenadeSize - 1 ) ) );
+        }
+
+        if ( g_bKnife && ( containi ( szWeapon, "KNIFE" ) != -1 || \
+                                containi ( szWeapon, "SPADE" ) != -1 || \
+                                    containi ( szWeapon, "SATCHEL" ) != -1 ) )
+        {
+            if ( g_bKnifeMsg )
+            {
+                QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szKnifeMsg, g_pszName [ nKiller ], g_pszName [ nVictim ] );
+            }
+
+            QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pKnife, random_num ( 0, g_nKnifeSize - 1 ) ) );
+        }
+
+        if ( g_bDKill )
+        {
+            //
+            // GAME TIME
+            //
+            fGameTime = get_gametime ( );
+
+            if ( g_pfLastKillTimeStamp [ nKiller ]  >   fGameTime )
+            {
+                if ( g_bDKillMsg )
+                {
+                    QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_EVENT ], g_szDKillMsg, g_pszName [ nKiller ], g_pszName [ nVictim ] );
+                }
+
+                QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pDKill, random_num ( 0, g_nDKillSize - 1 ) ) );
+            }
+
+            g_pfLastKillTimeStamp   [ nKiller ]     =   fGameTime   +   0.1;
+        }
+
+        if ( g_bKStreak )
+        {
+            for ( nIter = 0; nIter < g_nKStreakSize; nIter ++ )
+            {
+                if ( g_pnKills  [ nKiller ]     ==      ArrayGetCell    ( g_pKStreakReqKills,   nIter ) )
+                {
+                    ArrayGetString      (   g_pKStreakMsgs, nIter,      szMsg,  charsmax ( szMsg ) );
+                    ArrayGetString      (   g_pKStreakSnds, nIter,      szSnd,  charsmax ( szSnd ) );
+
+                    QS_DisplayKStreak   (   nKiller,        szMsg,      szSnd );
+
+                    break;
+                }
+            }
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
-// LOADS THE FILE
 //
-__Load ( )
+// LOADS THE CONFIGURATION FILE
+//
+static QS_LoadSettings ( )
 {
-	// PREPARES CONFIGURATIONS FILE DIRECTORY
-	//
-	new File [ 256 ];
-	get_configsdir ( File, charsmax ( File ) );
+    //
+    // PREPARES THE CONFIGURATION FILES DIRECTORY
+    //
+    new szFile [ 256 ];
 
-	// APPENDS CONFIGURATIONS FILE NAME
-	//
-	add ( File, charsmax ( File ), "/quakesounds.ini" );
+    get_configsdir ( szFile,    charsmax ( szFile ) );
 
-	// OPENS FILE
-	//
-	new pFile = fopen ( File, "r" );
+    //
+    // APPENDS THE CONFIGURATION FILE'S NAME
+    //
+    add ( szFile,   charsmax ( szFile ),    QS_CFG_FILE_NAME );
 
-	if ( !pFile )
-		return;
+    //
+    // OPENS THE FILE
+    //
+    new nFile =     fopen ( szFile,         "r" );
 
-	// PREPARES FILE LINE
-	//
-	new Line [ 1024 ], Key [ 256 ], Value [ 768 ], Type [ 512 ], Sound [ 256 ], RequiredKills [ 8 ], Dummy [ 4 ], Message [ QS_HUD_MESSAGE_MAX_LENGTH ];
+    //
+    // NO FILE
+    //
+    if ( !nFile )
+    {
+        return  PLUGIN_CONTINUE;
+    }
 
-	// READS FILE
-	//
-	while ( !feof ( pFile ) )
-	{
-		// GETS LINE
-		//
-		fgets ( pFile, Line, charsmax ( Line ) );
+    //
+    // PREPARES THE FILE LINES
+    //
+    new szLine [ 2048 ], szKey [ 2048 ], szVal [ 2048 ], szType [ 256 ], szSnd [ 512 ], \
+        szReqKills [ 128 ], szDummy [ 64 ], szMsg [ QS_HUD_MSG_MAX_LEN ], nVal = 0;
 
-		// TRIMS LINE OFF
-		//
-		trim ( Line );
+    //
+    // READS THE FILE
+    //
+    while ( !feof ( nFile ) )
+    {
+        //
+        // GETS LINE
+        //
+        fgets ( nFile,  szLine, charsmax ( szLine ) );
 
-		// CHECK FOR VALIDITY
-		//
-		if ( Line [ 0 ] == EOS || \
-				Line [ 0 ] == ';' || \
-					Line [ 0 ] == '#' || \
-						( Line [ 0 ] == '/' && Line [ 1 ] == '/' ) )
-		{
-			continue;
-		}
+        //
+        // TRIMS LINE OFF
+        //
+        trim ( szLine );
 
-		// SPLITS STRING IN TOKENS
-		//
-		strtok ( Line, Key, charsmax ( Key ), Value, charsmax ( Value ), '=' );
+        //
+        // CHECKS FOR VALIDITY
+        //
+        if ( QS_EmptyString ( szLine ) || \
+                szLine [ 0 ] == ';' || \
+                    szLine [ 0 ] == '#' || \
+                        ( szLine [ 0 ] == '/' && szLine [ 1 ] == '/' ) )
+        {
+            continue;
+        }
 
-		// TRIMS KEY
-		//
-		trim ( Key );
+        //
+        // PREPARE
+        //
+        QS_ClearString ( szKey );
+        QS_ClearString ( szVal );
 
-		// TRIMS VALUE
-		//
-		trim ( Value );
+        //
+        // SPLITS STRING IN TOKENS
+        //
+        strtok ( szLine, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), '=' );
 
-		//
-		// SETTINGS
-		//
+        //
+        // TRIMS KEY
+        //
+        trim ( szKey );
 
-		if ( equali ( Key, "ENABLE/DISABLE PLUGIN" ) )			g_bPluginEnabled =				bool:	str_to_num ( Value );
-		else if ( equali ( Key, "HEADSHOT ONLY KILLER" ) )		g_bHShotOnlyKiller =			bool:	str_to_num ( Value );
-		else if ( equali ( Key, "MIN FRAGS FOR HATTRICK" ) )	g_MinimumKillsForHattrick =				str_to_num ( Value );
-		else if ( equali ( Key, "REVENGE ONLY FOR KILLER" ) )	g_bRevengeOnlyKiller =			bool:	str_to_num ( Value );
+        //
+        // TRIMS VALUE
+        //
+        trim ( szVal );
 
-		//
-		// HUD MESSAGES
-		//
+        //
+        // SETTINGS
+        //
 
-		else if ( equali ( Key, "HUDMSG RED" ) )
-		{
-			if ( equal ( Value, "_" ) )		g_bRandomRed =		true;
-			else g_Red =					str_to_num ( Value );
-		}
+        if      ( equali ( szKey, "ENABLE/DISABLE PLUGIN" ) || equali ( szKey, "ENABLE/ DISABLE PLUGIN" ) ) /** COMPATIBILITY */
+        {
+            g_bEnabled =                bool:       str_to_num ( szVal );
+        }
 
-		else if ( equali ( Key, "HUDMSG GREEN" ) )
-		{
-			if ( equal ( Value, "_" ) )		g_bRandomGreen =	true;
-			else g_Green =					str_to_num ( Value );
-		}
+        else if ( equali ( szKey, "HEADSHOT ONLY KILLER" ) )
+        {
+            g_bHShotOnlyKiller =        bool:       str_to_num ( szVal );
+        }
 
-		else if ( equali ( Key, "HUDMSG BLUE" ) )
-		{
-			if ( equal ( Value, "_" ) )		g_bRandomBlue =		true;
-			else g_Blue =					str_to_num ( Value );
-		}
+        else if ( equali ( szKey, "MIN FRAGS FOR HATTRICK" ) )
+        {
+            g_nMinKillsForHattrick =                str_to_num ( szVal );
+        }
 
-		// KILLS STREAK SOUNDS
-		//
-		else if ( equali ( Key, "SOUND" ) )
-		{
-			parse ( Value, Dummy, charsmax ( Dummy ), Type, charsmax ( Type ) );
+        else if ( equali ( szKey, "DECREASE FRAG IN CASE OF 'KILL' COMMAND SUICIDE" ) )
+        {
+            g_bHattrickDecrease =       bool:       str_to_num ( szVal );
+        }
 
-			if ( equali ( Type, "REQUIREDKILLS" ) )
-			{
-				parse ( Value, Dummy, charsmax ( Dummy ), Type, charsmax ( Type ), RequiredKills, \
-					charsmax ( RequiredKills ), Dummy, charsmax ( Dummy ), Sound, charsmax ( Sound ) );
+        else if ( equali ( szKey, "REVENGE ONLY FOR KILLER" ) )
+        {
+            g_bRevengeOnlyKiller =      bool:       str_to_num ( szVal );
+        }
 
-				ArrayPushString ( g_pKStreakSounds, Sound );
-				ArrayPushCell ( g_pKStreakRequiredKills, str_to_num ( RequiredKills ) );
-			}
+        //
+        // HUD MESSAGES
+        //
 
-			else if ( equali ( Type, "MESSAGE" ) )
-			{
-				strtok ( Value, Type, charsmax ( Type ), Message, charsmax ( Message ), '@' );
-				trim ( Message );
+        else if     ( equali ( szKey,   "HUDMSG RED" ) )
+        {
+            if      ( equal ( szVal,    "_" ) )
+            {
+                g_bRandomRed =          true;
+            }
 
-				ArrayPushString ( g_pKStreakMessages, Message );
-			}
-		}
+            else
+            {
+                g_nRed =                str_to_num ( szVal );
+            }
+        }
 
-		//
-		// EVENTS ON/ OFF
-		//
+        else if     ( equali ( szKey,   "HUDMSG GREEN" ) )
+        {
+            if      ( equal ( szVal,    "_" ) )
+            {
+                g_bRandomGreen =        true;
+            }
 
-		else if ( equali ( Key, "KILLSTREAK EVENT" ) )		g_bKStreak =		bool: str_to_num ( Value );
-		else if ( equali ( Key, "REVENGE EVENT" ) )			g_bRevenge =		bool: str_to_num ( Value );
-		else if ( equali ( Key, "HEADSHOT EVENT" ) )		g_bHShot =			bool: str_to_num ( Value );
-		else if ( equali ( Key, "SUICIDE EVENT" ) )			g_bSuicide =		bool: str_to_num ( Value );
-		else if ( equali ( Key, "NADE EVENT" ) )			g_bGrenade =		bool: str_to_num ( Value );
-		else if ( equali ( Key, "TEAMKILL EVENT" ) )		g_bTKill =			bool: str_to_num ( Value );
-		else if ( equali ( Key, "KNIFE EVENT" ) )			g_bKnife =			bool: str_to_num ( Value );
-		else if ( equali ( Key, "FIRSTBLOOD EVENT" ) )		g_bFBlood =			bool: str_to_num ( Value );
-		else if ( equali ( Key, "ROUNDSTART EVENT" ) )		g_bRStart =			bool: str_to_num ( Value );
-		else if ( equali ( Key, "DOUBLEKILL EVENT" ) )		g_bDKill =			bool: str_to_num ( Value );
-		else if ( equali ( Key, "HATTRICK EVENT" ) )		g_bHattrick =		bool: str_to_num ( Value );
-		else if ( equali ( Key, "FLAWLESS VICTORY" ) )		g_bFlawless =		bool: str_to_num ( Value );
+            else
+            {
+                g_nGreen =              str_to_num ( szVal );
+            }
+        }
 
-		//
-		// EVENT SOUNDS
-		//
+        else if     ( equali ( szKey,   "HUDMSG BLUE" ) )
+        {
+            if      ( equal ( szVal,    "_" ) )
+            {
+                g_bRandomBlue =         true;
+            }
 
-		else if ( equali ( Key, "HEADSHOT SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pHShot, Key );
-			}
-		}
+            else
+            {
+                g_nBlue =               str_to_num ( szVal );
+            }
+        }
 
-		else if ( equali ( Key, "REVENGE SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pRevenge, Key );
-			}
-		}
+        //
+        // KILLS STREAK SOUNDS
+        //
+        else if ( equali ( szKey, "SOUND" ) )
+        {
+            //
+            // PREPARE
+            //
+            QS_ClearString ( szType );
 
-		else if ( equali ( Key, "SUICIDE SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pSuicide, Key );
-			}
-		}
+            parse ( szVal, szDummy, charsmax ( szDummy ), szType, charsmax ( szType ) );
 
-		else if ( equali ( Key, "NADE SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pGrenade, Key );
-			}
-		}
+            trim ( szType );
 
-		else if ( equali ( Key, "TEAMKILL SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pTKill, Key );
-			}
-		}
+            if ( equali ( szType, "REQUIREDKILLS" ) )
+            {
+                //
+                // PREPARE
+                //
+                QS_ClearString ( szReqKills );
+                QS_ClearString ( szSnd );
 
-		else if ( equali ( Key, "KNIFE SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pKnife, Key );
-			}
-		}
+                parse ( szVal, szDummy, charsmax ( szDummy ), szDummy, charsmax ( szDummy ), szReqKills, charsmax ( szReqKills ), \
+                    szDummy, charsmax ( szDummy ), szSnd, charsmax ( szSnd ) );
 
-		else if ( equali ( Key, "FIRSTBLOOD SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pFBlood, Key );
-			}
-		}
+                trim ( szReqKills );
+                trim ( szSnd );
 
-		else if ( equali ( Key, "ROUNDSTART SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pRStart, Key );
-			}
-		}
+                if ( !QS_EmptyString ( szReqKills ) &&      ( nVal = abs ( str_to_num ( szReqKills ) ) )    >   0 )
+                {
+                    ArrayPushCell   ( g_pKStreakReqKills,   nVal );
+                }
 
-		else if ( equali ( Key, "DOUBLEKILL SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pDKill, Key );
-			}
-		}
+                else
+                {
+                    ArrayPushCell   ( g_pKStreakReqKills,   QS_INVALID_REQUIRED_KILLS );
 
-		else if ( equali ( Key, "HATTRICK SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pHattrick, Key );
-			}
-		}
+                    log_to_file     ( QS_LOG_FILE_NAME,     "****************************************************************************************************************" );
+                    log_to_file     ( QS_LOG_FILE_NAME,     "Bad Required Kills ('REQUIREDKILLS') [ %s ] Inside Line [ %s ].", szReqKills, szLine );
+                    log_to_file     ( QS_LOG_FILE_NAME,     "This Sound Will Be Ignored. It Will Be Precached, If Set, So The Players Will Download It." );
+                    log_to_file     ( QS_LOG_FILE_NAME,     "It Will Never Play." );
+                }
 
-		else if ( equali ( Key, "FLAWLESS SOUNDS" ) )
-		{
-			while ( Value [ 0 ] != EOS && strtok ( Value, Key, charsmax ( Key ), Value, charsmax ( Value ), ',' ) )
-			{
-				trim ( Key ), trim ( Value );
-				ArrayPushString ( g_pFlawless, Key );
-			}
-		}
+                ArrayPushString     ( g_pKStreakSnds,       szSnd );
+            }
 
-		//
-		// MESSAGE STRINGS
-		//
+            else if ( equali ( szType, "MESSAGE" ) )
+            {
+                //
+                // PREPARE
+                //
+                QS_ClearString ( szMsg );
 
-		else if ( equali ( Key, "HEADSHOT HUDMSG" ) )			copy ( g_HShotMsg,				charsmax ( g_HShotMsg ),			Value );
-		else if ( equali ( Key, "SUICIDE HUDMSG" ) )			copy ( g_SuicideMsg,			charsmax ( g_SuicideMsg ),			Value );
-		else if ( equali ( Key, "NADE HUDMSG" ) )				copy ( g_GrenadeMsg,			charsmax ( g_GrenadeMsg ),			Value );
-		else if ( equali ( Key, "TEAMKILL HUDMSG" ) )			copy ( g_TKillMsg,				charsmax ( g_TKillMsg ),			Value );
-		else if ( equali ( Key, "KNIFE HUDMSG" ) )				copy ( g_KnifeMsg,				charsmax ( g_KnifeMsg ),			Value );
-		else if ( equali ( Key, "FIRSTBLOOD HUDMSG" ) )			copy ( g_FBloodMsg,				charsmax ( g_FBloodMsg ),			Value );
-		else if ( equali ( Key, "ROUNDSTART HUDMSG" ) )			copy ( g_RStartMsg,				charsmax ( g_RStartMsg ),			Value );
-		else if ( equali ( Key, "DOUBLEKILL HUDMSG" ) )			copy ( g_DKillMsg,				charsmax ( g_DKillMsg ),			Value );
-		else if ( equali ( Key, "HATTRICK HUDMSG" ) )			copy ( g_HattrickMsg,			charsmax ( g_HattrickMsg ),			Value );
-		else if ( equali ( Key, "FLAWLESS VICTORY HUDMSG" ) )	copy ( g_FlawlessMsg,			charsmax ( g_FlawlessMsg ),			Value );
-		else if ( equali ( Key, "REVENGE KILLER MESSAGE" ) )	copy ( g_RevengeMsgKiller,		charsmax ( g_RevengeMsgKiller ),	Value );
-		else if ( equali ( Key, "REVENGE VICTIM MESSAGE" ) )	copy ( g_RevengeMsgVictim,		charsmax ( g_RevengeMsgVictim ),	Value );
-		else if ( equali ( Key, "TERRO TEAM NAME" ) )			copy ( g_FlawlessTeamName_1,	charsmax ( g_FlawlessTeamName_1 ),	Value );
-		else if ( equali ( Key, "CT TEAM NAME" ) )				copy ( g_FlawlessTeamName_2,	charsmax ( g_FlawlessTeamName_2 ),	Value );
-	}
+                strtok ( szVal, szDummy, charsmax ( szDummy ), szMsg, charsmax  ( szMsg ), '@' );
 
-	// CLOSES
-	//
-	fclose ( pFile );
+                trim ( szMsg );
+
+                ArrayPushString ( g_pKStreakMsgs, szMsg );
+            }
+        }
+
+        //
+        // EVENTS ON/ OFF
+        //
+
+        else if ( equali ( szKey, "KILLSTREAK EVENT" ) || equali ( szKey, "KILLSSTREAK EVENT" ) ) /** COMPATIBILITY */
+        {
+            g_bKStreak =            bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "REVENGE EVENT" ) )
+        {
+            g_bRevenge =            bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "HEADSHOT EVENT" ) )
+        {
+            g_bHShot =              bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "SUICIDE EVENT" ) )
+        {
+            g_bSuicide =            bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "NADE EVENT" ) )
+        {
+            g_bGrenade =            bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "TEAMKILL EVENT" ) )
+        {
+            g_bTKill =              bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "KNIFE EVENT" ) )
+        {
+            g_bKnife =              bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "FIRSTBLOOD EVENT" ) )
+        {
+            g_bFBlood =             bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "ROUNDSTART EVENT" ) )
+        {
+            g_bRStart =             bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "DOUBLEKILL EVENT" ) )
+        {
+            g_bDKill =              bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "HATTRICK EVENT" ) )
+        {
+            g_bHattrick =           bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "TLMSTANDING EVENT" ) )
+        {
+            g_bTLMStanding =        bool: str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "FLAWLESS VICTORY" ) )
+        {
+            g_bFlawless =           bool: str_to_num ( szVal );
+        }
+
+        //
+        // EVENT SOUNDS
+        //
+
+        else if ( equali ( szKey, "HEADSHOT SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pHShot, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "REVENGE SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pRevenge, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "SUICIDE SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pSuicide, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "NADE SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pGrenade, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "TEAMKILL SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pTKill, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "KNIFE SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pKnife, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "FIRSTBLOOD SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pFBlood, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "ROUNDSTART SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pRStart, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "DOUBLEKILL SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pDKill, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "HATTRICK SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pHattrick, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "TLMSTANDING SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pTLMStanding, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "TLMSTANDING WORDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pTLMStandingWords, szKey );
+            }
+        }
+
+        else if ( equali ( szKey, "FLAWLESS SOUNDS" ) )
+        {
+            while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
+            {
+                trim ( szKey );
+                trim ( szVal );
+
+                ArrayPushString ( g_pFlawless, szKey );
+            }
+        }
+
+        //
+        // MESSAGE STRINGS
+        //
+
+        else if ( equali ( szKey, "HEADSHOT HUDMSG" ) )
+        {
+            copy ( g_szHShotMsg, charsmax ( g_szHShotMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "SUICIDE HUDMSG" ) )
+        {
+            copy ( g_szSuicideMsg, charsmax ( g_szSuicideMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "NADE HUDMSG" ) )
+        {
+            copy ( g_szGrenadeMsg, charsmax ( g_szGrenadeMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "TEAMKILL HUDMSG" ) )
+        {
+            copy ( g_szTKillMsg, charsmax ( g_szTKillMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "KNIFE HUDMSG" ) )
+        {
+            copy ( g_szKnifeMsg, charsmax ( g_szKnifeMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "FIRSTBLOOD HUDMSG" ) )
+        {
+            copy ( g_szFBloodMsg, charsmax ( g_szFBloodMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "ROUNDSTART HUDMSG" ) )
+        {
+            copy ( g_szRStartMsg, charsmax ( g_szRStartMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "DOUBLEKILL HUDMSG" ) )
+        {
+            copy ( g_szDKillMsg, charsmax ( g_szDKillMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "HATTRICK HUDMSG" ) )
+        {
+            copy ( g_szHattrickMsg, charsmax ( g_szHattrickMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "TLMSTANDING TEAM HUDMSG" ) )
+        {
+            copy ( g_szTLMStandingTeamMsg, charsmax ( g_szTLMStandingTeamMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "TLMSTANDING SELF HUDMSG" ) )
+        {
+            copy ( g_szTLMStandingSelfMsg, charsmax ( g_szTLMStandingSelfMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "FLAWLESS VICTORY HUDMSG" ) )
+        {
+            copy ( g_szFlawlessMsg, charsmax ( g_szFlawlessMsg ), szVal );
+        }
+
+        else if ( equali ( szKey, "REVENGE KILLER MESSAGE" ) )
+        {
+            copy ( g_szRevengeMsgKiller, charsmax ( g_szRevengeMsgKiller ), szVal );
+        }
+
+        else if ( equali ( szKey, "REVENGE VICTIM MESSAGE" ) )
+        {
+            copy ( g_szRevengeMsgVictim, charsmax ( g_szRevengeMsgVictim ), szVal );
+        }
+
+        else if ( equali ( szKey, "TERRO TEAM NAME" ) || equali ( szKey, "TE TEAM NAME" ) ) /** COMPATIBILITY */
+        {
+            copy ( g_szFlawlessTeamName_1, charsmax ( g_szFlawlessTeamName_1 ), szVal );
+        }
+
+        else if ( equali ( szKey, "CT TEAM NAME" ) )
+        {
+            copy ( g_szFlawlessTeamName_2, charsmax ( g_szFlawlessTeamName_2 ), szVal );
+        }
+    }
+
+    //
+    // CLOSES
+    //
+    fclose ( nFile );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// DISPLAYS KILLS STREAK GLOBALLY
 //
-__Display ( Killer, Message [ ], Sound [ ] )
+// DISPLAYS K. STREAK GLOBALLY
+//
+static QS_DisplayKStreak ( const &nKiller, const szMsg [ ], const szSnd [ ] )
 {
-	if ( g_bRandomRed )		g_Red =		random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomGreen )	g_Green =	random_num ( 0, QS_MAX_BYTE );
-	if ( g_bRandomBlue )	g_Blue =	random_num ( 0, QS_MAX_BYTE );
+    QS_UpdateHudMsgColor ( );
 
-	set_hudmessage ( g_Red, g_Green, g_Blue, QS_HUD_MESSAGE_X_POSITION, QS_STREAK_Y_POSITION, _, _, QS_HUD_MESSAGE_HOLD_TIME );
-	QS_ShowHudMsg ( 0, g_pHudMsg [ HUDMSG_STREAK ], Message, g_Name [ Killer ] );
+    set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+    QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_STREAK ], szMsg, g_pszName [ nKiller ] );
 
-	QS_ClientCommand ( 0, "SPK ^"%s^"", Sound );
+    QS_ClientCmd    ( QS_EVERYONE, "SPK \"%s\"", szSnd );
+
+    return  PLUGIN_CONTINUE;
 }
 
-// RETRIEVES PLAYERS COUNT
-// bAlive [ TRUE/ FALSE ]
-// Team [ QS_INVALID_TEAM / 1 / 2 / 3 ]
 //
-__Players ( bool: bAlive, Team = QS_INVALID_TEAM )
+// RETRIEVES ACTIVE PLAYERS COUNT
+//
+// bAlive   [ TRUE/ FALSE ]
+// nTeam    [ QS_INVALID_TEAM/ 1/ 2/ 3 ]
+//
+static QS_ActivePlayersNum ( bool: bAlive, nTeam = QS_INVALID_TEAM )
 {
-	// PLAYERS COUNT
-	//
-	static Total, Player;
+    //
+    // PLAYERS COUNT
+    //
+    static nTotal = 0, nPlayer = 0;
 
-	// ITERATES BETWEEN PLAYERS
-	//
-	for ( Total = 0, Player = 1; Player <= g_MaxPlayers; Player ++ )
-	{
-		// CONNECTED, NOT HLTV, IN SPECIFIED TEAM AND ALIVE/ DEAD
-		//
-		if ( g_bConnected [ Player ] && !g_bHLTV [ Player ] && \
-				( Team != QS_INVALID_TEAM && ( get_user_team ( Player ) == Team ) ) && \
-					( bAlive == bool: is_user_alive ( Player ) ) )
-		{
-			// TOTAL = TOTAL + 1
-			//
-			Total ++;
-		}
-	}
+    //
+    // ITERATES BETWEEN PLAYERS
+    //
+    for ( nTotal = 0, nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+    {
+        //
+        // CONNECTED, NOT HLTV, IN SPECIFIED TEAM AND ALIVE/ DEAD
+        //
+        if ( ( g_pbConnected [ nPlayer ] ) && ( !( g_pbHLTV [ nPlayer ] ) ) && \
+            ( ( nTeam == QS_INVALID_TEAM ) || ( get_user_team ( nPlayer ) == nTeam ) ) && \
+                ( bAlive == bool: is_user_alive ( nPlayer ) ) )
+        {
+            //
+            // TOTAL = TOTAL + 1
+            //
+            nTotal ++;
+        }
+    }
 
-	// GETS TOTAL
-	//
-	return Total;
+    //
+    // GETS THE TOTAL
+    //
+    return nTotal;
 }
 
+//
 // RETRIEVES THE LEADER OF THIS ROUND
 // RETURNS "QS_INVALID_PLAYER" IF THERE IS NO LEADER
 //
-__Leader ( )
+static QS_Leader ( )
 {
-	// DECLARES VARIABLES
-	//
-	static Leader, Kills, Client;
+    //
+    // DECLARES VARIABLES
+    //
+    static nLeader = 0, nKills = 0, nPlayer = 0;
 
-	// ITERATES BETWEEN CLIENTS
-	//
-	for ( Client = 1, Leader = QS_INVALID_PLAYER, Kills = 0; Client <= g_MaxPlayers; Client ++ )
-	{
-		// CONNECTED AND NOT HLTV
-		//
-		if ( g_bConnected [ Client ] && !g_bHLTV [ Client ] )
-		{
-			// HAS MANY KILLS THAN THE ONE PREVIOUSLY CHECKED
-			//
-			if ( g_KillsThisRound [ Client ] > Kills )
-			{
-				// THIS IS THE NEW LEADER
-				//
-				Kills =		g_KillsThisRound [ Client ];
-				Leader =	Client;
-			}
-		}
-	}
+    //
+    // ITERATES BETWEEN CLIENTS
+    //
+    for ( nPlayer = 1, nLeader = QS_INVALID_PLAYER, nKills = 0; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+    {
+        //
+        // CONNECTED AND NOT HLTV
+        //
+        if ( g_pbConnected [ nPlayer ]  &&  !g_pbHLTV [ nPlayer ] )
+        {
+            //
+            // HAS MANY KILLS THAN THE ONE PREVIOUSLY CHECKED
+            //
+            if ( g_pnKillsThisRound [ nPlayer ] >   nKills )
+            {
+                //
+                // THIS IS THE NEW LEADER
+                //
+                nKills      =       g_pnKillsThisRound [ nPlayer ];
 
-	// GETS LEADER ID
-	//
-	return Leader;
+                nLeader     =       nPlayer;
+            }
+        }
+    }
+
+    //
+    // GETS THE LEADER ID
+    //
+    return nLeader;
 }
 
+//
 // PROCESSES HUD MESSAGE
 //
-QS_ShowHudMsg ( Target, pObject, Rules [ ], any: ... )
+static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
 {
-	// ARGUMENT FORMAT
-	//
-	static Buffer [ QS_HUD_MESSAGE_MAX_LENGTH ], Player;
-	vformat ( Buffer, charsmax ( Buffer ), Rules, 4 );
+    //
+    // ARGUMENT FORMAT
+    //
+    static szBuffer [ QS_HUD_MSG_MAX_LEN ], nPlayer = 0;
 
-	// SPECIFIED CLIENT
-	//
-	if ( Target > 0 && g_bConnected [ Target ] && !g_bBOT [ Target ] && !g_bHLTV [ Target ] && !g_bDisabled [ Target ] )
-		ShowSyncHudMsg ( Target, pObject, Buffer );
+    //
+    // SANITY CHECK
+    //
+    if ( QS_EmptyString ( szRules ) )
+    {
+        return  PLUGIN_CONTINUE;
+    }
 
-	// NO TARGET
-	//
-	else if ( Target < 1 )
-	{
-		for ( Player = 1; Player <= g_MaxPlayers; Player ++ )
-		{
-			if ( g_bConnected [ Player ] && !g_bBOT [ Player ] && !g_bHLTV [ Player ] && !g_bDisabled [ Player ] )
-				ShowSyncHudMsg ( Player, pObject, Buffer );
-		}
-	}
+    vformat ( szBuffer, charsmax ( szBuffer ), szRules, 4 );
+
+    //
+    // SANITY CHECK
+    //
+    if ( QS_EmptyString ( szBuffer ) )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    //
+    // SPECIFIED CLIENT
+    //
+    if ( nTo > 0 && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
+    {
+        ShowSyncHudMsg ( nTo, nObj, szBuffer );
+    }
+
+    //
+    // NO TARGET
+    //
+    else if ( nTo < 1 )
+    {
+        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        {
+            if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !g_pbDisabled [ nPlayer ] )
+            {
+                ShowSyncHudMsg ( nPlayer, nObj, szBuffer );
+            }
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
+//
 // PROCESSES CLIENT COMMAND
 //
-QS_ClientCommand ( Target, Rules [ ], any: ... )
+static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
 {
-	// ARGUMENT FORMAT
-	//
-	static Buffer [ 256 ], Player;
-	vformat ( Buffer, charsmax ( Buffer ), Rules, 3 );
+    //
+    // ARGUMENT FORMAT
+    //
+    static szBuffer [ 256 ], nPlayer = 0;
 
-	// SPECIFIED CLIENT
-	//
-	if ( Target > 0 && g_bConnected [ Target ] && !g_bBOT [ Target ] && !g_bHLTV [ Target ] && !g_bDisabled [ Target ] )
-		client_cmd ( Target, Buffer );
+    //
+    // SANITY CHECK
+    //
+    if ( QS_EmptyString ( szRules ) )
+    {
+        return  PLUGIN_CONTINUE;
+    }
 
-	// NO TARGET
-	//
-	else if ( Target < 1 )
-	{
-		for ( Player = 1; Player <= g_MaxPlayers; Player ++ )
-		{
-			if ( g_bConnected [ Player ] && !g_bBOT [ Player ] && !g_bHLTV [ Player ] && !g_bDisabled [ Player ] )
-				client_cmd ( Player, Buffer );
-		}
-	}
+    vformat ( szBuffer, charsmax ( szBuffer ), szRules, 3 );
+
+    //
+    // SANITY CHECK
+    //
+    if ( QS_EmptyString ( szBuffer ) || equali ( szBuffer, "SPK \"\"" ) )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    //
+    // SPECIFIED CLIENT
+    //
+    if ( nTo > 0 && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
+    {
+        client_cmd ( nTo, szBuffer );
+    }
+
+    //
+    // NO TARGET
+    //
+    else if ( nTo < 1 )
+    {
+        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        {
+            if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !g_pbDisabled [ nPlayer ] )
+            {
+                client_cmd ( nPlayer, szBuffer );
+            }
+        }
+    }
+
+    return  PLUGIN_CONTINUE;
 }
 
+//
 // CLEARS STRING
 //
-QS_ClearString ( String [ ] )
+static QS_ClearString ( szString [ ] )
 {
-	String [ 0 ] = EOS;
+    szString [ 0 ] =    EOS;
+
+    return  PLUGIN_CONTINUE;
 }
 
-// CHECKS MOD
 //
-QS_CheckMod ( )
+// EMPTY STRING
+//
+static bool: QS_EmptyString ( const szString [ ] )
 {
-	if ( g_ModName [ 0 ] == EOS )
-		get_modname ( g_ModName, charsmax ( g_ModName ) );
+    return  szString [ 0 ]  ==  EOS;
+}
+
+//
+// CHECKS THE MOD NAME
+//
+static QS_CheckMod ( )
+{
+    if ( QS_EmptyString ( g_szMod ) )
+    {
+        get_modname ( g_szMod,  charsmax ( g_szMod ) );
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+//
+// CSTRIKE OR CZERO RUNNING
+//
+static bool: QS_CSCZRunning ( )
+{
+    QS_CheckMod ( );
+
+    return  equali ( g_szMod, "CS", 2 ) ||  equali ( g_szMod, "CZ", 2 );
+}
+
+//
+// DAY OF DEFEAT RUNNING
+//
+static bool: QS_DODRunning ( )
+{
+    QS_CheckMod ( );
+
+    return  bool: equali ( g_szMod, "DOD", 3 );
+}
+
+//
+// XSTATS AVAILABLE
+//
+static bool: QS_XStatsAvail ( )
+{
+    static      bool: bChecked = false,     bool: bAvail = false;
+
+    if ( !bChecked )
+    {
+        bChecked =      true;
+
+        bAvail =        bool: module_exists ( "xstats" );
+    }
+
+    return  bAvail;
+}
+
+//
+// TEAM TOTAL ALIVE AND IF ONLY ONE PLAYER IS ALIVE IN THAT TEAM, THEIR ID
+//
+static QS_GetTeamTotalAlive ( nTeam, &nPlayer = QS_INVALID_PLAYER )
+{
+    static pnPlayers [ 32 ], nTotal = 0;
+
+    get_players ( pnPlayers, nTotal, "aeh", ( ( nTeam == QS_CSCZ_TEAM_TE ) ? "TERRORIST" : "CT" ) );
+
+    if ( nTotal ==  1 )
+    {
+        nPlayer =   pnPlayers [ 0 ];
+    }
+
+    else
+    {
+        nPlayer =   QS_INVALID_PLAYER;
+    }
+
+    return  nTotal;
+}
+
+//
+// UPDATES THE HUD MESSAGE'S COLOR
+//
+static QS_UpdateHudMsgColor ( )
+{
+    if ( g_bRandomRed )
+    {
+        g_nRed              =       random_num ( 0, QS_MAX_BYTE );
+    }
+
+    if ( g_bRandomGreen )
+    {
+        g_nGreen            =       random_num ( 0, QS_MAX_BYTE );
+    }
+
+    if ( g_bRandomBlue )
+    {
+        g_nBlue             =       random_num ( 0, QS_MAX_BYTE );
+    }
+
+    return  PLUGIN_CONTINUE;
+}
+
+static bool: QS_IsPlayer ( const &nId )
+{
+    return  ( nId < 1 || nId > g_nMaxPlayers ) ? false : true;
+}
+
+static bool: QS_IsPlayerOrWorld ( const &nId )
+{
+    return  ( nId < 0 || nId > g_nMaxPlayers ) ? false : true;
 }
