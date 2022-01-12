@@ -793,6 +793,11 @@ static g_szMod [ 64 ];
 static g_nMaxPlayers = 0;
 
 //
+// THE DEATHMSG USER MESSAGE'S ID
+//
+static g_nDeathMsg = QS_INVALID_MSG;
+
+//
 // ON DEATHMSG
 //
 static bool: g_bOnDeathMsg = false;
@@ -1291,13 +1296,6 @@ public plugin_init ( )
     register_plugin ( "ADV. QUAKE SOUNDS (ENABLED)",            QS_PLUGIN_VERSION,      "HATTRICK (HTTRCKCLDHKS)" );
 
     //
-    // REGISTERS THE FAKE META FORWARDS
-    //
-    register_forward ( FM_MessageBegin,                         "QS_FM_OnMsgBegin",     1 );
-    register_forward ( FM_WriteByte,                            "QS_FM_OnWriteByte",    1 );
-    register_forward ( FM_MessageEnd,                           "QS_FM_OnMsgEnd",       1 );
-
-    //
     // GETS THE MAXIMUM PLAYERS
     //
     g_nMaxPlayers =         get_maxplayers ( );
@@ -1388,14 +1386,6 @@ public plugin_init ( )
         // DISABLES THE LAST MAN STANDING
         //
         g_bTLMStanding =                        false;
-
-        //
-        // GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg"
-        //
-        if ( g_bDeathMsgOnly )
-        {
-            RegisterHam ( Ham_Killed, "player", "QS_HAM_PlayerKilled" );
-        }
     }
 
     //
@@ -1417,53 +1407,39 @@ public plugin_init ( )
 //
 public QS_HAM_PlayerKilled ( nVictim )
 {
-    static nWeapon =                                    0;
+    static nWeapon =                            0;
 
-    static nDeathMsg =                                  QS_INVALID_MSG;
-
-    static bool: bChecked =                             false;
-
-    if ( !QS_IsPlayer ( nVictim ) ||                    !g_pbConnected [ nVictim ] )
+    if ( !QS_IsPlayer ( nVictim ) ||            !g_pbConnected [ nVictim ] )
     {
         return  PLUGIN_CONTINUE;
     }
 
-    if ( !bChecked )
-    {
-        bChecked =                                      true;
+    g_nVictim =                                 nVictim;
 
-        nDeathMsg =                                     get_user_msgid ( "DeathMsg" );
+    g_nWeapon = g_nPlace = g_nTeamKill =        0;
+
+    g_nKiller =                                 get_user_attacker ( g_nVictim, g_nWeapon, g_nPlace );
+
+    if ( QS_IsPlayer ( g_nKiller ) &&           g_pbConnected [ g_nKiller ] )
+    {
+        if ( g_nWeapon < 1 )
+        {
+            nWeapon =                           get_user_weapon ( g_nKiller );
+
+            if ( nWeapon > 0 )
+            {
+                g_nWeapon =                     nWeapon;
+            }
+        }
+
+        g_nTeamKill =                           ( get_user_team ( g_nKiller ) == get_user_team ( g_nVictim ) ) ? 1 : 0;
+
+        set_task                                ( 0.0, "QS_ProcessDeathMsg" );
     }
 
-    if ( nDeathMsg < 1 )
+    else
     {
-        g_nVictim =                                     nVictim;
-
-        g_nWeapon = g_nPlace = g_nTeamKill =            0;
-
-        g_nKiller =                                     get_user_attacker ( g_nVictim, g_nWeapon, g_nPlace );
-
-        if ( QS_IsPlayer ( g_nKiller ) &&               g_pbConnected [ g_nKiller ] )
-        {
-            if ( g_nWeapon < 1 )
-            {
-                nWeapon =                               get_user_weapon ( g_nKiller );
-
-                if ( nWeapon > 0 )
-                {
-                    g_nWeapon =                         nWeapon;
-                }
-            }
-
-            g_nTeamKill =                               ( get_user_team ( g_nKiller ) == get_user_team ( g_nVictim ) ) ? 1 : 0;
-
-            set_task                                    ( 0.0, "QS_ProcessDeathMsg" );
-        }
-
-        else
-        {
-            g_nWeapon = g_nPlace = g_nTeamKill =        0;
-        }
+        g_nWeapon = g_nPlace = g_nTeamKill =    0;
     }
 
     return  PLUGIN_CONTINUE;
@@ -1495,6 +1471,29 @@ public plugin_cfg ( )
     g_bFlawlessMsg =                !QS_EmptyString ( g_szFlawlessMsg );
     g_bRevengeMsgVictim =           !QS_EmptyString ( g_szRevengeMsgVictim );
     g_bRevengeMsgKiller =           !QS_EmptyString ( g_szRevengeMsgKiller );
+
+    g_nDeathMsg =                   get_user_msgid ( "DeathMsg" );
+
+    if ( g_nDeathMsg < 1 )
+    {
+        //
+        // GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg"
+        //
+        if ( g_bDeathMsgOnly )
+        {
+            RegisterHam ( Ham_Killed, "player", "QS_HAM_PlayerKilled" );
+        }
+    }
+
+    else
+    {
+        //
+        // REGISTERS THE FAKE META FORWARDS
+        //
+        register_forward ( FM_MessageBegin, "QS_FM_OnMsgBegin",     1 );
+        register_forward ( FM_WriteByte,    "QS_FM_OnWriteByte",    1 );
+        register_forward ( FM_MessageEnd,   "QS_FM_OnMsgEnd",       1 );
+    }
 
     return  PLUGIN_CONTINUE;
 }
@@ -1994,25 +1993,10 @@ public QS_Flawless ( )
 //
 public QS_FM_OnMsgBegin (   nDestination,   nType   )
 {
-    static nDeathMsg    =   QS_INVALID_MSG;
-    static nVar         =   1;
-
-    //
-    // GETS THE DEATHMSG ID
-    //
-    if ( nDeathMsg      <   1   &&  nVar    !=  1024 )
-    {
-        nDeathMsg       =   get_user_msgid  ( "DeathMsg" );     /** DON'T CALL 'get_user_msgid ( )' FOREVER */
-
-        nVar            ++;
-    }
-
     //
     // IF GLOBALLY SENT
     //
-    if ( nDeathMsg > 0 && \
-            nType == nDeathMsg && \
-                ( nDestination == MSG_ALL   ||  nDestination == MSG_BROADCAST ) )
+    if ( nType == g_nDeathMsg   &&  ( nDestination == MSG_ALL   ||  nDestination == MSG_BROADCAST ) )
     {
         g_bOnDeathMsg =             true;
 
