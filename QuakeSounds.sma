@@ -1530,7 +1530,7 @@ public QS_HAM_PlayerKilled ( nVictim )
 
         g_nTeamKill =                           ( get_user_team ( g_nKiller ) == get_user_team ( g_nVictim ) ) ? 1 : 0;
 
-        set_task                                ( 0.0, "QS_ProcessDeathMsg" );
+        set_task                                ( 0.000000, "QS_ProcessDeathMsg" );
     }
 
     else
@@ -1697,6 +1697,14 @@ public client_disconnected ( nPlayer )
         QS_ClearString  ( g_pszRevengeStamp     [ nPlayer ] );
     }
 
+    //
+    // ZERO FLOATS
+    //
+    if ( g_bDKill )
+    {
+        g_pfLastKillTimeStamp   [ nPlayer ]     =       0.000000;
+    }
+
     return  PLUGIN_CONTINUE;
 }
 
@@ -1815,6 +1823,14 @@ public client_putinserver ( nPlayer )
     }
 
     //
+    // ZERO FLOATS
+    //
+    if ( g_bDKill )
+    {
+        g_pfLastKillTimeStamp [ nPlayer ] = 0.000000;
+    }
+
+    //
     // PRINTS INFORMATION FOR VALID PLAYERS ONLY
     //
     if ( !g_pbBOT [ nPlayer ]   &&  !g_pbHLTV [ nPlayer ] )
@@ -1890,7 +1906,7 @@ public QS_PrepareManStanding ( )
 {
     if ( QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_TE ) == 1  ||  QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_CT ) == 1 )
     {
-        set_task ( 0.0, "QS_PerformManStanding" );
+        set_task ( 0.000000,    "QS_PerformManStanding" );
     }
 
     return  PLUGIN_CONTINUE;
@@ -2247,7 +2263,7 @@ public QS_FM_OnMsgEnd   ( )
         //
         // FIRES
         //
-        set_task ( 0.0, "QS_ProcessDeathMsg" );
+        set_task ( 0.000000,            "QS_ProcessDeathMsg" );
     }
 
     return  PLUGIN_CONTINUE;
@@ -2405,16 +2421,6 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
     set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
     //
-    // REVENGE KILLER STAMP
-    //
-    if ( g_bRevenge )
-    {
-        g_pszRevengeStamp       [ nVictim ]     =       g_pszName           [ nKiller ];
-
-        g_pnRevengeStamp        [ nVictim ]     =       g_pnUserId          [ nKiller ];
-    }
-
-    //
     // SUICIDE
     //
     if ( nVictim == nKiller )
@@ -2446,6 +2452,9 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
     //
     else
     {
+        //
+        // KILLS ++
+        //
         if ( g_bKStreak )
         {
             g_pnKills               [ nKiller ] ++;
@@ -2454,6 +2463,16 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
         if ( g_bHattrick )
         {
             g_pnKillsThisRound      [ nKiller ] ++;
+        }
+
+        //
+        // REVENGE KILLER STAMP
+        //
+        if ( g_bRevenge )
+        {
+            g_pszRevengeStamp       [ nVictim ]     =       g_pszName           [ nKiller ];
+
+            g_pnRevengeStamp        [ nVictim ]     =       g_pnUserId          [ nKiller ];
         }
 
         //
@@ -2585,7 +2604,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
             //
             fGameTime   =   get_gametime ( );
 
-            if ( g_pfLastKillTimeStamp [ nKiller ]  >   fGameTime )
+            if ( g_pfLastKillTimeStamp  [ nKiller ]     >   fGameTime )
             {
                 if ( g_bDKillMsg )
                 {
