@@ -342,7 +342,7 @@ static bool: g_bHShotMsg = false;
 //
 // HEAD SHOT MESSAGE
 //
-static g_szHShotMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szHShotMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // HEAD SHOT SOUNDS COUNT
@@ -382,12 +382,12 @@ static bool: g_bRevengeMsgVictim = false;
 //
 // REVENGE MESSAGE FOR KILLER (IF ENABLED)
 //
-static g_szRevengeMsgKiller [ QS_HUD_MSG_MAX_LEN ];
+static g_szRevengeMsgKiller [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // REVENGE MESSAGE FOR VICTIM (IF ENABLED)
 //
-static g_szRevengeMsgVictim [ QS_HUD_MSG_MAX_LEN ];
+static g_szRevengeMsgVictim [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // REVENGE SOUNDS COUNT
@@ -426,7 +426,7 @@ static bool: g_bHattrickMsg = false;
 //
 // HATTRICK MESSAGE
 //
-static g_szHattrickMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szHattrickMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // HATTRICK SOUNDS COUNT
@@ -473,12 +473,12 @@ static bool: g_bTLMStandingSelfMsg = false;
 //
 // THE LAST MAN STANDING TEAM MESSAGE
 //
-static g_szTLMStandingTeamMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szTLMStandingTeamMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // THE LAST MAN STANDING SELF MESSAGE
 //
-static g_szTLMStandingSelfMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szTLMStandingSelfMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // THE LAST MAN STANDING SOUNDS COUNT
@@ -501,12 +501,12 @@ static Array: g_pTLMStandingWords = Invalid_Array;
 static g_nTLMStandingWordsSize = 0;
 
 //
-// THE LAST MAN STANDING PLAYED THIS ROUND [TE]
+// THE LAST MAN STANDING PLAYED THIS ROUND [ TE ]
 //
 static bool: g_bTLMStandingDone_TE = false;
 
 //
-// THE LAST MAN STANDING PLAYED THIS ROUND [CT]
+// THE LAST MAN STANDING PLAYED THIS ROUND [ CT ]
 //
 static bool: g_bTLMStandingDone_CT = false;
 
@@ -528,7 +528,7 @@ static bool: g_bSuicideMsg = false;
 //
 // SUICIDE MESSAGE
 //
-static g_szSuicideMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szSuicideMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // SUICIDE SOUNDS COUNT
@@ -558,7 +558,7 @@ static bool: g_bGrenadeMsg = false;
 //
 // GRENADE KILL MESSAGE
 //
-static g_szGrenadeMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szGrenadeMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // GRENADE SOUNDS COUNT
@@ -590,7 +590,7 @@ static bool: g_bTKillMsg = false;
 //
 // TEAM KILL MESSAGE
 //
-static g_szTKillMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szTKillMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // TEAM KILL SOUNDS COUNT
@@ -620,7 +620,7 @@ static bool: g_bKnifeMsg = false;
 //
 // KNIFE KILL MESSAGE
 //
-static g_szKnifeMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szKnifeMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // KNIFE KILL SOUNDS COUNT
@@ -650,7 +650,7 @@ static bool: g_bFBloodMsg = false;
 //
 // FIRST BLOOD MESSAGE
 //
-static g_szFBloodMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szFBloodMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // FIRST BLOOD SOUNDS COUNT
@@ -727,7 +727,7 @@ static bool: g_bRStartMsg = false;
 //
 // ROUND START MESSAGE
 //
-static g_szRStartMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szRStartMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // ROUND START SOUNDS COUNT
@@ -757,7 +757,7 @@ static bool: g_bDKillMsg = false;
 //
 // DOUBLE KILL MESSAGE
 //
-static g_szDKillMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szDKillMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // DOUBLE KILL SOUNDS COUNT
@@ -791,17 +791,17 @@ static bool: g_bFlawlessMsg = false;
 //
 // FLAWLESS MESSAGE
 //
-static g_szFlawlessMsg [ QS_HUD_MSG_MAX_LEN ];
+static g_szFlawlessMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... };
 
 //
 // FLAWLESS TEAM NAME FOR TEAM [ 1 ]
 //
-static g_szFlawlessTeamName_1 [ QS_WORD_MAX_LEN ];
+static g_szFlawlessTeamName_1 [ QS_WORD_MAX_LEN ] = { EOS, ... };
 
 //
 // FLAWLESS TEAM NAME FOR TEAM [ 2 ]
 //
-static g_szFlawlessTeamName_2 [ QS_WORD_MAX_LEN ];
+static g_szFlawlessTeamName_2 [ QS_WORD_MAX_LEN ] = { EOS, ... };
 
 //
 // FLAWLESS SOUNDS COUNT
@@ -821,7 +821,7 @@ static Array: g_pFlawless = Invalid_Array;
 //
 // CHANNEL HANDLES
 //
-static g_pnHudMsgObj [ QS_HUD_MAX ];
+static g_pnHudMsgObj [ QS_HUD_MAX ] = { 0, ... };
 
 //
 // RED
@@ -861,7 +861,7 @@ static bool: g_bRandomBlue = false;
 //
 // MOD NAME
 //
-static g_szMod [ QS_MOD_MAX_LEN ];
+static g_szMod [ QS_MOD_MAX_LEN ] = { EOS, ... };
 
 //
 // MAXIMUM PLAYERS
@@ -928,29 +928,29 @@ static g_nTeamKill = 0;
 //
 // RESETS ON PLAYER DEATH
 //
-static g_pnKills [ QS_MAX_PLAYERS + 1 ];
+static g_pnKills [ QS_MAX_PLAYERS + 1 ] = { 0, ... };
 
 //
 // TOTAL KILLS PER PLAYER PER ROUND
 //
 // RESETS NEXT ROUND
 //
-static g_pnKillsThisRound [ QS_MAX_PLAYERS + 1 ];
+static g_pnKillsThisRound [ QS_MAX_PLAYERS + 1 ] = { 0, ... };
 
 //
 // HLTV
 //
-static bool: g_pbHLTV [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbHLTV [ QS_MAX_PLAYERS + 1 ] = { false, ... };
 
 //
 // BOT
 //
-static bool: g_pbBOT [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbBOT [ QS_MAX_PLAYERS + 1 ] = { false, ... };
 
 //
 // CONNECTED
 //
-static bool: g_pbConnected [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbConnected [ QS_MAX_PLAYERS + 1 ] = { false, ... };
 
 //
 // NAME
@@ -965,22 +965,22 @@ static g_pszRevengeStamp [ QS_MAX_PLAYERS + 1 ] [ QS_NAME_MAX_LEN ];
 //
 // REVENGE KILL USER ID STAMP
 //
-static g_pnRevengeStamp [ QS_MAX_PLAYERS + 1 ];
+static g_pnRevengeStamp [ QS_MAX_PLAYERS + 1 ] = { 0, ... };
 
 //
 // SOUNDS DISABLED PER PLAYER
 //
-static bool: g_pbDisabled [ QS_MAX_PLAYERS + 1 ];
+static bool: g_pbDisabled [ QS_MAX_PLAYERS + 1 ] = { false, ... };
 
 //
 // CACHED PLAYER'S USER ID
 //
-static g_pnUserId [ QS_MAX_PLAYERS + 1 ];
+static g_pnUserId [ QS_MAX_PLAYERS + 1 ] = { 0, ... };
 
 //
 // LAST KILL TIME STAMP ( GAME TIME )
 //
-static Float: g_pfLastKillTimeStamp [ QS_MAX_PLAYERS + 1 ];
+static Float: g_pfLastKillTimeStamp [ QS_MAX_PLAYERS + 1 ] = { 0.000000, ... };
 
 
 /*************************************************************************************
@@ -1032,6 +1032,24 @@ public QS_ModuleFilter ( szModule [ ] )
 //
 public plugin_precache ( )
 {
+    //
+    // DEFINES ITERATOR FOR FURTHER USE
+    //
+    new nIter = 0;
+
+    //
+    // ZERO SOME PLAYER MULTI ARRAY SZ GLOBAL VARIABLES
+    //
+    for ( nIter = 0; nIter <= QS_MAX_PLAYERS; nIter ++ )
+    {
+        QS_ClearString ( g_pszName          [ nIter ] );
+    }
+
+    for ( nIter = 0; nIter <= QS_MAX_PLAYERS; nIter ++ )
+    {
+        QS_ClearString ( g_pszRevengeStamp  [ nIter ] );
+    }
+
     //
     // GETS THE MOD NAME
     //
@@ -1125,14 +1143,9 @@ public plugin_precache ( )
     }
 
     //
-    // DEFINES ITERATOR FOR FURTHER USE
-    //
-    new nIter = 0;
-
-    //
     // DEFINES SOUND FOR FURTHER USE
     //
-    new szSnd [ QS_SND_MAX_LEN ];
+    new szSnd [ QS_SND_MAX_LEN ] = { EOS, ... };
 
     //
     // PRECACHES ALL THE SOUNDS
@@ -1612,7 +1625,7 @@ public plugin_cfg ( )
 //
 public client_infochanged ( nPlayer )
 {
-    static szName [ 32 ];
+    static szName [ 32 ] = { EOS, ... };
 
     //
     // SANITY CHECK
@@ -1715,7 +1728,7 @@ public client_disconnected ( nPlayer )
 //
 public client_command ( nPlayer )
 {
-    static szArg [ 16 ];
+    static szArg [ 16 ] = { EOS, ... };
 
     //
     // SANITY CHECK
@@ -2376,11 +2389,11 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
     //
     // VARIABLES
     //
-    static  nIter = 0, Float: fGameTime = 0.000000, szWeapon [ QS_WORD_MAX_LEN ], szSnd [ QS_SND_MAX_LEN ], szMsg [ QS_HUD_MSG_MAX_LEN ], \
-            bool: bDiedByWorldDmg = false   /** OR BY THE 'KILL' COMMAND */;
+    static  nIter = 0, Float: fGameTime = 0.000000, szWeapon [ QS_WORD_MAX_LEN ] = { EOS, ... }, szSnd [ QS_SND_MAX_LEN ] = { EOS, ... }, \
+            szMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... }, bool: bDiedByWorldDmg = false  /** OR BY THE 'KILL' COMMAND */;
 
     //
-    // RESET THE SUICIDE TYPE [ WORLD DAMAGE / 'KILL' COMMAND ]
+    // RESET THE SUICIDE TYPE [ WORLD DAMAGE/ 'KILL' COMMAND ]
     //
     bDiedByWorldDmg = false;
 
@@ -2495,6 +2508,9 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
                 equali ( g_pszName [ nVictim ], g_pszRevengeStamp [ nKiller ] ) && \
                     g_pnUserId [ nVictim ] == g_pnRevengeStamp [ nKiller ] )
         {
+            //
+            // CLEARS THE REVENGE STAMP
+            //
             g_pnRevengeStamp    [ nKiller ] =   QS_INVALID_PLAYER;
 
             QS_ClearString      ( g_pszRevengeStamp [ nKiller ] );
@@ -2645,7 +2661,7 @@ static QS_LoadSettings ( )
     //
     // PREPARES THE CONFIGURATION FILES DIRECTORY
     //
-    new szFile [ QS_SND_MAX_LEN ];
+    new szFile [ QS_SND_MAX_LEN ] = { EOS, ... };
 
     get_configsdir ( szFile,    charsmax ( szFile ) );
 
@@ -2670,8 +2686,9 @@ static QS_LoadSettings ( )
     //
     // PREPARES THE FILE LINES
     //
-    new szLine [ 2048 ], szKey [ 2048 ], szVal [ 2048 ], szType [ QS_WORD_MAX_LEN ], szSnd [ QS_SND_MAX_LEN ], \
-        szReqKills [ QS_WORD_MAX_LEN ], szDummy [ QS_WORD_MAX_LEN ], szMsg [ QS_HUD_MSG_MAX_LEN ], nVal = 0;
+    new szLine [ 2048 ] = { EOS, ... }, szKey [ 2048 ] = { EOS, ... }, szVal [ 2048 ] = { EOS, ... }, szType [ QS_WORD_MAX_LEN ] = { EOS, ... }, \
+        szSnd [ QS_SND_MAX_LEN ] = { EOS, ... }, szReqKills [ QS_WORD_MAX_LEN ] = { EOS, ... }, szDummy [ QS_WORD_MAX_LEN ] = { EOS, ... }, \
+        szMsg [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... }, nVal = 0;
 
     //
     // READS THE FILE
@@ -3266,7 +3283,7 @@ static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
     //
     // ARGUMENT FORMAT
     //
-    static szBuffer [ QS_HUD_MSG_MAX_LEN ], nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
+    static szBuffer [ QS_HUD_MSG_MAX_LEN ] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
 
     //
     // SANITY CHECK
@@ -3321,7 +3338,7 @@ static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
     //
     // ARGUMENT FORMAT
     //
-    static szBuffer [ QS_SND_MAX_LEN ], nPlayer = QS_INVALID_PLACE, bool: bIsPlayer = false;
+    static szBuffer [ QS_SND_MAX_LEN ] = { EOS, ... }, nPlayer = QS_INVALID_PLACE, bool: bIsPlayer = false;
 
     //
     // SANITY CHECK
@@ -3441,7 +3458,7 @@ static bool: QS_XStatsAvail ( )
 //
 static QS_GetTeamTotalAlive ( nTeam, &nPlayer = QS_INVALID_PLAYER ) /// CSTRIKE AND CZERO ONLY
 {
-    static pnPlayers [ QS_MAX_PLAYERS ], nTotal = 0;
+    static pnPlayers [ QS_MAX_PLAYERS ] = { 0, ... }, nTotal = 0;
 
     get_players ( pnPlayers, nTotal, "aeh", (   ( nTeam == QS_CSCZ_TEAM_TE ) ? ( "TERRORIST" ) : ( "CT" )   ) );
 
