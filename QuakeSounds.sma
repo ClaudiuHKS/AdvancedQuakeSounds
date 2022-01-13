@@ -9,29 +9,31 @@
 #pragma     semicolon       1
 
 //
-// WHETHER OR NOT TO INCREASE MEMORY FOR THIS SCRIPT
+// WHETHER OR NOT TO INCREASE MEMORY FOR THIS SCRIPT    [[[ DEFAULT 2^22 ( 4194304 ) ]]]
 //
 #pragma     dynamic         4194304     /// B           [[[ INCREASE THIS IF YOU ARE GETTING JUNKY ERROR LOGS ]]]
 
 //
 // WHETHER OR NOT TO USE '\' AS A CONTROL CHARACTER
+//
 // INSTEAD OF THE DEFAULT ONE, WHICH IS '^'
 //
 #pragma     ctrlchar        '\'
 
 //
 // SETS THE TAB SIZE ( '\t' AND ' ' ) TO 0
+//
 // GLOBALLY
 //
 #pragma     tabsize         0
 
 //
-// REQUIRES XSTATS MODULE IF AVAILABLE
+// REQUIRES XSTATS MODULE IF AVAILABLE  [ client_death ( ) ]
 //
 #pragma     reqclass        xstats
 
 //
-// XSTATS DEFAULTS
+// XSTATS DEFAULTS  [ FOUR MODS SUPPORTED BY NOW ]
 //
 #pragma     defclasslib     xstats      csx
 #pragma     defclasslib     xstats      dodx
@@ -59,7 +61,7 @@
 #include    < fakemeta >                /// FM_MessageBegin +
 
 //
-// HAM SANDWICH HEADER FILE [[[ FOR GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg" ]]]
+// HAM SANDWICH HEADER FILE [[[ FOR GAMES WITHOUT "client_death ( )" ( XSTATS ) AND WITHOUT "DeathMsg" ]]]
 //
 #include    < hamsandwich >             /// Ham_Killed +
 
@@ -103,6 +105,7 @@
 
 //
 // SECONDS DELAY TO SHOW THE INFORMATION MESSAGE REGARDING '/SOUNDS' COMMAND
+//
 // AFTER THE PLAYER JOINS THE GAME SERVER
 //
 #define QS_PLUGIN_INFO_DELAY                ( 6.000000 )            /// 6
@@ -127,24 +130,34 @@
 //
 
 //
-// INVALID PLAYER
-//
-#define QS_INVALID_PLAYER                   ( 0x000000FF )          /// 255             [[[ 0x000000FF ]]]
-
-//
-// INVALID MESSAGE NUMBER [[[   get_user_msgid ( )  ]]]
-//
-#define QS_INVALID_MSG                      ( -16384 )              /// -16384
-
-//
 // INVALID REQUIRED KILLS [[[   A TRULY HUGE NUMBER     ]]]
 //
-#define QS_INVALID_REQUIRED_KILLS           ( 0x0FFFFFFF )          /// 268435455       [[[ 0x0FFFFFFF ]]]
+#define QS_INVALID_REQ_KILLS                ( 0x0FFFFFFF )          /// 268435455       [[[ 0x0FFFFFFF ]]]
 
 //
-// INVALID TEAM
+// INVALID TEAM ID
 //
 #define QS_INVALID_TEAM                     ( 0x000000FF )          /// 255             [[[ 0x000000FF ]]]
+
+//
+// INVALID PLAYER ID
+//
+#define QS_INVALID_PLAYER                   ( 0 )                   /// 0
+
+//
+// INVALID USER MESSAGE ID
+//
+#define QS_INVALID_MSG                      ( 0 )                   /// 0
+
+//
+// INVALID WEAPON ID
+//
+#define QS_INVALID_WEAPON                   ( 0 )                   /// 0
+
+//
+// INVALID HIT PLACE ID
+//
+#define QS_INVALID_PLACE                    ( 0 )                   /// 0
 
 //
 /// ###################################################################################################
@@ -156,12 +169,52 @@
 #define QS_MAX_PLAYERS                      ( 32 )                  /// 32
 
 //
+// MAXIMUM PLAYER NAME LENGTH
+//
+#define QS_NAME_MAX_LEN                     ( 32 )                  /// 32
+
+//
+// GAME MOD NAME MAXIMUM LENGTH
+//
+#define QS_MOD_MAX_LEN                      ( 64 )                  /// 64
+
+//
+// SOUND FILE PATH MAXIMUM LENGTH
+//
+#define QS_SND_MAX_LEN                      ( 256 )                 /// 256
+
+//
+// WORD MAXIMUM LENGTH [ "GUY", "MAN STANDING", "ONE", "COUNTER-TERRORIST", ... ]
+//
+#define QS_WORD_MAX_LEN                     ( 64 )                  /// 64
+
+//
+// MINIMUM PLAYER ID
+//
+#define QS_MIN_PLAYER                       ( 1 )                   /// 1
+
+//
 // EVERYONE ( ALL PLAYERS )
 //
 #define QS_EVERYONE                         ( 0 )                   /// 0
 
 //
-// MAXIMUM BYTE (8 BIT)
+// THE WORLDSPAWN
+//
+#define QS_WORLDSPAWN                       ( 0 )                   /// 0
+
+//
+// THE WORLDSPAWN'S NAME
+//
+#define QS_WORLDSPAWN_NAME                  ( "WORLDSPAWN" )        /// "WORLDSPAWN"
+
+//
+// MINIMUM UNSIGNED BYTE
+//
+#define QS_MIN_BYTE                         ( 0x00000000 )          /// 0               [[[ 0x00000000 ]]]
+
+//
+// MAXIMUM UNSIGNED BYTE
 //
 #define QS_MAX_BYTE                         ( 0x000000FF )          /// 255             [[[ 0x000000FF ]]]
 
@@ -180,7 +233,7 @@
 #define QS_HUD_MSG_X_POS                    ( -1.000000 )           /// -1
 
 //
-// HUD MESSAGE'S HOLD TIME (SECONDS TO BE DISPLAYED)
+// HUD MESSAGE'S HOLD TIME ( SECONDS TO BE DISPLAYED )
 //
 #define QS_HUD_MSG_HOLD_TIME                ( 5.000000 )            /// 5
 
@@ -189,7 +242,7 @@
 //
 
 //
-// [ MONSTER KILL, MULTI KILL, UNSTOPPABLE, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ MONSTER KILL, MULTI KILL, UNSTOPPABLE, .. ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_STREAK_Y_POS                     ( 0.180000 )            /// .18
 
@@ -198,34 +251,49 @@
 // @@@@
 
 //
-// [ SUICIDE, KNIFE, GRENADE, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ SUICIDE, KNIFE, GRENADE, .. ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_EVENT_Y_POS                      ( 0.220000 )            /// .22
 
 //
-// [ REVENGE ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ REVENGE ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_REVENGE_Y_POS                    ( 0.240000 )            /// .24
 
 //
-// [ THE LAST MAN STANDING ] CSTRIKE AND CZERO HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ THE LAST MAN STANDING ] CSTRIKE AND CZERO HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_STANDING_Y_POS                   ( 0.260000 )            /// .26
 
 //
-// [ FLAWLESS VICTORY EVENT ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ FLAWLESS VICTORY EVENT ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_FLAWLESS_Y_POS                   ( 0.280000 )            /// .28
 
 //
-// [ HATTRICK ( THE LEADER OF THE ROUND ) ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ HATTRICK ( THE LEADER OF THE ROUND ) ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_HATTRICK_Y_POS                   ( 0.300000 )            /// .3
 
 //
-// [ PREPARE TO FIGHT, .. ] HUD MESSAGE'S "Y" (VERTICAL) POSITION
+// [ PREPARE TO FIGHT, .. ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION
 //
 #define QS_ROUND_Y_POS                      ( 0.320000 )            /// .32
+
+//
+/// ###################################################################################################
+//
+
+//
+/// DEATHMSG USER MESSAGE'S 'BYTE' STATUSES
+//
+enum /** DEATHMSG USER MESSAGE'S 'BYTE' STATUS */
+{
+    QS_DEATHMSG_NONE    =   0   ,   \
+    QS_DEATHMSG_KILLER  =   1   ,   \
+    QS_DEATHMSG_VICTIM  =   2   ,   \
+    QS_DEATHMSG_MAX     =   3   ,
+};
 
 //
 /// ###################################################################################################
@@ -236,14 +304,14 @@
 //
 enum /** HUD MESSAGE PURPOSE */
 {
-    QS_HUD_EVENT            =   0   ,   \
-    QS_HUD_STREAK           =   1   ,   \
-    QS_HUD_HATTRICK         =   2   ,   \
-    QS_HUD_ROUND            =   3   ,   \
-    QS_HUD_STANDING         =   4   ,   \
-    QS_HUD_FLAWLESS         =   5   ,   \
-    QS_HUD_REVENGE          =   6   ,   \
-    QS_HUD_MAX              =   7   ,
+    QS_HUD_STREAK       =   0   ,   \
+    QS_HUD_EVENT        =   1   ,   \
+    QS_HUD_REVENGE      =   2   ,   \
+    QS_HUD_STANDING     =   3   ,   \
+    QS_HUD_FLAWLESS     =   4   ,   \
+    QS_HUD_HATTRICK     =   5   ,   \
+    QS_HUD_ROUND        =   6   ,   \
+    QS_HUD_MAX          =   7   ,
 };
 
 
@@ -341,6 +409,8 @@ static Array: g_pRevenge = Invalid_Array;
  * HATTRICK
  *
  * THE LEADER OF THE CURRENT ROUND
+ *
+ * CSTRIKE AND CZERO ONLY
  */
 
 //
@@ -503,6 +573,8 @@ static Array: g_pGrenade = Invalid_Array;
 
 /**
  * TEAM KILL
+ *
+ * DOD, CSTRIKE AND CZERO ONLY
  */
 
 //
@@ -638,6 +710,8 @@ static Array: g_pKStreakReqKills = Invalid_Array;
 
 /**
  * ROUND START
+ *
+ * DOD, CSTRIKE AND CZERO ONLY
  */
 
 //
@@ -700,6 +774,8 @@ static Array: g_pDKill = Invalid_Array;
  * FLAWLESS
  *
  * IF A TEAM KILLS THE OTHER ONE W/ O GETTING ANY CASUALTIES
+ *
+ * CSTRIKE AND CZERO ONLY
  */
 
 //
@@ -718,14 +794,14 @@ static bool: g_bFlawlessMsg = false;
 static g_szFlawlessMsg [ QS_HUD_MSG_MAX_LEN ];
 
 //
-// FLAWLESS TEAM NAME FOR TEAM [1]
+// FLAWLESS TEAM NAME FOR TEAM [ 1 ]
 //
-static g_szFlawlessTeamName_1 [ QS_HUD_MSG_MAX_LEN ];
+static g_szFlawlessTeamName_1 [ QS_WORD_MAX_LEN ];
 
 //
-// FLAWLESS TEAM NAME FOR TEAM [2]
+// FLAWLESS TEAM NAME FOR TEAM [ 2 ]
 //
-static g_szFlawlessTeamName_2 [ QS_HUD_MSG_MAX_LEN ];
+static g_szFlawlessTeamName_2 [ QS_WORD_MAX_LEN ];
 
 //
 // FLAWLESS SOUNDS COUNT
@@ -750,7 +826,7 @@ static g_pnHudMsgObj [ QS_HUD_MAX ];
 //
 // RED
 //
-static g_nRed = 0;
+static g_nRed = QS_MIN_BYTE;
 
 //
 // RANDOM RED
@@ -760,7 +836,7 @@ static bool: g_bRandomRed = false;
 //
 // GREEN
 //
-static g_nGreen = 0;
+static g_nGreen = QS_MIN_BYTE;
 
 //
 // RANDOM GREEN
@@ -770,7 +846,7 @@ static bool: g_bRandomGreen = false;
 //
 // BLUE
 //
-static g_nBlue = 0;
+static g_nBlue = QS_MIN_BYTE;
 
 //
 // RANDOM BLUE
@@ -785,7 +861,7 @@ static bool: g_bRandomBlue = false;
 //
 // MOD NAME
 //
-static g_szMod [ 64 ];
+static g_szMod [ QS_MOD_MAX_LEN ];
 
 //
 // MAXIMUM PLAYERS
@@ -803,34 +879,39 @@ static g_nDeathMsg = QS_INVALID_MSG;
 static bool: g_bOnDeathMsg = false;
 
 //
-// DEATHMSG BYTE STATUS
+// DEATHMSG'S BYTE STATUS
 //
-static g_nDeathMsgByteStatus = 0;
+static g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
 
 //
-// DEATHMSG ONLY AVAILABLE
+// DEATHMSG ONLY AVAILABLE      [[[ NO XSTATS   " client_death ( ) " ]]]
 //
 static bool: g_bDeathMsgOnly = false;
 
 //
+// ARRAYS CREATED
+//
+static bool: g_bArraysCreated = false;
+
+//
 // CACHED KILLER ID
 //
-static g_nKiller = 0;
+static g_nKiller = QS_INVALID_PLAYER;
 
 //
 // CACHED VICTIM ID
 //
-static g_nVictim = 0;
+static g_nVictim = QS_INVALID_PLAYER;
 
 //
 // CACHED WEAPON ID
 //
-static g_nWeapon = 0;
+static g_nWeapon = QS_INVALID_WEAPON;
 
 //
-// CACHED HIT PLACE
+// CACHED HIT PLACE ID
 //
-static g_nPlace = 0;
+static g_nPlace = QS_INVALID_PLACE;
 
 //
 // CACHED TEAM KILL BOOLEAN
@@ -874,12 +955,12 @@ static bool: g_pbConnected [ QS_MAX_PLAYERS + 1 ];
 //
 // NAME
 //
-static g_pszName [ QS_MAX_PLAYERS + 1 ] [ 32 ];
+static g_pszName [ QS_MAX_PLAYERS + 1 ] [ QS_NAME_MAX_LEN ];
 
 //
 // REVENGE KILL NAME STAMP
 //
-static g_pszRevengeStamp [ QS_MAX_PLAYERS + 1 ] [ 32 ];
+static g_pszRevengeStamp [ QS_MAX_PLAYERS + 1 ] [ QS_NAME_MAX_LEN ];
 
 //
 // REVENGE KILL USER ID STAMP
@@ -897,7 +978,7 @@ static bool: g_pbDisabled [ QS_MAX_PLAYERS + 1 ];
 static g_pnUserId [ QS_MAX_PLAYERS + 1 ];
 
 //
-// LAST KILL TIME STAMP (GAME TIME)
+// LAST KILL TIME STAMP ( GAME TIME )
 //
 static Float: g_pfLastKillTimeStamp [ QS_MAX_PLAYERS + 1 ];
 
@@ -959,31 +1040,36 @@ public plugin_precache ( )
     //
     // CREATES THE ARRAYS FIRST
     //
-    g_pHShot =                      ArrayCreate ( 256 );
-    g_pSuicide =                    ArrayCreate ( 256 );
-    g_pGrenade =                    ArrayCreate ( 256 );
-    g_pTKill =                      ArrayCreate ( 256 );
-    g_pKnife =                      ArrayCreate ( 256 );
-    g_pFBlood =                     ArrayCreate ( 256 );
-    g_pRStart =                     ArrayCreate ( 256 );
-    g_pDKill =                      ArrayCreate ( 256 );
-    g_pHattrick =                   ArrayCreate ( 256 );
+    g_pHShot =                      ArrayCreate ( QS_SND_MAX_LEN );
+    g_pSuicide =                    ArrayCreate ( QS_SND_MAX_LEN );
+    g_pGrenade =                    ArrayCreate ( QS_SND_MAX_LEN );
+    g_pTKill =                      ArrayCreate ( QS_SND_MAX_LEN );
+    g_pKnife =                      ArrayCreate ( QS_SND_MAX_LEN );
+    g_pFBlood =                     ArrayCreate ( QS_SND_MAX_LEN );
+    g_pRStart =                     ArrayCreate ( QS_SND_MAX_LEN );
+    g_pDKill =                      ArrayCreate ( QS_SND_MAX_LEN );
+    g_pHattrick =                   ArrayCreate ( QS_SND_MAX_LEN );
 
-    g_pTLMStanding =                ArrayCreate ( 256 );
+    g_pTLMStanding =                ArrayCreate ( QS_SND_MAX_LEN );
     {
-        g_pTLMStandingWords =       ArrayCreate ( 64 );
+        g_pTLMStandingWords =       ArrayCreate ( QS_WORD_MAX_LEN );
     }
 
-    g_pFlawless =                   ArrayCreate ( 256 );
-    g_pRevenge =                    ArrayCreate ( 256 );
+    g_pFlawless =                   ArrayCreate ( QS_SND_MAX_LEN );
+    g_pRevenge =                    ArrayCreate ( QS_SND_MAX_LEN );
 
-    g_pKStreakSnds =                ArrayCreate ( 256 );
+    g_pKStreakSnds =                ArrayCreate ( QS_SND_MAX_LEN );
     {
         g_pKStreakMsgs =            ArrayCreate ( QS_HUD_MSG_MAX_LEN );
         {
-            g_pKStreakReqKills =    ArrayCreate ( 32 );
+            g_pKStreakReqKills =    ArrayCreate ( QS_WORD_MAX_LEN );
         }
     }
+
+    //
+    // ARRAYS ARE CREATED NOW
+    //
+    g_bArraysCreated = true;
 
     //
     // READS THE CONFIGURATION FILE
@@ -992,6 +1078,7 @@ public plugin_precache ( )
 
     //
     // PRECACHES NOTHING
+    //
     // IF THE PLUGIN IS OFF
     //
     if ( !g_bEnabled )
@@ -1045,8 +1132,11 @@ public plugin_precache ( )
     //
     // DEFINES SOUND FOR FURTHER USE
     //
-    new szSnd [ 256 ];
+    new szSnd [ QS_SND_MAX_LEN ];
 
+    //
+    // PRECACHES ALL THE SOUNDS
+    //
     if ( g_bHShot )
     {
         for ( nIter = 0; nIter < g_nHShotSize; nIter ++ )
@@ -1216,7 +1306,10 @@ public plugin_precache ( )
         }
     }
 
-    copy ( g_pszName [ 0 ], charsmax ( g_pszName [ ] ), "WORLDSPAWN" );
+    //
+    // WORLDSPAWN PREPARATION
+    //
+    copy ( g_pszName [ QS_WORLDSPAWN ], charsmax ( g_pszName [ ] ), QS_WORLDSPAWN_NAME );
 
     return  PLUGIN_CONTINUE;
 }
@@ -1231,22 +1324,25 @@ public plugin_end ( )
     //
     // DESTROYS ARRAYS
     //
-    ArrayDestroy ( g_pHShot );
-    ArrayDestroy ( g_pSuicide );
-    ArrayDestroy ( g_pGrenade );
-    ArrayDestroy ( g_pTKill );
-    ArrayDestroy ( g_pKnife );
-    ArrayDestroy ( g_pFBlood );
-    ArrayDestroy ( g_pRStart );
-    ArrayDestroy ( g_pDKill );
-    ArrayDestroy ( g_pHattrick );
-    ArrayDestroy ( g_pTLMStanding );
-    ArrayDestroy ( g_pTLMStandingWords );
-    ArrayDestroy ( g_pFlawless );
-    ArrayDestroy ( g_pRevenge );
-    ArrayDestroy ( g_pKStreakSnds );
-    ArrayDestroy ( g_pKStreakMsgs );
-    ArrayDestroy ( g_pKStreakReqKills );
+    if ( g_bArraysCreated ) /** ARRAYS ARE CREATED */
+    {
+        ArrayDestroy ( g_pHShot );
+        ArrayDestroy ( g_pSuicide );
+        ArrayDestroy ( g_pGrenade );
+        ArrayDestroy ( g_pTKill );
+        ArrayDestroy ( g_pKnife );
+        ArrayDestroy ( g_pFBlood );
+        ArrayDestroy ( g_pRStart );
+        ArrayDestroy ( g_pDKill );
+        ArrayDestroy ( g_pHattrick );
+        ArrayDestroy ( g_pTLMStanding );
+        ArrayDestroy ( g_pTLMStandingWords );
+        ArrayDestroy ( g_pFlawless );
+        ArrayDestroy ( g_pRevenge );
+        ArrayDestroy ( g_pKStreakSnds );
+        ArrayDestroy ( g_pKStreakMsgs );
+        ArrayDestroy ( g_pKStreakReqKills );
+    }
 
     return  PLUGIN_CONTINUE;
 }
@@ -1301,7 +1397,7 @@ public plugin_init ( )
     g_nMaxPlayers =         get_maxplayers ( );
 
     //
-    // CHECKS WHETHER XSTATS MODULE IS LOADED
+    // CHECKS WHETHER XSTATS MODULE IS LOADED [ client_death ( ) ]
     //
     g_bDeathMsgOnly =       !QS_XStatsAvail ( );
 
@@ -1391,13 +1487,10 @@ public plugin_init ( )
     //
     // HUD MESSAGE [ TE_TEXTMESSAGE ] CHANNEL HANDLES
     //
-    g_pnHudMsgObj [ QS_HUD_STREAK   ]   =   CreateHudSyncObj ( );
-    g_pnHudMsgObj [ QS_HUD_EVENT    ]   =   CreateHudSyncObj ( );
-    g_pnHudMsgObj [ QS_HUD_ROUND    ]   =   CreateHudSyncObj ( );
-    g_pnHudMsgObj [ QS_HUD_FLAWLESS ]   =   CreateHudSyncObj ( );
-    g_pnHudMsgObj [ QS_HUD_STANDING ]   =   CreateHudSyncObj ( );
-    g_pnHudMsgObj [ QS_HUD_HATTRICK ]   =   CreateHudSyncObj ( );
-    g_pnHudMsgObj [ QS_HUD_REVENGE  ]   =   CreateHudSyncObj ( );
+    for ( new nIter = 0; nIter < QS_HUD_MAX; nIter++ )
+    {
+        g_pnHudMsgObj [ nIter ] = CreateHudSyncObj ( );
+    }
 
     return  PLUGIN_CONTINUE;
 }
@@ -1407,26 +1500,29 @@ public plugin_init ( )
 //
 public QS_HAM_PlayerKilled ( nVictim )
 {
-    static nWeapon =                            0;
+    static nWeapon      =                       QS_INVALID_WEAPON;
 
     if ( !QS_IsPlayer ( nVictim ) ||            !g_pbConnected [ nVictim ] )
     {
         return  PLUGIN_CONTINUE;
     }
 
-    g_nVictim =                                 nVictim;
+    g_nVictim           =                       nVictim;
+    {
+        g_nWeapon       =                       QS_INVALID_WEAPON;
+        g_nPlace        =                       QS_INVALID_PLACE;
+        g_nTeamKill     =                       0;
+    }
 
-    g_nWeapon = g_nPlace = g_nTeamKill =        0;
-
-    g_nKiller =                                 get_user_attacker ( g_nVictim, g_nWeapon, g_nPlace );
+    g_nKiller           =                       get_user_attacker ( g_nVictim, g_nWeapon, g_nPlace );
 
     if ( QS_IsPlayer ( g_nKiller ) &&           g_pbConnected [ g_nKiller ] )
     {
-        if ( g_nWeapon < 1 )
+        if ( !QS_ValidWeapon ( g_nWeapon ) )
         {
             nWeapon =                           get_user_weapon ( g_nKiller );
 
-            if ( nWeapon > 0 )
+            if ( QS_ValidWeapon ( nWeapon ) )
             {
                 g_nWeapon =                     nWeapon;
             }
@@ -1439,7 +1535,10 @@ public QS_HAM_PlayerKilled ( nVictim )
 
     else
     {
-        g_nWeapon = g_nPlace = g_nTeamKill =    0;
+        g_nWeapon           =                   QS_INVALID_WEAPON;
+        g_nPlace            =                   QS_INVALID_PLACE;
+
+        g_nTeamKill         =                   0;
     }
 
     return  PLUGIN_CONTINUE;
@@ -1453,6 +1552,14 @@ public QS_HAM_PlayerKilled ( nVictim )
 //
 public plugin_cfg ( )
 {
+    //
+    // SANITY CHECK
+    //
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
     /**
      * MESSAGES ON/ OFF
      */
@@ -1472,9 +1579,9 @@ public plugin_cfg ( )
     g_bRevengeMsgVictim =           !QS_EmptyString ( g_szRevengeMsgVictim );
     g_bRevengeMsgKiller =           !QS_EmptyString ( g_szRevengeMsgKiller );
 
-    g_nDeathMsg =                   get_user_msgid ( "DeathMsg" );
+    g_nDeathMsg =                   get_user_msgid  ( "DeathMsg" );
 
-    if ( g_nDeathMsg < 1 )
+    if ( !QS_ValidMsg ( g_nDeathMsg ) )
     {
         //
         // GAMES WITHOUT "client_death" ( XSTATS ) AND WITHOUT "DeathMsg"
@@ -1508,9 +1615,17 @@ public client_infochanged ( nPlayer )
     static szName [ 32 ];
 
     //
+    // SANITY CHECK
+    //
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    //
     // PLAYER IS CONNECTED AND IT'S NOT A HLTV
     //
-    if ( g_pbConnected [ nPlayer ] && !g_pbHLTV [ nPlayer ] )
+    if ( g_pbConnected [ nPlayer ]  &&  !g_pbHLTV [ nPlayer ] )
     {
         //
         // RETRIEVES NEW NAME (IF ANY)
@@ -1534,20 +1649,53 @@ public client_infochanged ( nPlayer )
 public client_disconnected ( nPlayer )
 {
     //
-    // NO MORE KILLS AND STAMPS
+    // SANITY CHECK
     //
-    g_pnKills [ nPlayer ] = g_pnKillsThisRound [ nPlayer ] = g_pnRevengeStamp [ nPlayer ] = g_pnUserId [ nPlayer ] =    0;
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    //
+    // NO MORE KILLS
+    //
+    if ( g_bKStreak )
+    {
+        g_pnKills               [ nPlayer ]     =       0;
+    }
+
+    if ( g_bHattrick )
+    {
+        g_pnKillsThisRound      [ nPlayer ]     =       0;
+    }
+
+    //
+    // NO MORE STAMPS
+    //
+    if ( g_bRevenge )
+    {
+        g_pnRevengeStamp        [ nPlayer ]     =       QS_INVALID_PLAYER;
+    }
+
+    g_pnUserId                  [ nPlayer ]     =       QS_INVALID_PLAYER;
 
     //
     // NO MORE TRUE DATA
     //
-    g_pbHLTV [ nPlayer ] = g_pbBOT [ nPlayer ] = g_pbDisabled [ nPlayer ] = g_pbConnected [ nPlayer ] =                 false;
+    g_pbHLTV                    [ nPlayer ]     =       false;
+    g_pbBOT                     [ nPlayer ]     =       false;
+    g_pbDisabled                [ nPlayer ]     =       false;
+    g_pbConnected               [ nPlayer ]     =       false;
 
     //
     // NO MORE VALID STRINGS
     //
-    QS_ClearString  ( g_pszName             [ nPlayer ] );
-    QS_ClearString  ( g_pszRevengeStamp     [ nPlayer ] );
+    QS_ClearString  ( g_pszName                 [ nPlayer ] );
+
+    if ( g_bRevenge )
+    {
+        QS_ClearString  ( g_pszRevengeStamp     [ nPlayer ] );
+    }
 
     return  PLUGIN_CONTINUE;
 }
@@ -1560,6 +1708,14 @@ public client_disconnected ( nPlayer )
 public client_command ( nPlayer )
 {
     static szArg [ 16 ];
+
+    //
+    // SANITY CHECK
+    //
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
 
     //
     // CONNECTED, NOT BOT AND NOT HLTV
@@ -1598,6 +1754,14 @@ public client_command ( nPlayer )
 public client_putinserver ( nPlayer )
 {
     //
+    // SANITY CHECK
+    //
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    //
     // RETRIEVES PLAYER NAME
     //
     get_user_name ( nPlayer, g_pszName [ nPlayer ], charsmax ( g_pszName [ ] ) );
@@ -1605,18 +1769,25 @@ public client_putinserver ( nPlayer )
     //
     // HLTV
     //
-    g_pbHLTV [ nPlayer ] =                  bool: is_user_hltv ( nPlayer );
+    g_pbHLTV [ nPlayer ] =                  bool: is_user_hltv  ( nPlayer );
 
     //
     // BOT
     //
-    g_pbBOT [ nPlayer ] =                   bool: is_user_bot ( nPlayer );
+    g_pbBOT [ nPlayer ] =                   bool: is_user_bot   ( nPlayer );
 
     //
     // NO KILLS
     //
-    g_pnKills [ nPlayer ] =                 0;
-    g_pnKillsThisRound [ nPlayer ] =        0;
+    if ( g_bKStreak )
+    {
+        g_pnKills [ nPlayer ] =             0;
+    }
+
+    if ( g_bHattrick )
+    {
+        g_pnKillsThisRound [ nPlayer ] =    0;
+    }
 
     //
     // CONNECTED
@@ -1626,7 +1797,7 @@ public client_putinserver ( nPlayer )
     //
     // USER ID
     //
-    g_pnUserId [ nPlayer ] =                get_user_userid ( nPlayer );
+    g_pnUserId [ nPlayer ] =                get_user_userid     ( nPlayer );
 
     //
     // SETTINGS ON
@@ -1636,14 +1807,17 @@ public client_putinserver ( nPlayer )
     //
     // NO REVENGE STAMP YET
     //
-    QS_ClearString                          ( g_pszRevengeStamp [ nPlayer ] );
+    if ( g_bRevenge )
+    {
+        QS_ClearString                      ( g_pszRevengeStamp [ nPlayer ] );
 
-    g_pnRevengeStamp [ nPlayer ] =          0;
+        g_pnRevengeStamp [ nPlayer ] =      QS_INVALID_PLAYER;
+    }
 
     //
     // PRINTS INFORMATION FOR VALID PLAYERS ONLY
     //
-    if ( !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] )
+    if ( !g_pbBOT [ nPlayer ]   &&  !g_pbHLTV [ nPlayer ] )
     {
         set_task ( QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", nPlayer );
     }
@@ -1676,6 +1850,14 @@ public QS_DisplayPlayerInfo ( nPlayer )
 public client_death ( nKiller, nVictim, nWeapon, nPlace, nTeamKill )
 {
     //
+    // SANITY CHECK
+    //
+    if ( !g_bEnabled )
+    {
+        return  PLUGIN_CONTINUE;
+    }
+
+    //
     // CACHES WEAPON ID
     //
     g_nWeapon =     nWeapon;
@@ -1706,7 +1888,7 @@ public client_death ( nKiller, nVictim, nWeapon, nPlace, nTeamKill )
 //
 public QS_PrepareManStanding ( )
 {
-    if ( g_bTLMStanding && ( QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_TE ) == 1 || QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_CT ) == 1 ) )
+    if ( QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_TE ) == 1  ||  QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_CT ) == 1 )
     {
         set_task ( 0.0, "QS_PerformManStanding" );
     }
@@ -1719,7 +1901,7 @@ public QS_PrepareManStanding ( )
 //
 public QS_PerformManStanding ( )
 {
-    static nPlayer = 0, nTEGuy = 0, nTEs = 0, nCTGuy = 0, nCTs = 0;
+    static  nPlayer = QS_INVALID_PLAYER, nTEGuy = QS_INVALID_PLAYER, nTEs = 0, nCTGuy = QS_INVALID_PLAYER, nCTs = 0;
 
     nTEs =  QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_TE, nTEGuy );
     nCTs =  QS_GetTeamTotalAlive ( QS_CSCZ_TEAM_CT, nCTGuy );
@@ -1728,22 +1910,15 @@ public QS_PerformManStanding ( )
     {
         g_bTLMStandingDone_TE = true;
 
-        if ( !g_pbDisabled [ nTEGuy ] )
+        QS_ClientCmd    ( nTEGuy, "SPK \"%a\"", ArrayGetStringHandle ( g_pTLMStanding, random_num ( 0, g_nTLMStandingSize - 1 ) ) );
+
+        QS_HudMsgColor  ( );
+
+        set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+
+        for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
         {
-            QS_ClientCmd ( nTEGuy, "SPK \"%a\"", ArrayGetStringHandle ( g_pTLMStanding, random_num ( 0, g_nTLMStandingSize - 1 ) ) );
-        }
-
-        QS_UpdateHudMsgColor ( );
-
-        set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
-
-        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
-        {
-            if ( g_pbDisabled [ nPlayer ] || \
-                    !g_pbConnected [ nPlayer ] || \
-                        g_pbBOT [ nPlayer ] || \
-                            g_pbHLTV [ nPlayer ] || \
-                                get_user_team ( nPlayer ) != QS_CSCZ_TEAM_TE )
+            if ( !g_pbConnected [ nPlayer ] || g_pbBOT [ nPlayer ] || g_pbHLTV [ nPlayer ] || get_user_team ( nPlayer ) != QS_CSCZ_TEAM_TE )
             {
                 continue;
             }
@@ -1761,9 +1936,8 @@ public QS_PerformManStanding ( )
             {
                 if ( g_bTLMStandingTeamMsg )
                 {
-                    QS_ShowHudMsg ( nPlayer, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingTeamMsg, \
-                                        g_pszName [ nTEGuy ], \
-                                            ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
+                    QS_ShowHudMsg ( nPlayer, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingTeamMsg, g_pszName [ nTEGuy ], \
+                                        ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
                 }
             }
         }
@@ -1773,22 +1947,15 @@ public QS_PerformManStanding ( )
     {
         g_bTLMStandingDone_CT = true;
 
-        if ( !g_pbDisabled [ nCTGuy ] )
+        QS_ClientCmd    ( nCTGuy, "SPK \"%a\"", ArrayGetStringHandle ( g_pTLMStanding, random_num ( 0, g_nTLMStandingSize - 1 ) ) );
+
+        QS_HudMsgColor  ( );
+
+        set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+
+        for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
         {
-            QS_ClientCmd ( nCTGuy, "SPK \"%a\"", ArrayGetStringHandle ( g_pTLMStanding, random_num ( 0, g_nTLMStandingSize - 1 ) ) );
-        }
-
-        QS_UpdateHudMsgColor ( );
-
-        set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
-
-        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
-        {
-            if ( g_pbDisabled [ nPlayer ] || \
-                    !g_pbConnected [ nPlayer ] || \
-                        g_pbBOT [ nPlayer ] || \
-                            g_pbHLTV [ nPlayer ] || \
-                                get_user_team ( nPlayer ) != QS_CSCZ_TEAM_CT )
+            if ( !g_pbConnected [ nPlayer ] || g_pbBOT [ nPlayer ] || g_pbHLTV [ nPlayer ] || get_user_team ( nPlayer ) != QS_CSCZ_TEAM_CT )
             {
                 continue;
             }
@@ -1806,9 +1973,8 @@ public QS_PerformManStanding ( )
             {
                 if ( g_bTLMStandingTeamMsg )
                 {
-                    QS_ShowHudMsg ( nPlayer, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingTeamMsg, \
-                                        g_pszName [ nCTGuy ], \
-                                            ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
+                    QS_ShowHudMsg ( nPlayer, g_pnHudMsgObj [ QS_HUD_STANDING ], g_szTLMStandingTeamMsg, g_pszName [ nCTGuy ], \
+                                        ArrayGetStringHandle ( g_pTLMStandingWords, random_num ( 0, g_nTLMStandingWordsSize - 1 ) ) );
                 }
             }
         }
@@ -1822,19 +1988,29 @@ public QS_PerformManStanding ( )
 //
 public QS_OnRoundRefresh ( )
 {
-    static nPlayer = 0;
+    static nPlayer =    QS_INVALID_PLAYER;
 
-    for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+    for ( nPlayer =     QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
     {
         //
         // CLEARS DATA
         //
-        g_pnKills               [ nPlayer ]     =       0;
-        g_pnKillsThisRound      [ nPlayer ]     =       0;
+        if ( g_bKStreak )
+        {
+            g_pnKills           [ nPlayer ]     =       0;
+        }
 
-        QS_ClearString          ( g_pszRevengeStamp     [ nPlayer ] );
+        if ( g_bHattrick )
+        {
+            g_pnKillsThisRound  [ nPlayer ]     =       0;
+        }
 
-        g_pnRevengeStamp        [ nPlayer ]     =       0;
+        if ( g_bRevenge )
+        {
+            QS_ClearString      ( g_pszRevengeStamp     [ nPlayer ] );
+
+            g_pnRevengeStamp    [ nPlayer ]     =       QS_INVALID_PLAYER;
+        }
     }
 
     return  PLUGIN_CONTINUE;
@@ -1845,7 +2021,7 @@ public QS_OnRoundRefresh ( )
 //
 public QS_OnRoundBegin ( )
 {
-    static nPlayer = 0;
+    static nPlayer = QS_INVALID_PLAYER;
 
     //
     // RESETS FIRST BLOOD
@@ -1871,7 +2047,7 @@ public QS_OnRoundBegin ( )
     {
         if ( g_bRStartMsg )
         {
-            QS_UpdateHudMsgColor ( );
+            QS_HudMsgColor  ( );
 
             set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_ROUND_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
             QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_ROUND ], g_szRStartMsg );
@@ -1885,9 +2061,9 @@ public QS_OnRoundBegin ( )
     //
     if ( g_bHattrick )
     {
-        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers;    nPlayer ++ )
         {
-            g_pnKillsThisRound  [ nPlayer ]     =   0;
+            g_pnKillsThisRound  [ nPlayer ]     =                   0;
         }
     }
 
@@ -1899,18 +2075,20 @@ public QS_OnRoundBegin ( )
 //
 public QS_OnRoundEnd ( )
 {
+    //
     // GETS HATTRICK READY
     //
     if ( g_bHattrick )
     {
-        set_task ( QS_HATTRICK_ROUND_END_DELAY, "QS_Hattrick" );
+        set_task    ( QS_HATTRICK_ROUND_END_DELAY,  "QS_Hattrick" );
     }
 
+    //
     // GETS FLAWLESS READY
     //
     if ( g_bFlawless )
     {
-        set_task ( QS_FLAWLESS_ROUND_END_DELAY, "QS_Flawless" );
+        set_task    ( QS_FLAWLESS_ROUND_END_DELAY,  "QS_Flawless" );
     }
 
     return  PLUGIN_CONTINUE;
@@ -1924,20 +2102,20 @@ public QS_Hattrick ( )
     //
     // RETRIEVES THE LEADER'S ID
     //
-    static nLeader =    0;
+    static      nLeader =   QS_INVALID_PLAYER;
 
-    nLeader =   QS_Leader   ( );
+    nLeader     =           QS_Leader   ( );
 
     //
     // IF ANY
     //
-    if ( nLeader != QS_INVALID_PLAYER )
+    if ( QS_IsPlayer    ( nLeader ) )
     {
         if ( g_pnKillsThisRound [ nLeader ]     >=      g_nMinKillsForHattrick )
         {
             if ( g_bHattrickMsg )
             {
-                QS_UpdateHudMsgColor ( );
+                QS_HudMsgColor  ( );
 
                 set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_HATTRICK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
                 QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_HATTRICK ], g_szHattrickMsg, g_pszName [ nLeader ] );
@@ -1946,6 +2124,8 @@ public QS_Hattrick ( )
             QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pHattrick, random_num ( 0, g_nHattrickSize - 1 ) ) );
         }
     }
+
+    return  PLUGIN_CONTINUE;
 }
 
 //
@@ -1958,10 +2138,10 @@ public QS_Flawless ( )
     nAliveTeam_1    =   QS_ActivePlayersNum         ( true, 1 );
     nAliveTeam_2    =   QS_ActivePlayersNum         ( true, 2 );
 
-    nAllTeam_1      =   nAliveTeam_1            +   QS_ActivePlayersNum ( false, 1 );
-    nAllTeam_2      =   nAliveTeam_2            +   QS_ActivePlayersNum ( false, 2 );
+    nAllTeam_1      =   nAliveTeam_1            +   QS_ActivePlayersNum ( false,    1 );
+    nAllTeam_2      =   nAliveTeam_2            +   QS_ActivePlayersNum ( false,    2 );
 
-    QS_UpdateHudMsgColor ( );
+    QS_HudMsgColor  ( );
 
     set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
@@ -1984,6 +2164,8 @@ public QS_Flawless ( )
 
         QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pFlawless, random_num ( 0, g_nFlawlessSize - 1 ) ) );
     }
+
+    return  PLUGIN_CONTINUE;
 }
 
 //
@@ -1998,9 +2180,9 @@ public QS_FM_OnMsgBegin (   nDestination,   nType   )
     //
     if ( nType == g_nDeathMsg   &&  ( nDestination == MSG_ALL   ||  nDestination == MSG_BROADCAST ) )
     {
-        g_bOnDeathMsg =             true;
+        g_bOnDeathMsg               =   true;
 
-        g_nDeathMsgByteStatus =     0;
+        g_nDeathMsgByteStatus       =   QS_DEATHMSG_NONE;
     }
 
     return  PLUGIN_CONTINUE;
@@ -2023,12 +2205,12 @@ public QS_FM_OnWriteByte    ( nByte )
         //
         switch ( ++ g_nDeathMsgByteStatus )
         {
-            case 1: /// KILLER ID
+            case QS_DEATHMSG_KILLER:    /// KILLER ID
             {
                 g_nKiller   =   nByte;
             }
 
-            case 2: /// VICTIM ID
+            case QS_DEATHMSG_VICTIM:    /// VICTIM ID
             {
                 g_nVictim   =   nByte;
             }
@@ -2050,13 +2232,16 @@ public QS_FM_OnMsgEnd   ( )
     //
     if ( g_bOnDeathMsg )
     {
-        g_bOnDeathMsg =                             false;
+        g_bOnDeathMsg               =   false;
 
-        g_nDeathMsgByteStatus =                     0;
+        g_nDeathMsgByteStatus       =   QS_DEATHMSG_NONE;
 
-        if ( g_bDeathMsgOnly )
+        if ( g_bDeathMsgOnly )      /// OTHERWISE, THESE ARE PREPARED BY THE XSTATS "client_death ( )"
         {
-            g_nWeapon = g_nPlace = g_nTeamKill =    0;
+            g_nWeapon               =   QS_INVALID_WEAPON;
+            g_nPlace                =   QS_INVALID_PLACE;
+
+            g_nTeamKill             =   0;
         }
 
         //
@@ -2078,12 +2263,13 @@ public QS_ProcessDeathMsg ( )
     //
     // DECLARES THE HIT PLACE AND THE WEAPON ID
     //
-    static nPlace = 0, nWeapon = 0;
+    static  nPlace = QS_INVALID_PLACE,  nWeapon = QS_INVALID_WEAPON;
 
     //
     // SETS THE DECLARED VARIABLES TO ZERO
     //
-    nPlace = nWeapon = 0;
+    nPlace =    QS_INVALID_PLACE;
+    nWeapon =   QS_INVALID_WEAPON;
 
     //
     // SANITY CHECK
@@ -2096,48 +2282,60 @@ public QS_ProcessDeathMsg ( )
     //
     // PREPARES THE WEAPON ID AND THE HIT PLACE
     //
-    get_user_attacker   ( g_nVictim, nWeapon, nPlace );
+    if ( QS_ValidMsg ( g_nDeathMsg ) )  /// OTHERWISE, THIS IS PREPARED WITHIN THE "QS_HAM_PlayerKilled ( )" FORWARD
+    {
+        get_user_attacker   ( g_nVictim, nWeapon, nPlace );
+    }
 
     //
     // POSSIBLE WEAPON ID FIX
     //
-    if ( g_nWeapon < 1 )
+    if ( QS_ValidMsg ( g_nDeathMsg ) )  /// OTHERWISE, THIS IS PREPARED WITHIN THE "QS_HAM_PlayerKilled ( )" FORWARD
     {
-        if ( nWeapon < 1 )
+        if ( !QS_ValidWeapon        ( g_nWeapon ) )
         {
-            if ( g_pbConnected  [ g_nKiller ] )
+            if ( !QS_ValidWeapon    ( nWeapon ) )
             {
-                g_nWeapon   =   get_user_weapon ( g_nKiller );
+                if ( g_pbConnected  [ g_nKiller ] )
+                {
+                    g_nWeapon   =   get_user_weapon ( g_nKiller );
+                }
             }
-        }
 
-        else
-        {
-            g_nWeapon       =   nWeapon;
+            else
+            {
+                g_nWeapon       =   nWeapon;
+            }
         }
     }
 
     //
     // POSSIBLE HIT PLACE FIX
     //
-    if ( g_nPlace < 1   &&  nPlace > 0 )
+    if ( QS_ValidMsg ( g_nDeathMsg ) )  /// OTHERWISE, THIS IS PREPARED WITHIN THE "QS_HAM_PlayerKilled ( )" FORWARD
     {
-        g_nPlace    =   nPlace;
+        if ( !QS_ValidPlace ( g_nPlace )    &&  QS_ValidPlace ( nPlace ) )
+        {
+            g_nPlace    =   nPlace;
+        }
     }
 
     //
     // PREPARES THE TEAM KILL BOOLEAN IF NEEDED
     //
-    if ( g_bDeathMsgOnly )
+    if ( QS_ValidMsg ( g_nDeathMsg ) )  /// OTHERWISE, THIS IS PREPARED WITHIN THE "QS_HAM_PlayerKilled ( )" FORWARD
     {
-        if ( g_pbConnected [ g_nKiller ] )
+        if ( g_bDeathMsgOnly )  /// OTHERWISE, THIS IS PREPARED WITHIN THE "client_death ( )" FORWARD
         {
-            g_nTeamKill =   ( get_user_team ( g_nKiller )   ==  get_user_team ( g_nVictim ) )   ?   1   :   0;
-        }
+            if ( g_pbConnected  [ g_nKiller ] )
+            {
+                g_nTeamKill =   ( get_user_team ( g_nKiller )   ==  get_user_team ( g_nVictim ) )   ?   1   :   0;
+            }
 
-        else
-        {
-            g_nTeamKill =   0;
+            else
+            {
+                g_nTeamKill =   0;
+            }
         }
     }
 
@@ -2162,13 +2360,13 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
     //
     // VARIABLES
     //
-    static  nIter = 0, Float: fGameTime = 0.0, szWeapon [ 64 ], szSnd [ 256 ], szMsg [ QS_HUD_MSG_MAX_LEN ], \
-            bool: bKilledByWorldDamage = false /** OR BY THE 'KILL' COMMAND */;
+    static  nIter = 0, Float: fGameTime = 0.000000, szWeapon [ QS_WORD_MAX_LEN ], szSnd [ QS_SND_MAX_LEN ], szMsg [ QS_HUD_MSG_MAX_LEN ], \
+            bool: bDiedByWorldDmg = false   /** OR BY THE 'KILL' COMMAND */;
 
     //
     // RESET THE SUICIDE TYPE [ WORLD DAMAGE / 'KILL' COMMAND ]
     //
-    bKilledByWorldDamage = false;
+    bDiedByWorldDmg = false;
 
     //
     // RESETS KILLS FOR VICTIM
@@ -2183,11 +2381,11 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
     //
     if ( !g_pbConnected [ nKiller ] )
     {
-        if ( nKiller <  1 )
+        if ( !QS_IsPlayer ( nKiller ) ) /** WORLDSPAWN */
         {
             nKiller =                   nVictim;
 
-            bKilledByWorldDamage =      true;
+            bDiedByWorldDmg =           true;
         }
 
         else
@@ -2199,12 +2397,12 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
     //
     // PREPARES HUD MESSAGE COLOR
     //
-    QS_UpdateHudMsgColor ( );
+    QS_HudMsgColor  ( );
 
     //
     // PREPARES MINOR EVENTS HUD MESSAGE
     //
-    set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+    set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
     //
     // REVENGE KILLER STAMP
@@ -2233,7 +2431,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
 
         if ( g_bHattrick )
         {
-            if ( !bKilledByWorldDamage )
+            if ( !bDiedByWorldDmg )
             {
                 if ( g_bHattrickDecrease )
                 {
@@ -2261,7 +2459,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
         //
         // WEAPON NAME
         //
-        if ( nWeapon > 0 )
+        if ( QS_ValidWeapon ( nWeapon ) )
         {
             get_weaponname  ( nWeapon, szWeapon, charsmax ( szWeapon ) );
         }
@@ -2278,19 +2476,19 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
                 equali ( g_pszName [ nVictim ], g_pszRevengeStamp [ nKiller ] ) && \
                     g_pnUserId [ nVictim ] == g_pnRevengeStamp [ nKiller ] )
         {
-            g_pnRevengeStamp    [ nKiller ] =   0;
+            g_pnRevengeStamp    [ nKiller ] =   QS_INVALID_PLAYER;
 
             QS_ClearString      ( g_pszRevengeStamp [ nKiller ] );
 
             //
             // PREPARES HUD MESSAGE COLOR
             //
-            QS_UpdateHudMsgColor ( );
+            QS_HudMsgColor      ( );
 
             //
             // PREPARES REVENGE HUD MESSAGE
             //
-            set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_REVENGE_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+            set_hudmessage      ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_REVENGE_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
 
             if ( g_bRevengeMsgKiller )
             {
@@ -2312,12 +2510,12 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
             //
             // PREPARES HUD MESSAGE COLOR
             //
-            QS_UpdateHudMsgColor ( );
+            QS_HudMsgColor      ( );
 
             //
             // PREPARES MINOR EVENTS HUD MESSAGE
             //
-            set_hudmessage ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+            set_hudmessage      ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
         }
 
         if ( g_bHShot   &&  nPlace  ==  HIT_HEAD )
@@ -2340,7 +2538,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
             QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pFBlood, random_num ( 0, g_nFBloodSize - 1 ) ) );
         }
 
-        if ( g_bTKill   &&  nTeamKill > 0 )
+        if ( g_bTKill   &&  nTeamKill   >   0 )
         {
             if ( g_bTKillMsg )
             {
@@ -2385,7 +2583,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
             //
             // GAME TIME
             //
-            fGameTime = get_gametime ( );
+            fGameTime   =   get_gametime ( );
 
             if ( g_pfLastKillTimeStamp [ nKiller ]  >   fGameTime )
             {
@@ -2397,7 +2595,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
                 QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pDKill, random_num ( 0, g_nDKillSize - 1 ) ) );
             }
 
-            g_pfLastKillTimeStamp   [ nKiller ]     =   fGameTime   +   0.1;
+            g_pfLastKillTimeStamp   [ nKiller ]     =   fGameTime   +   0.100000;
         }
 
         if ( g_bKStreak )
@@ -2428,7 +2626,7 @@ static QS_LoadSettings ( )
     //
     // PREPARES THE CONFIGURATION FILES DIRECTORY
     //
-    new szFile [ 256 ];
+    new szFile [ QS_SND_MAX_LEN ];
 
     get_configsdir ( szFile,    charsmax ( szFile ) );
 
@@ -2453,8 +2651,8 @@ static QS_LoadSettings ( )
     //
     // PREPARES THE FILE LINES
     //
-    new szLine [ 2048 ], szKey [ 2048 ], szVal [ 2048 ], szType [ 256 ], szSnd [ 512 ], \
-        szReqKills [ 128 ], szDummy [ 64 ], szMsg [ QS_HUD_MSG_MAX_LEN ], nVal = 0;
+    new szLine [ 2048 ], szKey [ 2048 ], szVal [ 2048 ], szType [ QS_WORD_MAX_LEN ], szSnd [ QS_SND_MAX_LEN ], \
+        szReqKills [ QS_WORD_MAX_LEN ], szDummy [ QS_WORD_MAX_LEN ], szMsg [ QS_HUD_MSG_MAX_LEN ], nVal = 0;
 
     //
     // READS THE FILE
@@ -2610,7 +2808,7 @@ static QS_LoadSettings ( )
 
                 else
                 {
-                    ArrayPushCell   ( g_pKStreakReqKills,   QS_INVALID_REQUIRED_KILLS );
+                    ArrayPushCell   ( g_pKStreakReqKills,   QS_INVALID_REQ_KILLS );
 
                     log_to_file     ( QS_LOG_FILE_NAME,     "****************************************************************************************************************" );
                     log_to_file     ( QS_LOG_FILE_NAME,     "Bad Required Kills ('REQUIREDKILLS') [ %s ] Inside Line [ %s ].", szReqKills, szLine );
@@ -2626,11 +2824,11 @@ static QS_LoadSettings ( )
                 //
                 // PREPARE
                 //
-                QS_ClearString ( szMsg );
+                QS_ClearString  ( szMsg );
 
-                strtok ( szVal, szDummy, charsmax ( szDummy ), szMsg, charsmax  ( szMsg ), '@' );
+                strtok          ( szVal, szDummy, charsmax ( szDummy ), szMsg, charsmax  ( szMsg ), '@' );
 
-                trim ( szMsg );
+                trim            ( szMsg );
 
                 ArrayPushString ( g_pKStreakMsgs, szMsg );
             }
@@ -2950,7 +3148,7 @@ static QS_LoadSettings ( )
 //
 static QS_DisplayKStreak ( const &nKiller, const szMsg [ ], const szSnd [ ] )
 {
-    QS_UpdateHudMsgColor ( );
+    QS_HudMsgColor  ( );
 
     set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
     QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_STREAK ], szMsg, g_pszName [ nKiller ] );
@@ -2964,19 +3162,19 @@ static QS_DisplayKStreak ( const &nKiller, const szMsg [ ], const szSnd [ ] )
 // RETRIEVES ACTIVE PLAYERS COUNT
 //
 // bAlive   [ TRUE/ FALSE ]
-// nTeam    [ QS_INVALID_TEAM/ 1/ 2/ 3 ]
+// nTeam    [ QS_INVALID_TEAM/ 0/ 1/ 2/ 3 ]
 //
 static QS_ActivePlayersNum ( bool: bAlive, nTeam = QS_INVALID_TEAM )
 {
     //
     // PLAYERS COUNT
     //
-    static nTotal = 0, nPlayer = 0;
+    static nTotal = 0, nPlayer = QS_INVALID_PLAYER;
 
     //
     // ITERATES BETWEEN PLAYERS
     //
-    for ( nTotal = 0, nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+    for ( nTotal = 0, nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
     {
         //
         // CONNECTED, NOT HLTV, IN SPECIFIED TEAM AND ALIVE/ DEAD
@@ -2995,24 +3193,25 @@ static QS_ActivePlayersNum ( bool: bAlive, nTeam = QS_INVALID_TEAM )
     //
     // GETS THE TOTAL
     //
-    return nTotal;
+    return  nTotal;
 }
 
 //
 // RETRIEVES THE LEADER OF THIS ROUND
-// RETURNS "QS_INVALID_PLAYER" IF THERE IS NO LEADER
+//
+// RETURNS 'QS_INVALID_PLAYER' IF THERE IS NO LEADER
 //
 static QS_Leader ( )
 {
     //
     // DECLARES VARIABLES
     //
-    static nLeader = 0, nKills = 0, nPlayer = 0;
+    static nLeader = QS_INVALID_PLAYER, nKills = 0, nPlayer = QS_INVALID_PLAYER;
 
     //
     // ITERATES BETWEEN CLIENTS
     //
-    for ( nPlayer = 1, nLeader = QS_INVALID_PLAYER, nKills = 0; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+    for ( nPlayer = QS_MIN_PLAYER, nLeader = QS_INVALID_PLAYER, nKills = 0; nPlayer <= g_nMaxPlayers; nPlayer ++ )
     {
         //
         // CONNECTED AND NOT HLTV
@@ -3037,7 +3236,7 @@ static QS_Leader ( )
     //
     // GETS THE LEADER ID
     //
-    return nLeader;
+    return  nLeader;
 }
 
 //
@@ -3048,7 +3247,7 @@ static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
     //
     // ARGUMENT FORMAT
     //
-    static szBuffer [ QS_HUD_MSG_MAX_LEN ], nPlayer = 0;
+    static szBuffer [ QS_HUD_MSG_MAX_LEN ], nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
 
     //
     // SANITY CHECK
@@ -3068,10 +3267,12 @@ static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
         return  PLUGIN_CONTINUE;
     }
 
+    bIsPlayer = QS_IsPlayer ( nTo );
+
     //
     // SPECIFIED CLIENT
     //
-    if ( nTo > 0 && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
+    if ( bIsPlayer && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
     {
         ShowSyncHudMsg ( nTo, nObj, szBuffer );
     }
@@ -3079,9 +3280,9 @@ static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
     //
     // NO TARGET
     //
-    else if ( nTo < 1 )
+    else if ( !bIsPlayer )
     {
-        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
         {
             if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !g_pbDisabled [ nPlayer ] )
             {
@@ -3101,7 +3302,7 @@ static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
     //
     // ARGUMENT FORMAT
     //
-    static szBuffer [ 256 ], nPlayer = 0;
+    static szBuffer [ QS_SND_MAX_LEN ], nPlayer = QS_INVALID_PLACE, bool: bIsPlayer = false;
 
     //
     // SANITY CHECK
@@ -3121,10 +3322,12 @@ static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
         return  PLUGIN_CONTINUE;
     }
 
+    bIsPlayer = QS_IsPlayer ( nTo );
+
     //
     // SPECIFIED CLIENT
     //
-    if ( nTo > 0 && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
+    if ( bIsPlayer && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
     {
         client_cmd ( nTo, szBuffer );
     }
@@ -3132,9 +3335,9 @@ static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
     //
     // NO TARGET
     //
-    else if ( nTo < 1 )
+    else if ( !bIsPlayer )
     {
-        for ( nPlayer = 1; nPlayer <= g_nMaxPlayers; nPlayer ++ )
+        for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
         {
             if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !g_pbDisabled [ nPlayer ] )
             {
@@ -3215,13 +3418,13 @@ static bool: QS_XStatsAvail ( )
 }
 
 //
-// TEAM TOTAL ALIVE AND IF ONLY ONE PLAYER IS ALIVE IN THAT TEAM, THEIR ID
+// GET THE TEAM TOTAL ALIVE, AND IF ONLY ONE PLAYER IS ALIVE IN THAT TEAM, THEIR ID
 //
-static QS_GetTeamTotalAlive ( nTeam, &nPlayer = QS_INVALID_PLAYER )
+static QS_GetTeamTotalAlive ( nTeam, &nPlayer = QS_INVALID_PLAYER ) /// CSTRIKE AND CZERO ONLY
 {
-    static pnPlayers [ 32 ], nTotal = 0;
+    static pnPlayers [ QS_MAX_PLAYERS ], nTotal = 0;
 
-    get_players ( pnPlayers, nTotal, "aeh", ( ( nTeam == QS_CSCZ_TEAM_TE ) ? "TERRORIST" : "CT" ) );
+    get_players ( pnPlayers, nTotal, "aeh", (   ( nTeam == QS_CSCZ_TEAM_TE ) ? ( "TERRORIST" ) : ( "CT" )   ) );
 
     if ( nTotal ==  1 )
     {
@@ -3239,32 +3442,64 @@ static QS_GetTeamTotalAlive ( nTeam, &nPlayer = QS_INVALID_PLAYER )
 //
 // UPDATES THE HUD MESSAGE'S COLOR
 //
-static QS_UpdateHudMsgColor ( )
+static QS_HudMsgColor ( )
 {
     if ( g_bRandomRed )
     {
-        g_nRed              =       random_num ( 0, QS_MAX_BYTE );
+        g_nRed              =       random_num ( QS_MIN_BYTE,   QS_MAX_BYTE );
     }
 
     if ( g_bRandomGreen )
     {
-        g_nGreen            =       random_num ( 0, QS_MAX_BYTE );
+        g_nGreen            =       random_num ( QS_MIN_BYTE,   QS_MAX_BYTE );
     }
 
     if ( g_bRandomBlue )
     {
-        g_nBlue             =       random_num ( 0, QS_MAX_BYTE );
+        g_nBlue             =       random_num ( QS_MIN_BYTE,   QS_MAX_BYTE );
     }
 
     return  PLUGIN_CONTINUE;
 }
 
+//
+// VALID PLAYERS ARE FROM QS_MIN_PLAYER TO g_nMaxPlayers
+//
 static bool: QS_IsPlayer ( const &nId )
 {
-    return  ( nId < 1 || nId > g_nMaxPlayers ) ? false : true;
+    return  ( nId < QS_MIN_PLAYER || nId > g_nMaxPlayers ) ? false : true;
 }
 
+//
+// VALID PLAYERS ARE FROM QS_MIN_PLAYER TO g_nMaxPlayers
+//
+// THE WORLDSPAWN IS 0
+//
 static bool: QS_IsPlayerOrWorld ( const &nId )
 {
-    return  ( nId < 0 || nId > g_nMaxPlayers ) ? false : true;
+    return  ( nId < QS_WORLDSPAWN || nId > g_nMaxPlayers ) ? false : true;
+}
+
+//
+// VALID 'get_user_msgid ( )'
+//
+static bool: QS_ValidMsg ( const &nMsg )
+{
+    return  nMsg > QS_INVALID_MSG;
+}
+
+//
+// VALID WEAPON
+//
+static bool: QS_ValidWeapon ( const &nWpn )
+{
+    return  nWpn > QS_INVALID_WEAPON;
+}
+
+//
+// VALID HIT PLACE
+//
+static bool: QS_ValidPlace ( const &nPlace )
+{
+    return  nPlace > QS_INVALID_PLACE;
 }
