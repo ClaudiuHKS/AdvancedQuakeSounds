@@ -2678,7 +2678,7 @@ static QS_LoadSettings ( )
     //
     // NO FILE
     //
-    if ( !nFile )
+    if ( nFile  ==  0 )
     {
         return  PLUGIN_CONTINUE;
     }
@@ -2753,7 +2753,7 @@ static QS_LoadSettings ( )
 
         else if ( equali ( szKey, "MIN FRAGS FOR HATTRICK" ) )
         {
-            g_nMinKillsForHattrick =                str_to_num ( szVal );
+            g_nMinKillsForHattrick =                clamp ( abs ( str_to_num ( szVal ) ), 1, QS_INVALID_REQ_KILLS );
         }
 
         else if ( equali ( szKey, "DECREASE FRAG IN CASE OF 'KILL' COMMAND SUICIDE" ) )
@@ -2779,7 +2779,7 @@ static QS_LoadSettings ( )
 
             else
             {
-                g_nRed =                str_to_num ( szVal );
+                g_nRed =                clamp ( abs ( str_to_num ( szVal ) ), QS_MIN_BYTE, QS_MAX_BYTE );
             }
         }
 
@@ -2792,7 +2792,7 @@ static QS_LoadSettings ( )
 
             else
             {
-                g_nGreen =              str_to_num ( szVal );
+                g_nGreen =              clamp ( abs ( str_to_num ( szVal ) ), QS_MIN_BYTE, QS_MAX_BYTE );
             }
         }
 
@@ -2805,7 +2805,7 @@ static QS_LoadSettings ( )
 
             else
             {
-                g_nBlue =               str_to_num ( szVal );
+                g_nBlue =               clamp ( abs ( str_to_num ( szVal ) ), QS_MIN_BYTE, QS_MAX_BYTE );
             }
         }
 
@@ -2945,144 +2945,248 @@ static QS_LoadSettings ( )
 
         else if ( equali ( szKey, "HEADSHOT SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pHShot ) )
+            {
+                ArrayPushString ( g_pHShot, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pHShot, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pHShot, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "REVENGE SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pRevenge ) )
+            {
+                ArrayPushString ( g_pRevenge, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pRevenge, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pRevenge, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "SUICIDE SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pSuicide ) )
+            {
+                ArrayPushString ( g_pSuicide, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pSuicide, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pSuicide, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "NADE SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pGrenade ) )
+            {
+                ArrayPushString ( g_pGrenade, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pGrenade, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pGrenade, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "TEAMKILL SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pTKill ) )
+            {
+                ArrayPushString ( g_pTKill, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pTKill, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pTKill, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "KNIFE SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pKnife ) )
+            {
+                ArrayPushString ( g_pKnife, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pKnife, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pKnife, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "FIRSTBLOOD SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pFBlood ) )
+            {
+                ArrayPushString ( g_pFBlood, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pFBlood, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pFBlood, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "ROUNDSTART SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pRStart ) )
+            {
+                ArrayPushString ( g_pRStart, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pRStart, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pRStart, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "DOUBLEKILL SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pDKill ) )
+            {
+                ArrayPushString ( g_pDKill, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pDKill, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pDKill, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "HATTRICK SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pHattrick ) )
+            {
+                ArrayPushString ( g_pHattrick, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pHattrick, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pHattrick, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "TLMSTANDING SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pTLMStanding ) )
+            {
+                ArrayPushString ( g_pTLMStanding, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pTLMStanding, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pTLMStanding, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "TLMSTANDING WORDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pTLMStandingWords ) )
+            {
+                ArrayPushString ( g_pTLMStandingWords, "MAN STANDING" );    /// .........
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pTLMStandingWords, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pTLMStandingWords, szKey );
+                }
             }
         }
 
         else if ( equali ( szKey, "FLAWLESS SOUNDS" ) )
         {
+            if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pFlawless ) )
+            {
+                ArrayPushString ( g_pFlawless, szVal );
+            }
+
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
             {
                 trim ( szKey );
                 trim ( szVal );
 
-                ArrayPushString ( g_pFlawless, szKey );
+                if ( !QS_EmptyString ( szKey ) )
+                {
+                    ArrayPushString ( g_pFlawless, szKey );
+                }
             }
         }
 
@@ -3182,14 +3286,20 @@ static QS_LoadSettings ( )
 //
 // DISPLAYS K. STREAK GLOBALLY
 //
-static QS_DisplayKStreak ( const &nKiller, const szMsg [ ], const szSnd [ ] )
+static QS_DisplayKStreak    ( const &nKiller, const szMsg [ ], const szSnd [ ] )
 {
-    QS_HudMsgColor  ( );
+    if ( !QS_EmptyString    ( szMsg ) )
+    {
+        QS_HudMsgColor      ( );
 
-    set_hudmessage  ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
-    QS_ShowHudMsg   ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_STREAK ], szMsg, g_pszName [ nKiller ] );
+        set_hudmessage      ( g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME );
+        QS_ShowHudMsg       ( QS_EVERYONE, g_pnHudMsgObj [ QS_HUD_STREAK ], szMsg, g_pszName [ nKiller ] );
+    }
 
-    QS_ClientCmd    ( QS_EVERYONE, "SPK \"%s\"", szSnd );
+    if ( !QS_EmptyString    ( szSnd ) )
+    {
+        QS_ClientCmd        ( QS_EVERYONE, "SPK \"%s\"", szSnd );
+    }
 
     return  PLUGIN_CONTINUE;
 }
