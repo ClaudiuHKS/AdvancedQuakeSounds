@@ -965,7 +965,7 @@ static g_pszRevengeStamp [ QS_MAX_PLAYERS + 1 ] [ QS_NAME_MAX_LEN ];
 //
 // REVENGE KILL USER ID STAMP
 //
-static g_pnRevengeStamp [ QS_MAX_PLAYERS + 1 ] = { 0, ... };
+static g_pnRevengeStamp [ QS_MAX_PLAYERS + 1 ] = { QS_INVALID_PLAYER, ... };
 
 //
 // SOUNDS DISABLED PER PLAYER
@@ -975,7 +975,7 @@ static bool: g_pbDisabled [ QS_MAX_PLAYERS + 1 ] = { false, ... };
 //
 // CACHED PLAYER'S USER ID
 //
-static g_pnUserId [ QS_MAX_PLAYERS + 1 ] = { 0, ... };
+static g_pnUserId [ QS_MAX_PLAYERS + 1 ] = { QS_INVALID_PLAYER, ... };
 
 //
 // LAST KILL TIME STAMP ( GAME TIME )
@@ -3568,7 +3568,7 @@ static bool: QS_XStatsAvail ( )
 //
 static QS_GetTeamTotalAlive ( nTeam, &nPlayer = QS_INVALID_PLAYER ) /// CSTRIKE AND CZERO ONLY
 {
-    static pnPlayers [ QS_MAX_PLAYERS ] = { 0, ... }, nTotal = 0;
+    static pnPlayers [ QS_MAX_PLAYERS ] = { QS_INVALID_PLAYER, ... }, nTotal = 0;
 
     get_players ( pnPlayers, nTotal, "aeh", (   ( nTeam == QS_CSCZ_TEAM_TE ) ? ( "TERRORIST" ) : ( "CT" )   ) );
 
