@@ -73,7 +73,7 @@
 //
 // PLUGIN'S VERSION
 //
-#define QS_PLUGIN_VERSION                   ( "6.0" )               /// "6.0"
+#define QS_PLUGIN_VERSION                   ( "6.1" )               /// "6.1"
 
 //
 // STARTING WITH '/', THE CONFIG FILE NAME
@@ -124,6 +124,13 @@
 // THE LAST MAN STANDING FEATURE :: TRIGGER DELAY
 //
 #define QS_STANDING_TRIGGER_DELAY           ( 1.000000 )            /// 1
+
+//
+// DOUBLE KILL :: TRIGGER TIME FRAME
+//
+// THE KILLER MUST KILL TWO VICTIMS WITHIN THIS TIME FRAME TO TRIGGER THE DOUBLE KILL EVENT
+//
+#define QS_DOUBLE_KILL_DELAY                ( 0.100000 )            /// .1
 
 //
 /// ###################################################################################################
@@ -207,6 +214,11 @@
 // THE WORLDSPAWN'S NAME
 //
 #define QS_WORLDSPAWN_NAME                  ( "WORLDSPAWN" )        /// "WORLDSPAWN"
+
+//
+// THE DEFAULT WORD FOR THE 'THE LAST MAN STANDING' EVENT
+//
+#define QS_TLMSTANDING_WORD                 ( "MAN STANDING" )      /// "MAN STANDING"
 
 //
 // MINIMUM UNSIGNED BYTE
@@ -323,6 +335,16 @@ enum /** HUD MESSAGE PURPOSE */
 // PLUGIN ON/ OFF
 //
 static bool: g_bEnabled = false;
+
+//
+// CHAT '/SOUNDS' COMMAND ON/ OFF
+//
+static bool: g_bChatCmd = false;
+
+//
+// '/SOUNDS' CHAT INFO AFTER THE PLAYER JOINS THE GAME SERVER ON/ OFF
+//
+static bool: g_bChatInfo = false;
 
 
 /**
@@ -1733,7 +1755,7 @@ public client_command ( nPlayer )
     //
     // SANITY CHECK
     //
-    if ( !g_bEnabled )
+    if ( !g_bEnabled || !g_bChatCmd )
     {
         return  PLUGIN_CONTINUE;
     }
@@ -1848,7 +1870,10 @@ public client_putinserver ( nPlayer )
     //
     if ( !g_pbBOT [ nPlayer ]   &&  !g_pbHLTV [ nPlayer ] )
     {
-        set_task ( QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", nPlayer );
+        if ( g_bChatInfo )
+        {
+            set_task ( QS_PLUGIN_INFO_DELAY,    "QS_DisplayPlayerInfo",     nPlayer );
+        }
     }
 
     return  PLUGIN_CONTINUE;
@@ -2630,7 +2655,7 @@ static QS_ProcessPlayerDeath ( nKiller, const &nVictim, const &nWeapon, const &n
                 QS_ClientCmd        ( QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle ( g_pDKill, random_num ( 0, g_nDKillSize - 1 ) ) );
             }
 
-            g_pfLastKillTimeStamp   [ nKiller ]     =   fGameTime   +   0.100000;
+            g_pfLastKillTimeStamp   [ nKiller ]     =   fGameTime   +   QS_DOUBLE_KILL_DELAY;
         }
 
         if ( g_bKStreak )
@@ -2744,6 +2769,16 @@ static QS_LoadSettings ( )
         if      ( equali ( szKey, "ENABLE/DISABLE PLUGIN" ) || equali ( szKey, "ENABLE/ DISABLE PLUGIN" ) ) /** COMPATIBILITY */
         {
             g_bEnabled =                bool:       str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "ENABLE/DISABLE CHAT" ) || equali ( szKey, "ENABLE/ DISABLE CHAT" ) )     /** COMPATIBILITY */
+        {
+            g_bChatCmd =                bool:       str_to_num ( szVal );
+        }
+
+        else if ( equali ( szKey, "ENABLE/DISABLE JOIN" ) || equali ( szKey, "ENABLE/ DISABLE JOIN" ) )     /** COMPATIBILITY */
+        {
+            g_bChatInfo =               bool:       str_to_num ( szVal );
         }
 
         else if ( equali ( szKey, "HEADSHOT ONLY KILLER" ) )
@@ -3156,7 +3191,7 @@ static QS_LoadSettings ( )
         {
             if ( QS_EmptyString ( szVal ) && 0 == ArraySize ( g_pTLMStandingWords ) )
             {
-                ArrayPushString ( g_pTLMStandingWords, "MAN STANDING" );    /// .........
+                ArrayPushString ( g_pTLMStandingWords, QS_TLMSTANDING_WORD );   /// .........
             }
 
             while ( !QS_EmptyString ( szVal ) && strtok ( szVal, szKey, charsmax ( szKey ), szVal, charsmax ( szVal ), ',' ) )
