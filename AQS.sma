@@ -691,41 +691,41 @@ static Array: g_pFBlood = Invalid_Array;
 
 
 /**
- * KILLS STREAK
+ * K. STREAK
  */
 
 //
-// KILLS STREAK ON/ OFF
+// K. STREAK ON/ OFF
 //
 static bool: g_bKStreak = false;
 
 //
-// KILL STREAK SOUNDS COUNT
+// K. STREAK SOUNDS COUNT
 //
 static g_nKStreakSize = 0;
 
 //
-// KILL STREAK REQUIRED KILLS COUNT
+// K. STREAK REQUIRED KILLS COUNT
 //
 static g_nKStreakRKillsSize = 0;
 
 //
-// KILL STREAK MESSAGES COUNT
+// K. STREAK MESSAGES COUNT
 //
 static g_nKStreakMsgSize = 0;
 
 //
-// KILLS STREAK SOUNDS CONTAINER
+// K. STREAK SOUNDS CONTAINER
 //
 static Array: g_pKStreakSnds = Invalid_Array;
 
 //
-// KILLS STREAK MESSAGES CONTAINER
+// K. STREAK MESSAGES CONTAINER
 //
 static Array: g_pKStreakMsgs = Invalid_Array;
 
 //
-// KILLS STREAK REQUIRED KILLS CONTAINER
+// K. STREAK REQUIRED KILLS CONTAINER
 //
 static Array: g_pKStreakReqKills = Invalid_Array;
 
@@ -2845,7 +2845,7 @@ static QS_LoadSettings ( )
         }
 
         //
-        // KILLS STREAK SOUNDS
+        // K. STREAK SOUNDS
         //
         else if ( equali ( szKey, "SOUND" ) )
         {
