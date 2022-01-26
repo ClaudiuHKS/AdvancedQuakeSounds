@@ -73,17 +73,17 @@
 //
 // PLUGIN'S VERSION
 //
-#define QS_PLUGIN_VERSION                   ( "6.1" )               /// "6.1"
+#define QS_PLUGIN_VERSION                   ( "6.2" )               /// "6.2"
 
 //
 // STARTING WITH '/', THE CONFIG FILE NAME
 //
-#define QS_CFG_FILE_NAME                    ( "/quakesounds.ini" )  /// "/quakesounds.ini"
+#define QS_CFG_FILE_NAME                    ( "/AQS.ini" )          /// "/AQS.ini"
 
 //
 // THE LOG FILE NAME
 //
-#define QS_LOG_FILE_NAME                    ( "quakesounds.log" )   /// "quakesounds.log"
+#define QS_LOG_FILE_NAME                    ( "AQS.log" )           /// "AQS.log"
 
 //
 /// ###################################################################################################
