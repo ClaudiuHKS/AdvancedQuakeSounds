@@ -86,6 +86,11 @@
 #define QS_LOG_FILE_NAME                    ( "AQS.log" )           /// "AQS.log"
 
 //
+// CLIENT INFO NAME
+//
+#define CLIENT_INFO_NAME                    ( "qs_d" )
+
+//
 /// ###################################################################################################
 //
 
@@ -990,11 +995,6 @@ static g_pszRevengeStamp [ QS_MAX_PLAYERS + 1 ] [ QS_NAME_MAX_LEN ];
 static g_pnRevengeStamp [ QS_MAX_PLAYERS + 1 ] = { QS_INVALID_PLAYER, ... };
 
 //
-// SOUNDS DISABLED PER PLAYER
-//
-static bool: g_pbDisabled [ QS_MAX_PLAYERS + 1 ] = { false, ... };
-
-//
 // CACHED PLAYER'S USER ID
 //
 static g_pnUserId [ QS_MAX_PLAYERS + 1 ] = { QS_INVALID_PLAYER, ... };
@@ -1719,7 +1719,6 @@ public client_disconnected ( nPlayer )
     //
     g_pbHLTV                    [ nPlayer ]     =       false;
     g_pbBOT                     [ nPlayer ]     =       false;
-    g_pbDisabled                [ nPlayer ]     =       false;
     g_pbConnected               [ nPlayer ]     =       false;
 
     //
@@ -1780,9 +1779,9 @@ public client_command ( nPlayer )
             //
             // ENABLES/ DISABLES SOUNDS PER CLIENT
             //
-            client_print    ( nPlayer, print_chat, ">> QUAKE SOUNDS HAVE BEEN %s.", g_pbDisabled [ nPlayer ] ? "ENABLED" : "DISABLED" );
+            client_print    ( nPlayer, print_chat, ">> QUAKE SOUNDS HAVE BEEN %s.", QS_Disabled ( nPlayer ) ? "ENABLED" : "DISABLED" );
 
-            g_pbDisabled    [ nPlayer ]     =   !g_pbDisabled   [ nPlayer ];
+            QS_Toggle ( nPlayer );
         }
     }
 
@@ -1841,11 +1840,6 @@ public client_putinserver ( nPlayer )
     // USER ID
     //
     g_pnUserId [ nPlayer ] =                get_user_userid     ( nPlayer );
-
-    //
-    // SETTINGS ON
-    //
-    g_pbDisabled [ nPlayer ] =              false;
 
     //
     // NO REVENGE STAMP YET
@@ -3453,7 +3447,7 @@ static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
     //
     // SPECIFIED CLIENT
     //
-    if ( bIsPlayer && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
+    if ( bIsPlayer && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !QS_Disabled ( nTo ) )
     {
         ShowSyncHudMsg ( nTo, nObj, szBuffer );
     }
@@ -3465,7 +3459,7 @@ static QS_ShowHudMsg ( nTo, const &nObj, const szRules [ ], any: ... )
     {
         for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
         {
-            if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !g_pbDisabled [ nPlayer ] )
+            if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !QS_Disabled ( nPlayer ) )
             {
                 ShowSyncHudMsg ( nPlayer, nObj, szBuffer );
             }
@@ -3508,7 +3502,7 @@ static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
     //
     // SPECIFIED CLIENT
     //
-    if ( bIsPlayer && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !g_pbDisabled [ nTo ] )
+    if ( bIsPlayer && g_pbConnected [ nTo ] && !g_pbBOT [ nTo ] && !g_pbHLTV [ nTo ] && !QS_Disabled ( nTo ) )
     {
         client_cmd ( nTo, szBuffer );
     }
@@ -3520,7 +3514,7 @@ static QS_ClientCmd ( nTo, const szRules [ ], any: ... )
     {
         for ( nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer ++ )
         {
-            if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !g_pbDisabled [ nPlayer ] )
+            if ( g_pbConnected [ nPlayer ] && !g_pbBOT [ nPlayer ] && !g_pbHLTV [ nPlayer ] && !QS_Disabled ( nPlayer ) )
             {
                 client_cmd ( nPlayer, szBuffer );
             }
@@ -3683,4 +3677,27 @@ static bool: QS_ValidWeapon ( const &nWpn )
 static bool: QS_ValidPlace ( const &nPlace )
 {
     return  nPlace > QS_INVALID_PLACE;
+}
+
+//
+// RETURNS TRUE IF THE PLAYER HAS QS DISABLED
+//
+static bool: QS_Disabled ( nPlayer ) {
+  new qs_disabled_s[5];
+
+  get_user_info ( nPlayer, CLIENT_INFO_NAME, qs_disabled_s, charsmax(qs_disabled_s) );
+  return str_to_num( qs_disabled_s ) == 1;
+}
+
+//
+// DISABLES/ENABLES QS FOR THE PLAYER  
+//
+static QS_Toggle ( nPlayer ) {
+  new qs_disabled_s[5], bool: qs_state;
+
+  qs_state = QS_Disabled ( nPlayer );
+  num_to_str( !qs_state, qs_disabled_s, charsmax( qs_disabled_s ) );
+
+  client_cmd( nPlayer, "setinfo \"%s\" \"%s\"", CLIENT_INFO_NAME, qs_disabled_s );
+  set_user_info ( nPlayer, CLIENT_INFO_NAME, qs_disabled_s ); // In case setinfo breaks, this will at least be a fallback while the user is connected
 }
