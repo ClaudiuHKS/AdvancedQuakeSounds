@@ -2054,11 +2054,11 @@ public client_command(nPlayer)
 }
 
 ///
-/// client_authorized ( nPlayer, const szSteam [ ] )
+/// client_authorized ( nPlayer )
 ///
 /// EXECUTES WHEN CLIENT TELLS THEIR STEAM ID
 ///
-public client_authorized(nPlayer, const szSteam[])
+public client_authorized(nPlayer)
 {
     static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
 
@@ -2081,7 +2081,7 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     /// RETRIEVES PLAYER STEAM
     ///
-    copy(g_pszSteam[nPlayer], charsmax(g_pszSteam[]), szSteam);
+    get_user_authid(nPlayer, g_pszSteam[nPlayer], charsmax(g_pszSteam[]));
 
     ///
     /// SHRINK THE STEAM
@@ -2704,7 +2704,7 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
         {
             if (nUserId > -1)
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = find_player("km", nUserId);
                 {
                     if (nPlayer > 0)
                     {
@@ -2747,7 +2747,7 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
         {
             if (nUserId > -1)
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = find_player("km", nUserId);
                 {
                     if (nPlayer > 0)
                     {
@@ -2774,7 +2774,7 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
         {
             if (nUserId > -1)
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = find_player("km", nUserId);
                 {
                     if (nPlayer > 0)
                     {
@@ -2814,7 +2814,7 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
         {
             if (nUserId > -1)
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = find_player("km", nUserId);
                 {
                     if (nPlayer > 0)
                     {
@@ -2841,7 +2841,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
         {
             if (nUserId > -1)
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = find_player("km", nUserId);
                 {
                     if (nPlayer > 0)
                     {
@@ -2913,7 +2913,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
         {
             if (nUserId > -1)
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = find_player("km", nUserId);
                 {
                     if (nPlayer > 0)
                     {
