@@ -1997,46 +1997,43 @@ public client_command(nPlayer)
                     {
                         if (Empty_Handle != g_pDatabase)
                         {
-                            if (isdigit(g_pszSteam[nPlayer][0]))
+                            if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
                             {
-                                if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+                                if (equali(g_szExtension, "SQLite"))
                                 {
-                                    if (equali(g_szExtension, "SQLite"))
+                                    if (!g_bFullSteam)
                                     {
-                                        if (!g_bFullSteam)
-                                        {
-                                            formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';",
-                                                g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
-                                        }
-
-                                        else
-                                        {
-                                            formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';",
-                                                g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
-                                        }
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';",
+                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
 
                                     else
                                     {
-                                        if (!g_bFullSteam)
-                                        {
-                                            formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
-                                                g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
-                                        }
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';",
+                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                                    }
+                                }
 
-                                        else
-                                        {
-                                            formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
-                                                g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
-                                        }
+                                else
+                                {
+                                    if (!g_bFullSteam)
+                                    {
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
+                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
 
-                                    num_to_str(g_pnUserId[nPlayer], szUserId, charsmax(szUserId));
-
-                                    SQL_ThreadQuery(g_pDatabase, "QS_StoreThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
-
-                                    g_pbAccess[nPlayer] = false;
+                                    else
+                                    {
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
+                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                                    }
                                 }
+
+                                num_to_str(g_pnUserId[nPlayer], szUserId, charsmax(szUserId));
+
+                                SQL_ThreadQuery(g_pDatabase, "QS_StoreThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+
+                                g_pbAccess[nPlayer] = false;
                             }
                         }
                     }
@@ -2111,24 +2108,21 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     if (Empty_Handle != g_pDatabase)
     {
-        if (isdigit(g_pszSteam[nPlayer][0]))
+        if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
         {
-            if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+            if (!g_bFullSteam)
             {
-                if (!g_bFullSteam)
-                {
-                    formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_fast WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
-                }
-
-                else
-                {
-                    formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_full WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
-                }
-
-                num_to_str(g_pnUserId[nPlayer], szUserId, charsmax(szUserId));
-
-                SQL_ThreadQuery(g_pDatabase, "QS_PickThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+                formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_fast WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
             }
+
+            else
+            {
+                formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_full WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
+            }
+
+            num_to_str(g_pnUserId[nPlayer], szUserId, charsmax(szUserId));
+
+            SQL_ThreadQuery(g_pDatabase, "QS_PickThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
         }
     }
 
