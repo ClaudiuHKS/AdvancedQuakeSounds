@@ -1653,24 +1653,6 @@ public plugin_init()
 
         if (g_pDatabase != Empty_Handle)
         {
-            if (g_szChars[0] != EOS && !equali(g_szExtension, "SQLite") && !SQL_SetCharset(g_pDatabase, g_szChars))
-            {
-                log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
-                log_to_file(QS_LOG_FILE_NAME, "Sql Primary Character Set Update Failed.");
-                log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", g_szChars[0] != EOS ? g_szChars : "N/ A");
-                log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database.");
-                log_to_file(QS_LOG_FILE_NAME, "This Is Just A Warning, Not An Error.");
-
-                if (g_szSecChars[0] != EOS && !equali(g_szExtension, "SQLite") && !SQL_SetCharset(g_pDatabase, g_szSecChars))
-                {
-                    log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
-                    log_to_file(QS_LOG_FILE_NAME, "Sql Secondary Character Set Update Failed.");
-                    log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", g_szSecChars[0] != EOS ? g_szSecChars : "N/ A");
-                    log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database.");
-                    log_to_file(QS_LOG_FILE_NAME, "This Is Just A Warning, Not An Error.");
-                }
-            }
-
             if (!equali(g_szExtension, "SQLite"))
             {
                 if (!g_bFullSteam)
