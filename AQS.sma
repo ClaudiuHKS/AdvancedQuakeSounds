@@ -57,7 +57,7 @@
 ///
 /// SQL HEADER FILE
 ///
-#include < sqlx > /// SQL_Connect ( ) +
+#include < sqlx > /// SQL_ThreadQuery ( ) +
 
 ///
 /// FAKE META HEADER FILE
@@ -942,54 +942,59 @@ static g_nTeamKill = 0;
 static bool: g_bSql = false;
 
 ///
+/// SQL STORAGE LOCAL/ REMOTE
+///
+static bool: g_bSqlLocal = false;
+
+///
 /// SQL DATABASE HANDLE
 ///
-static Handle: g_pDatabase = Empty_Handle;
+static Handle: g_pSqlDb = Empty_Handle;
 
 ///
 /// SQL FULL OR FAST STEAM STORAGE
 ///
-static bool: g_bFullSteam = false;
+static bool: g_bSqlFullSteam = false;
 
 ///
 /// SQL ADDRESS
 ///
-static g_szAddress[128] = { EOS, ... };
+static g_szSqlAddr[128] = { EOS, ... };
 
 ///
 /// SQL DATABASE USER NAME
 ///
-static g_szUser[64] = { EOS, ... };
+static g_szSqlUser[64] = { EOS, ... };
 
 ///
 /// SQL DATABASE PASSWORD
 ///
-static g_szPassword[64] = { EOS, ... };
+static g_szSqlPassword[64] = { EOS, ... };
 
 ///
 /// SQL EXTENSION TO USE
 ///
-static g_szExtension[64] = { EOS, ... };
+static g_szSqlExtension[64] = { EOS, ... };
 
 ///
 /// SQL DATABASE NAME
 ///
-static g_szDatabase[64] = { EOS, ... };
+static g_szSqlDatabase[64] = { EOS, ... };
 
 ///
 /// SQL PRIMARY ( MAIN ) CHARSET
 ///
-static g_szChars[64] = { EOS, ... };
+static g_szSqlChars[64] = { EOS, ... };
 
 ///
-/// SQL SECOND CHARSET
+/// SQL SECONDARY CHARSET
 ///
-static g_szSecChars[64] = { EOS, ... };
+static g_szSqlSecChars[64] = { EOS, ... };
 
 ///
 /// SQL TIMEOUT SECONDS [ 0 = AMX MOD X'S DEFAULT ( SEE THE "CORE.INI" FILE ) ]
 ///
-static g_nMaxSecondsError = 0;
+static g_nSqlMaxSecondsError = 0;
 
 /**
 * PLAYERS RELATED
@@ -1455,11 +1460,11 @@ public plugin_end()
     ///
     if (g_bSql)
     {
-        if (Empty_Handle != g_pDatabase)
+        if (Empty_Handle != g_pSqlDb)
         {
-            SQL_FreeHandle(g_pDatabase);
+            SQL_FreeHandle(g_pSqlDb);
             {
-                g_pDatabase = Empty_Handle;
+                g_pSqlDb = Empty_Handle;
             }
         }
     }
@@ -1476,11 +1481,6 @@ public plugin_end()
 public plugin_init()
 {
     ///
-    /// DATA
-    ///
-    new szBuffer[128] = { EOS, ... }, bool: bError = false, nIter = 0, pConVar = 0;
-
-    ///
     /// GETS THE MOD NAME
     ///
     QS_CheckMod();
@@ -1488,7 +1488,7 @@ public plugin_init()
     ///
     /// REGISTERS THE PLUGIN'S CONSOLE VARIABLE
     ///
-    pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_SPONLY);
+    new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_SPONLY);
 
     ///
     /// SETS THE CONSOLE VARIABLE STRING
@@ -1612,7 +1612,7 @@ public plugin_init()
     ///
     /// HUD MESSAGE [ TE_TEXTMESSAGE ] CHANNEL HANDLES
     ///
-    for (nIter = 0; nIter < QS_HUD_MAX; nIter++)
+    for (new nIter = 0; nIter < QS_HUD_MAX; nIter++)
     {
         g_pnHudMsgObj[nIter] = CreateHudSyncObj();
     }
@@ -1622,11 +1622,19 @@ public plugin_init()
     ///
     if (g_bSql)
     {
-        SQL_GetAffinity(szBuffer, charsmax(szBuffer));
+        new szAffinity[64] = { EOS, ... }, bool: bError = false;
 
-        if (!equali(szBuffer, g_szExtension))
+        ///
+        /// READ THE ACTUAL SQL DRIVER
+        ///
+        SQL_GetAffinity(szAffinity, charsmax(szAffinity));
+
+        if (!equali(szAffinity, g_szSqlExtension))
         {
-            bError = !(bool: SQL_SetAffinity(g_szExtension));
+            ///
+            /// SQL DRIVER TO USE
+            ///
+            bError = !(bool: SQL_SetAffinity(g_szSqlExtension));
         }
 
         else
@@ -1634,51 +1642,74 @@ public plugin_init()
             bError = false;
         }
 
+        ///
+        /// UNKNOWN SQL DRIVER
+        ///
         if (bError)
         {
             g_bSql = false;
             {
-                g_pDatabase = Empty_Handle;
+                g_pSqlDb = Empty_Handle;
             }
 
             log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
             log_to_file(QS_LOG_FILE_NAME, "Sql Database Connection Failed.");
-            log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetAffinity ( '%s' ) ].", g_szExtension[0] != EOS ? g_szExtension : "N/ A");
+            log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetAffinity ( '%s' ) ].", !QS_EmptyString(g_szSqlExtension) ? g_szSqlExtension : "N/ A");
             log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Not Be Stored In Any Database.");
 
             return PLUGIN_CONTINUE;
         }
 
-        g_pDatabase = SQL_MakeDbTuple(g_szAddress, g_szUser, g_szPassword, g_szDatabase, g_nMaxSecondsError);
+        ///
+        /// SQL CONNECTION
+        ///
+        g_pSqlDb = SQL_MakeDbTuple(g_szSqlAddr, g_szSqlUser, g_szSqlPassword, g_szSqlDatabase, g_nSqlMaxSecondsError);
 
-        if (g_pDatabase != Empty_Handle)
+        ///
+        /// SUCCESS
+        ///
+        if (g_pSqlDb != Empty_Handle)
         {
-            if (g_szChars[0] != EOS && !equali(g_szExtension, "SQLite") && !SQL_SetCharset(g_pDatabase, g_szChars))
+            new szBuffer[128] = { EOS, ... };
+
+            ///
+            /// SQL CHARSET
+            ///
+            if (!QS_EmptyString(g_szSqlChars) && !g_bSqlLocal && !SQL_SetCharset(g_pSqlDb, g_szSqlChars))
             {
                 log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
                 log_to_file(QS_LOG_FILE_NAME, "Sql Primary Character Set Update Failed.");
-                log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", g_szChars[0] != EOS ? g_szChars : "N/ A");
-                log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database.");
-                log_to_file(QS_LOG_FILE_NAME, "This Is Just A Warning, Not An Error.");
+                log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", !QS_EmptyString(g_szSqlChars) ? g_szSqlChars : "N/ A");
+                log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database. This Is Just A Warning, Not An Error.");
 
-                if (g_szSecChars[0] != EOS && !equali(g_szExtension, "SQLite") && !SQL_SetCharset(g_pDatabase, g_szSecChars))
+                if (!QS_EmptyString(g_szSqlSecChars) && !g_bSqlLocal && !SQL_SetCharset(g_pSqlDb, g_szSqlSecChars))
                 {
                     log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
                     log_to_file(QS_LOG_FILE_NAME, "Sql Secondary Character Set Update Failed.");
-                    log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", g_szSecChars[0] != EOS ? g_szSecChars : "N/ A");
-                    log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database.");
-                    log_to_file(QS_LOG_FILE_NAME, "This Is Just A Warning, Not An Error.");
+                    log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", !QS_EmptyString(g_szSqlSecChars) ? g_szSqlSecChars : "N/ A");
+                    log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database. This Is Just A Warning, Not An Error.");
                 }
             }
 
-            if (!equali(g_szExtension, "SQLite"))
+            ///
+            /// SQL TABLES
+            ///
+            if (!g_bSqlLocal)
             {
-                if (!g_bFullSteam)
+                if (!g_bSqlFullSteam)
                 {
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_fast (aqs_steam, aqs_option)");
 
-                    SQL_ThreadQuery(g_pDatabase, "QS_CreateThreadedQueryHandler",
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
                         "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_520_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_520_ci;",
+                        szBuffer, charsmax(szBuffer));
+
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;",
+                        szBuffer, charsmax(szBuffer));
+
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
                 }
 
@@ -1686,42 +1717,57 @@ public plugin_init()
                 {
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_full (aqs_steam, aqs_option)");
 
-                    SQL_ThreadQuery(g_pDatabase, "QS_CreateThreadedQueryHandler",
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
                         "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_520_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_520_ci;",
+                        szBuffer, charsmax(szBuffer));
+
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;",
+                        szBuffer, charsmax(szBuffer));
+
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
                 }
             }
 
             else
             {
-                if (!g_bFullSteam)
+                if (!g_bSqlFullSteam)
                 {
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_fast (aqs_steam, aqs_option)");
 
-                    SQL_ThreadQuery(g_pDatabase, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
-                        szBuffer, charsmax(szBuffer));
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));", szBuffer, charsmax(szBuffer));
+
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));", szBuffer, charsmax(szBuffer));
                 }
 
                 else
                 {
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_full (aqs_steam, aqs_option)");
 
-                    SQL_ThreadQuery(g_pDatabase, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
-                        szBuffer, charsmax(szBuffer));
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));", szBuffer, charsmax(szBuffer));
+
+                    SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));", szBuffer, charsmax(szBuffer));
                 }
             }
         }
 
+        ///
+        /// ERROR
+        ///
         else
         {
             g_bSql = false;
 
             log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
             log_to_file(QS_LOG_FILE_NAME, "Sql Database Connection Failed.");
-            log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_MakeDbTuple ( '%s', '%s', '%s', '%s', %d ) ].", g_szAddress[0] != EOS ? g_szAddress : "N/ A",
-                g_szUser[0] != EOS ? g_szUser : "N/ A", g_szPassword[0] != EOS ? g_szPassword : "N/ A", g_szDatabase[0] != EOS ? g_szDatabase : "N/ A", g_nMaxSecondsError);
+            log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_MakeDbTuple ( '%s', '%s', '%s', '%s', %d ) ].", !QS_EmptyString(g_szSqlAddr) ? g_szSqlAddr : "N/ A",
+                !QS_EmptyString(g_szSqlUser) ? g_szSqlUser : "N/ A", !QS_EmptyString(g_szSqlPassword) ? g_szSqlPassword : "N/ A", !QS_EmptyString(g_szSqlDatabase) ? g_szSqlDatabase : "N/ A", g_nSqlMaxSecondsError);
             log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Not Be Stored In Any Database.");
         }
     }
@@ -1849,6 +1895,9 @@ public plugin_cfg()
 ///
 public client_infochanged(nPlayer)
 {
+    ///
+    /// DATA
+    ///
     static szName[QS_NAME_MAX_LEN] = { EOS, ... };
 
     ///
@@ -1901,6 +1950,9 @@ public client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen)
         g_pnKills[nPlayer] = 0;
     }
 
+    ///
+    /// NO MORE HATTRICK KILLS
+    ///
     if (g_bHattrick)
     {
         g_pnKillsThisRound[nPlayer] = 0;
@@ -1956,7 +2008,10 @@ public client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen)
 ///
 public client_command(nPlayer)
 {
-    static szArg[16] = { EOS, ... }, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+    ///
+    /// DATA
+    ///
+    static szArg[16] = { EOS, ... }, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0;
 
     ///
     /// SANITY CHECK
@@ -1993,46 +2048,52 @@ public client_command(nPlayer)
 
                 if (g_bSql)
                 {
-                    if (g_pbLoaded[nPlayer])
+                    if (Empty_Handle != g_pSqlDb)
                     {
-                        if (Empty_Handle != g_pDatabase)
+                        ///
+                        /// THEIR STEAM ID IS ACTUALLY INTO THE DATABASE
+                        ///
+                        if (g_pbLoaded[nPlayer])
                         {
-                            if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+                            ///
+                            /// VALID STEAM ID
+                            ///
+                            if ((((nLen = strlen(g_pszSteam[nPlayer])) > 0) && isdigit(g_pszSteam[nPlayer][0])) || ((nLen > 10) && isdigit(g_pszSteam[nPlayer][10])))
                             {
-                                if (equali(g_szExtension, "SQLite"))
+                                if (g_bSqlLocal)
                                 {
-                                    if (!g_bFullSteam)
+                                    if (!g_bSqlFullSteam)
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';",
-                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
 
                                     else
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';",
-                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
                                 }
 
                                 else
                                 {
-                                    if (!g_bFullSteam)
+                                    if (!g_bSqlFullSteam)
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
-                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
 
                                     else
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
-                                            g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
                                 }
 
                                 num_to_str(g_pnUserId[nPlayer], szUserId, charsmax(szUserId));
+                                {
+                                    SQL_ThreadQuery(g_pSqlDb, "QS_StoreThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+                                }
 
-                                SQL_ThreadQuery(g_pDatabase, "QS_StoreThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
-
+                                ///
+                                /// MAKE THEM WAIT A BIT WHILE THE SQL DRIVER ( IF ENABLED ) UPDATES THEIR PREFERENCE
+                                ///
                                 g_pbAccess[nPlayer] = false;
                             }
                         }
@@ -2040,6 +2101,9 @@ public client_command(nPlayer)
                 }
             }
 
+            ///
+            /// WHILE THE SQL DRIVER ( IF ENABLED ) UPDATES THEIR PREFERENCE THEY MUST WAIT A BIT
+            ///
             else
             {
                 client_print(nPlayer, print_chat, ">> WAIT A FEW MOMENTS.");
@@ -2057,7 +2121,10 @@ public client_command(nPlayer)
 ///
 public client_authorized(nPlayer, const szSteam[])
 {
-    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+    ///
+    /// DATA
+    ///
+    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0;
 
     ///
     /// SANITY CHECK
@@ -2076,6 +2143,14 @@ public client_authorized(nPlayer, const szSteam[])
     }
 
     ///
+    /// SANITY SQL STORAGE DATABASE CHECK
+    ///
+    if (Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
     /// RETRIEVES PLAYER STEAM
     ///
     copy(g_pszSteam[nPlayer], charsmax(g_pszSteam[]), szSteam);
@@ -2083,7 +2158,7 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     /// SHRINK THE STEAM
     ///
-    if (!g_bFullSteam)
+    if (!g_bSqlFullSteam)
     {
         QS_ShrinkSteam(g_pszSteam[nPlayer]);
     }
@@ -2106,11 +2181,14 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     /// SQL STORAGE SELECT QUERY
     ///
-    if (Empty_Handle != g_pDatabase)
+    if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
     {
-        if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+        ///
+        /// VALID STEAM ID ONLY
+        ///
+        if ((((nLen = strlen(g_pszSteam[nPlayer])) > 0) && isdigit(g_pszSteam[nPlayer][0])) || ((nLen > 10) && isdigit(g_pszSteam[nPlayer][10])))
         {
-            if (!g_bFullSteam)
+            if (!g_bSqlFullSteam)
             {
                 formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_fast WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
             }
@@ -2121,8 +2199,9 @@ public client_authorized(nPlayer, const szSteam[])
             }
 
             num_to_str(g_pnUserId[nPlayer], szUserId, charsmax(szUserId));
-
-            SQL_ThreadQuery(g_pDatabase, "QS_PickThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+            {
+                SQL_ThreadQuery(g_pSqlDb, "QS_PickThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+            }
         }
     }
 
@@ -2167,6 +2246,9 @@ public client_putinserver(nPlayer)
         g_pnKills[nPlayer] = 0;
     }
 
+    ///
+    /// NO HATTRICK KILLS
+    ///
     if (g_bHattrick)
     {
         g_pnKillsThisRound[nPlayer] = 0;
@@ -2180,7 +2262,7 @@ public client_putinserver(nPlayer)
     ///
     /// SOUNDS ENABLED IF NO SQL STORAGE IN USE
     ///
-    if (!g_bSql)
+    if ((false == g_bSql) || (g_pSqlDb == Empty_Handle))
     {
         g_pbDisabled[nPlayer] = false;
     }
@@ -2238,13 +2320,16 @@ public QS_DisplayPlayerInfo(nPlayer)
     ///
     if (g_pbConnected[nPlayer])
     {
-        if (g_pbLoaded[nPlayer])
+        if (g_bSql)
         {
-            if (g_pbExisting[nPlayer])
+            if (g_bSkipExisting)
             {
-                if (g_bSkipExisting)
+                if (g_pbLoaded[nPlayer])
                 {
-                    return PLUGIN_CONTINUE;
+                    if (g_pbExisting[nPlayer])
+                    {
+                        return PLUGIN_CONTINUE;
+                    }
                 }
             }
         }
@@ -2327,8 +2412,9 @@ public QS_PerformManStanding()
         QS_ClientCmd(nTEGuy, "SPK \"%a\"", ArrayGetStringHandle(g_pTLMStanding, random_num(0, g_nTLMStandingSize - 1)));
 
         QS_HudMsgColor();
-
-        set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+        {
+            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+        }
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -2341,8 +2427,7 @@ public QS_PerformManStanding()
             {
                 if (g_bTLMStandingSelfMsg)
                 {
-                    QS_ShowHudMsg(nTEGuy, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingSelfMsg,
-                        ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
+                    QS_ShowHudMsg(nTEGuy, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingSelfMsg, ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
                 }
             }
 
@@ -2350,8 +2435,7 @@ public QS_PerformManStanding()
             {
                 if (g_bTLMStandingTeamMsg)
                 {
-                    QS_ShowHudMsg(nPlayer, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingTeamMsg, g_pszName[nTEGuy],
-                        ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
+                    QS_ShowHudMsg(nPlayer, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingTeamMsg, g_pszName[nTEGuy], ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
                 }
             }
         }
@@ -2364,8 +2448,9 @@ public QS_PerformManStanding()
         QS_ClientCmd(nCTGuy, "SPK \"%a\"", ArrayGetStringHandle(g_pTLMStanding, random_num(0, g_nTLMStandingSize - 1)));
 
         QS_HudMsgColor();
-
-        set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+        {
+            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+        }
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -2378,8 +2463,7 @@ public QS_PerformManStanding()
             {
                 if (g_bTLMStandingSelfMsg)
                 {
-                    QS_ShowHudMsg(nCTGuy, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingSelfMsg,
-                        ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
+                    QS_ShowHudMsg(nCTGuy, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingSelfMsg, ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
                 }
             }
 
@@ -2387,8 +2471,7 @@ public QS_PerformManStanding()
             {
                 if (g_bTLMStandingTeamMsg)
                 {
-                    QS_ShowHudMsg(nPlayer, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingTeamMsg, g_pszName[nCTGuy],
-                        ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
+                    QS_ShowHudMsg(nPlayer, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingTeamMsg, g_pszName[nCTGuy], ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
                 }
             }
         }
@@ -2463,9 +2546,12 @@ public QS_OnRoundBegin()
         if (g_bRStartMsg)
         {
             QS_HudMsgColor();
-
-            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_ROUND_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
-            QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_ROUND], g_szRStartMsg);
+            {
+                set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_ROUND_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+                {
+                    QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_ROUND], g_szRStartMsg);
+                }
+            }
         }
 
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pRStart, random_num(0, g_nRStartSize - 1)));
@@ -2531,8 +2617,9 @@ public QS_Hattrick()
             if (g_bHattrickMsg)
             {
                 QS_HudMsgColor();
-
-                set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_HATTRICK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+                {
+                    set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_HATTRICK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+                }
 
                 if (g_bHattrickToAll)
                 {
@@ -2574,8 +2661,9 @@ public QS_Flawless()
     nAllTeam_2 = nAliveTeam_2 + QS_ActivePlayersNum(false, 2);
 
     QS_HudMsgColor();
-
-    set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+    {
+        set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+    }
 
     if (nAllTeam_1 == nAliveTeam_1)
     {
@@ -2613,8 +2701,9 @@ public QS_FM_OnMsgBegin(nDestination, nType)
     if (nType == g_nDeathMsg && (nDestination == MSG_ALL || nDestination == MSG_BROADCAST))
     {
         g_bOnDeathMsg = true;
-
-        g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
+        {
+            g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
+        }
     }
 
     return PLUGIN_CONTINUE;
@@ -2637,15 +2726,15 @@ public QS_FM_OnWriteByte(nByte)
         ///
         switch (++g_nDeathMsgByteStatus)
         {
-        case QS_DEATHMSG_KILLER: /// KILLER ID
-        {
-            g_nKiller = nByte;
-        }
+            case QS_DEATHMSG_KILLER: /// KILLER ID
+            {
+                g_nKiller = nByte;
+            }
 
-        case QS_DEATHMSG_VICTIM: /// VICTIM ID
-        {
-            g_nVictim = nByte;
-        }
+            case QS_DEATHMSG_VICTIM: /// VICTIM ID
+            {
+                g_nVictim = nByte;
+            }
         }
     }
 
@@ -2665,15 +2754,17 @@ public QS_FM_OnMsgEnd()
     if (g_bOnDeathMsg)
     {
         g_bOnDeathMsg = false;
-
-        g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
+        {
+            g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
+        }
 
         if (g_bDeathMsgOnly) /// OTHERWISE, THESE ARE PREPARED BY THE XSTATS "client_death ( )"
         {
             g_nWeapon = QS_INVALID_WEAPON;
             g_nPlace = QS_INVALID_PLACE;
-
-            g_nTeamKill = 0;
+            {
+                g_nTeamKill = 0;
+            }
         }
 
         ///
@@ -2688,13 +2779,19 @@ public QS_FM_OnMsgEnd()
 ///
 /// ADD TO THE DATABASE
 ///
-public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szUserData[], nUserDataSize, Float: fQueueTimeSeconds)
+public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szCustomUserData[], nCustomUserDataSize /** != LENGTH */, Float: fQueueTimeSeconds)
 {
+    ///
+    /// DATA
+    ///
     static nUserId = 0, nPlayer = 0;
 
-    if (!nFailState && szError[0] == EOS && !nErrorCode)
+    ///
+    /// SUCCESS
+    ///
+    if (!nFailState && QS_EmptyString(szError) && !nErrorCode)
     {
-        nUserId = str_to_num(szUserData);
+        nUserId = str_to_num(szCustomUserData);
         {
             if (nUserId > -1)
             {
@@ -2706,20 +2803,32 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
                         {
                             if (SQL_AffectedRows(pQuery) > 0)
                             {
+                                ///
+                                /// SOUNDS ENABLED
+                                ///
                                 g_pbDisabled[nPlayer] = false;
                                 {
-                                    g_pbLoaded[nPlayer] = true;
+                                    ///
+                                    /// INSERTION OF PLAYER STEAM ID INTO THE DATABASE SUCCEEDED
+                                    ///
+                                    g_pbLoaded[nPlayer] = true; /** CAN NOW SAVE THEIR PREFERENCE IF THEY TYPE '/SOUNDS' */
                                 }
                             }
 
                             else
                             {
+                                ///
+                                /// SOUNDS ENABLED
+                                ///
                                 g_pbDisabled[nPlayer] = false;
                             }
                         }
 
                         else
                         {
+                            ///
+                            /// SOUNDS ENABLED
+                            ///
                             g_pbDisabled[nPlayer] = false;
                         }
                     }
@@ -2728,16 +2837,19 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
         }
     }
 
+    ///
+    /// ERROR
+    ///
     else
     {
         log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
         log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
         log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", szError[0] != EOS ? szError : "N/ A");
+        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
         log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_AddThreadedQueryHandler ].");
+        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_AddThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
 
-        nUserId = str_to_num(szUserData);
+        nUserId = str_to_num(szCustomUserData);
         {
             if (nUserId > -1)
             {
@@ -2745,6 +2857,9 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
                 {
                     if (nPlayer > 0)
                     {
+                        ///
+                        /// SOUNDS ENABLED
+                        ///
                         g_pbDisabled[nPlayer] = false;
                     }
                 }
@@ -2758,13 +2873,19 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
 ///
 /// STORE TO THE DATABASE
 ///
-public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szUserData[], nUserDataSize, Float: fQueueTimeSeconds)
+public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szCustomUserData[], nCustomUserDataSize /** != LENGTH */, Float: fQueueTimeSeconds)
 {
+    ///
+    /// DATA
+    ///
     static nUserId = 0, nPlayer = 0;
 
-    if (!nFailState && szError[0] == EOS && !nErrorCode)
+    ///
+    /// SUCCESS
+    ///
+    if (!nFailState && QS_EmptyString(szError) && !nErrorCode)
     {
-        nUserId = str_to_num(szUserData);
+        nUserId = str_to_num(szCustomUserData);
         {
             if (nUserId > -1)
             {
@@ -2776,17 +2897,26 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
                         {
                             if (SQL_AffectedRows(pQuery) > 0)
                             {
+                                ///
+                                /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                                ///
                                 g_pbAccess[nPlayer] = true;
                             }
 
                             else
                             {
+                                ///
+                                /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                                ///
                                 g_pbAccess[nPlayer] = true;
                             }
                         }
 
                         else
                         {
+                            ///
+                            /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                            ///
                             g_pbAccess[nPlayer] = true;
                         }
                     }
@@ -2795,16 +2925,22 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
         }
     }
 
+    ///
+    /// ERROR
+    ///
     else
     {
         log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
         log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
         log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", szError[0] != EOS ? szError : "N/ A");
+        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
         log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_StoreThreadedQueryHandler ].");
+        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_StoreThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
 
-        nUserId = str_to_num(szUserData);
+        ///
+        /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+        ///
+        nUserId = str_to_num(szCustomUserData);
         {
             if (nUserId > -1)
             {
@@ -2812,6 +2948,9 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
                 {
                     if (nPlayer > 0)
                     {
+                        ///
+                        /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                        ///
                         g_pbAccess[nPlayer] = true;
                     }
                 }
@@ -2825,13 +2964,19 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
 ///
 /// PICK FROM THE DATABASE
 ///
-public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szUserData[], nUserDataSize, Float: fQueueTimeSeconds)
+public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szCustomUserData[], nCustomUserDataSize /** != LENGTH */, Float: fQueueTimeSeconds)
 {
+    ///
+    /// DATA
+    ///
     static nUserId = 0, nPlayer = 0, szQuery[128] = { EOS, ... };
 
-    if (!nFailState && szError[0] == EOS && !nErrorCode)
+    ///
+    /// SUCCESS
+    ///
+    if (!nFailState && QS_EmptyString(szError) && !nErrorCode)
     {
-        nUserId = str_to_num(szUserData);
+        nUserId = str_to_num(szCustomUserData);
         {
             if (nUserId > -1)
             {
@@ -2843,20 +2988,23 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                         {
                             if (SQL_NumResults(pQuery) > 0)
                             {
-                                g_pbDisabled[nPlayer] = !(bool: SQL_ReadResult(pQuery, 0));
+                                g_pbDisabled[nPlayer] = !(bool: SQL_ReadResult(pQuery, 0 /** COLUMN #0 */)); /** USER PREFERENCE ON/ OFF */
                                 {
-                                    g_pbLoaded[nPlayer] = true;
+                                    g_pbLoaded[nPlayer] = true; /** CAN NOW SAVE THEIR PREFERENCE IF THEY TYPE '/SOUNDS' */
                                     {
-                                        g_pbExisting[nPlayer] = true;
+                                        g_pbExisting[nPlayer] = true; /** ALREADY EXISTING INTO THE DATABASE ( NO DATABASE STEAM ID INSERTION NEEDED ) */
                                     }
                                 }
                             }
 
+                            ///
+                            /// STEAM ID NOT FOUND INTO THE DATABASE ( DATABASE INSERTION OF STEAM ID NEEDED )
+                            ///
                             else
                             {
-                                if (!equali(g_szExtension, "SQLite"))
+                                if (!g_bSqlLocal)
                                 {
-                                    if (!g_bFullSteam)
+                                    if (!g_bSqlFullSteam)
                                     {
                                         formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', 1) LIMIT 1;", g_pszSteam[nPlayer]);
                                     }
@@ -2869,7 +3017,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
 
                                 else
                                 {
-                                    if (!g_bFullSteam)
+                                    if (!g_bSqlFullSteam)
                                     {
                                         formatex(szQuery, charsmax(szQuery), "INSERT INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', 1);", g_pszSteam[nPlayer]);
                                     }
@@ -2880,13 +3028,13 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                     }
                                 }
 
-                                SQL_ThreadQuery(g_pDatabase, "QS_AddThreadedQueryHandler", szQuery, szUserData, nUserDataSize);
+                                SQL_ThreadQuery(g_pSqlDb, "QS_AddThreadedQueryHandler", szQuery, szCustomUserData, nCustomUserDataSize);
                             }
                         }
 
                         else
                         {
-                            g_pbDisabled[nPlayer] = false;
+                            g_pbDisabled[nPlayer] = false; /** SOUNDS ENABLED */
                         }
                     }
                 }
@@ -2894,16 +3042,19 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
         }
     }
 
+    ///
+    /// ERROR
+    ///
     else
     {
         log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
         log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
         log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", szError[0] != EOS ? szError : "N/ A");
+        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
         log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_PickThreadedQueryHandler ].");
+        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_PickThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
 
-        nUserId = str_to_num(szUserData);
+        nUserId = str_to_num(szCustomUserData);
         {
             if (nUserId > -1)
             {
@@ -2911,7 +3062,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                 {
                     if (nPlayer > 0)
                     {
-                        g_pbDisabled[nPlayer] = false;
+                        g_pbDisabled[nPlayer] = false; /** SOUNDS ENABLED */
                     }
                 }
             }
@@ -2924,30 +3075,43 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
 ///
 /// CREATE TABLE INTO THE DATABASE
 ///
-public QS_CreateThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szUserData[], nUserDataSize, Float: fQueueTimeSeconds)
+public QS_CreateThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szCustomUserData[], nCustomUserDataSize /** != LENGTH */, Float: fQueueTimeSeconds)
 {
-    if (!nFailState && szError[0] == EOS && !nErrorCode)
+    ///
+    /// SUCCESS
+    ///
+    if (!nFailState && QS_EmptyString(szError) && !nErrorCode)
     {
+        ///
+        /// DATABASE TABLE SUCCESSFULLY CREATED
+        ///
         if (pQuery != Empty_Handle)
         {
-
+            ///
+            /// ?
+            ///
         }
 
         else
         {
-
+            ///
+            /// ?
+            ///
         }
     }
 
+    ///
+    /// ERROR
+    ///
     else
     {
         log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
         log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
         log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", szError[0] != EOS ? szError : "N/ A");
+        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
         log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Parameter [ %s ].", szUserData[0] != EOS ? szUserData : "N/ A");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_CreateThreadedQueryHandler ].");
+        log_to_file(QS_LOG_FILE_NAME, "Parameter [ %s ].", !QS_EmptyString(szCustomUserData) ? szCustomUserData : "N/ A");
+        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_CreateThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
     }
 
     return PLUGIN_CONTINUE;
@@ -3059,8 +3223,7 @@ static QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamKill)
     ///
     /// VARIABLES
     ///
-    static nIter = 0, Float: fGameTime = 0.000000, szWeapon[QS_WORD_MAX_LEN] = { EOS, ... }, szSnd[QS_SND_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... },
-        bool: bDiedByWorldDmg = false /** OR BY THE 'KILL' COMMAND */;
+    static nIter = 0, Float: fGameTime = 0.000000, szWeapon[QS_WORD_MAX_LEN] = { EOS, ... }, szSnd[QS_SND_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, bool: bDiedByWorldDmg = false /** OR BY THE 'KILL' COMMAND */;
 
     ///
     /// RESET THE SUICIDE TYPE [ WORLD DAMAGE/ 'KILL' COMMAND ]
@@ -3083,8 +3246,9 @@ static QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamKill)
         if (!QS_IsPlayer(nKiller)) /** WORLDSPAWN */
         {
             nKiller = nVictim;
-
-            bDiedByWorldDmg = true;
+            {
+                bDiedByWorldDmg = true;
+            }
         }
 
         else
@@ -3412,12 +3576,12 @@ static QS_LoadSettings()
             g_bChatInfo = bool: str_to_num(szVal);
         }
 
-        else if (equali(szKey, "SKIP EXISTING INFO"))
+        else if (equali(szKey, "SKIP EXISTING INFO") || equali(szKey, "SKIP EXISTING INFORMATION")) /** COMPATIBILITY */
         {
             g_bSkipExisting = bool: str_to_num(szVal);
         }
 
-        else if (equali(szKey, "HEADSHOT ONLY KILLER"))
+        else if (equali(szKey, "HEADSHOT ONLY KILLER") || equali(szKey, "HEAD SHOT ONLY KILLER")) /** COMPATIBILITY */
         {
             g_bHShotOnlyKiller = bool: str_to_num(szVal);
         }
@@ -3427,7 +3591,7 @@ static QS_LoadSettings()
             g_bHattrickToAll = bool: str_to_num(szVal);
         }
 
-        else if (equali(szKey, "MIN FRAGS FOR HATTRICK"))
+        else if (equali(szKey, "MIN FRAGS FOR HATTRICK") || equali(szKey, "MINIMUM FRAGS FOR HATTRICK")) /** COMPATIBILITY */
         {
             g_nMinKillsForHattrick = clamp(abs(str_to_num(szVal)), 1, QS_INVALID_REQ_KILLS);
         }
@@ -3447,49 +3611,52 @@ static QS_LoadSettings()
             g_bSql = bool: str_to_num(szVal);
         }
 
-        else if (equali(szKey, "SQL FULL STEAM STORAGE"))
+        else if (equali(szKey, "SQL FULL STEAM STORAGE") || equali(szKey, "SQL FULL STEAM ID STORAGE") || equali(szKey, "SQL FULL STEAMID STORAGE")) /** COMPATIBILITY */
         {
-            g_bFullSteam = bool: str_to_num(szVal);
+            g_bSqlFullSteam = bool: str_to_num(szVal);
         }
 
-        else if (equali(szKey, "SQL USER"))
+        else if (equali(szKey, "SQL USER") || equali(szKey, "SQL USERNAME") || equali(szKey, "SQL USER NAME")) /** COMPATIBILITY */
         {
-            copy(g_szUser, charsmax(g_szUser), szVal);
+            copy(g_szSqlUser, charsmax(g_szSqlUser), szVal);
         }
 
-        else if (equali(szKey, "SQL ADDRESS"))
+        else if (equali(szKey, "SQL ADDRESS") || equali(szKey, "SQL HOST")) /** COMPATIBILITY */
         {
-            copy(g_szAddress, charsmax(g_szAddress), szVal);
+            copy(g_szSqlAddr, charsmax(g_szSqlAddr), szVal);
         }
 
-        else if (equali(szKey, "SQL PASSWORD"))
+        else if (equali(szKey, "SQL PASSWORD") || equali(szKey, "SQL USER PASSWORD")) /** COMPATIBILITY */
         {
-            copy(g_szPassword, charsmax(g_szPassword), szVal);
+            copy(g_szSqlPassword, charsmax(g_szSqlPassword), szVal);
         }
 
-        else if (equali(szKey, "SQL CHARSET"))
+        else if (equali(szKey, "SQL CHARSET") || equali(szKey, "SQL PRIMARY CHARSET") || equali(szKey, "SQL MAIN CHARSET")) /** COMPATIBILITY */
         {
-            copy(g_szChars, charsmax(g_szChars), szVal);
+            copy(g_szSqlChars, charsmax(g_szSqlChars), szVal);
         }
 
-        else if (equali(szKey, "SQL SECONDARY CHARSET"))
+        else if (equali(szKey, "SQL SECONDARY CHARSET") || equali(szKey, "SQL SECOND CHARSET")) /** COMPATIBILITY */
         {
-            copy(g_szSecChars, charsmax(g_szSecChars), szVal);
+            copy(g_szSqlSecChars, charsmax(g_szSqlSecChars), szVal);
         }
 
-        else if (equali(szKey, "SQL DATABASE"))
+        else if (equali(szKey, "SQL DATABASE") || equali(szKey, "SQL DATA BASE") || equali(szKey, "SQL DB")) /** COMPATIBILITY */
         {
-            copy(g_szDatabase, charsmax(g_szDatabase), szVal);
+            copy(g_szSqlDatabase, charsmax(g_szSqlDatabase), szVal);
         }
 
-        else if (equali(szKey, "SQL EXTENSION"))
+        else if (equali(szKey, "SQL EXTENSION") || equali(szKey, "SQL MODULE") || equali(szKey, "SQL DRIVER")) /** COMPATIBILITY */
         {
-            copy(g_szExtension, charsmax(g_szExtension), szVal);
+            copy(g_szSqlExtension, charsmax(g_szSqlExtension), szVal);
+            {
+                g_bSqlLocal = bool: equali(g_szSqlExtension, "SQLITE");
+            }
         }
 
         else if (equali(szKey, "SQL TIME OUT") || equali(szKey, "SQL TIMEOUT")) /** COMPATIBILITY */
         {
-            g_nMaxSecondsError = str_to_num(szVal);
+            g_nSqlMaxSecondsError = str_to_num(szVal);
         }
 
         ///
@@ -3545,8 +3712,9 @@ static QS_LoadSettings()
             QS_ClearString(szType);
 
             parse(szVal, szDummy, charsmax(szDummy), szType, charsmax(szType));
-
-            trim(szType);
+            {
+                trim(szType);
+            }
 
             if (equali(szType, "REQUIREDKILLS"))
             {
@@ -3556,8 +3724,7 @@ static QS_LoadSettings()
                 QS_ClearString(szReqKills);
                 QS_ClearString(szSnd);
 
-                parse(szVal, szDummy, charsmax(szDummy), szDummy, charsmax(szDummy), szReqKills, charsmax(szReqKills),
-                    szDummy, charsmax(szDummy), szSnd, charsmax(szSnd));
+                parse(szVal, szDummy, charsmax(szDummy), szDummy, charsmax(szDummy), szReqKills, charsmax(szReqKills), szDummy, charsmax(szDummy), szSnd, charsmax(szSnd));
 
                 trim(szReqKills);
                 trim(szSnd);
@@ -3986,7 +4153,7 @@ static QS_LoadSettings()
             copy(g_szRevengeMsgVictim, charsmax(g_szRevengeMsgVictim), szVal);
         }
 
-        else if (equali(szKey, "TERRO TEAM NAME") || equali(szKey, "TE TEAM NAME")) /** COMPATIBILITY */
+        else if (equali(szKey, "TERRO TEAM NAME") || equali(szKey, "TE TEAM NAME") || equali(szKey, "T TEAM NAME")) /** COMPATIBILITY */
         {
             copy(g_szFlawlessTeamName_1, charsmax(g_szFlawlessTeamName_1), szVal);
         }
@@ -4013,9 +4180,12 @@ static QS_DisplayKStreak(&nKiller, szMsg[], szSnd[])
     if (!QS_EmptyString(szMsg))
     {
         QS_HudMsgColor();
-
-        set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
-        QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_STREAK], szMsg, g_pszName[nKiller]);
+        {
+            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, _, _, QS_HUD_MSG_HOLD_TIME);
+            {
+                QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_STREAK], szMsg, g_pszName[nKiller]);
+            }
+        }
     }
 
     if (!QS_EmptyString(szSnd))
@@ -4047,8 +4217,7 @@ static QS_ActivePlayersNum(bool: bAlive, nTeam = QS_INVALID_TEAM)
         ///
         /// CONNECTED, NOT HLTV, IN SPECIFIED TEAM AND ALIVE/ DEAD
         ///
-        if ((g_pbConnected[nPlayer]) && (!(g_pbHLTV[nPlayer])) && ((nTeam == QS_INVALID_TEAM) || (get_user_team(nPlayer) == nTeam)) &&
-            (bAlive == bool: is_user_alive(nPlayer)))
+        if ((g_pbConnected[nPlayer]) && (!(g_pbHLTV[nPlayer])) && ((nTeam == QS_INVALID_TEAM) || (get_user_team(nPlayer) == nTeam)) && (bAlive == bool: is_user_alive(nPlayer)))
         {
             ///
             /// TOTAL = TOTAL + 1
@@ -4094,8 +4263,9 @@ static QS_Leader()
                 /// THIS IS THE NEW LEADER
                 ///
                 nKills = g_pnKillsThisRound[nPlayer];
-
-                nLeader = nPlayer;
+                {
+                    nLeader = nPlayer;
+                }
             }
         }
     }
@@ -4224,7 +4394,7 @@ static QS_ClientCmd(nTo, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLACE, bool: bIsPlayer = false;
+    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
 
     ///
     /// SANITY CHECK
@@ -4279,7 +4449,7 @@ static QS_ClientCmdAll(nTo, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLACE, bool: bIsPlayer = false;
+    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
 
     ///
     /// SANITY CHECK
@@ -4341,7 +4511,7 @@ static QS_ClearString(szString[])
 ///
 static bool: QS_EmptyString(szString[])
 {
-    return szString[0] == EOS;
+    return (szString[0] == EOS);
 }
 
 ///
@@ -4387,8 +4557,9 @@ static bool: QS_XStatsAvail()
     if (!bChecked)
     {
         bChecked = true;
-
-        bAvail = bool: module_exists("xstats");
+        {
+            bAvail = bool: module_exists("xstats");
+        }
     }
 
     return bAvail;
@@ -4495,9 +4666,10 @@ static bool: QS_ShrinkSteam(szSteam[QS_STEAM_MAX_LEN])
             copy(szBuffer, charsmax(szBuffer), szSteam[10]);
             {
                 szSteam = szBuffer;
+                {
+                    return true;
+                }
             }
-
-            return true;
         }
     }
 
