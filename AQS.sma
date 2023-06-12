@@ -76,7 +76,7 @@
 ///
 /// PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "6.3" ) /// "6.3"
+#define QS_PLUGIN_VERSION ( "6.4" ) /// "6.4"
 
 ///
 /// STARTING WITH '/', THE CONFIG FILE NAME
