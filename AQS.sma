@@ -76,7 +76,7 @@
 ///
 /// PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "6.4" ) /// "6.4"
+#define QS_PLUGIN_VERSION ( "6.5" ) /// "6.5"
 
 ///
 /// STARTING WITH '/', THE CONFIG FILE NAME
@@ -87,6 +87,11 @@
 /// THE LOG FILE NAME
 ///
 #define QS_LOG_FILE_NAME ( "AQS.log" ) /// "AQS.log"
+
+///
+/// ON BY DEFAULT TO PLAYERS WHEN THEY JOIN THE GAME SERVER
+///
+#define QS_ON_BY_DEFAULT ( 1 ) /// 1
 
 ///
 /// ###################################################################################################
@@ -136,6 +141,13 @@
 #define QS_DOUBLE_KILL_DELAY ( 0.100000 ) /// .1
 
 ///
+/// IF THE STEAM SERVERS ARE DOWN OR IF THE MYSQL SERVER IS DOWN
+///
+/// WAIT A FEW SECONDS BEFORE PERFORMING VALIDITY CHECKS
+///
+#define QS_CONNECTION_DELAY ( 2.000000 ) /// 2
+
+///
 /// ###################################################################################################
 ///
 
@@ -155,6 +167,16 @@
 #define QS_INVALID_PLAYER ( 0 ) /// 0
 
 ///
+/// INVALID PLAYER USER ID
+///
+#define QS_INVALID_USER_ID ( -1 ) /// -1
+
+///
+/// FIRST VALID PLAYER USER ID
+///
+#define QS_FIRST_VALID_USER_ID ( 0 ) /// 0
+
+///
 /// INVALID USER MESSAGE ID
 ///
 #define QS_INVALID_MSG ( 0 ) /// 0
@@ -168,6 +190,11 @@
 /// INVALID HIT PLACE ID
 ///
 #define QS_INVALID_PLACE ( 0 ) /// 0
+
+///
+/// INVALID HUD MSG SYNC OBJECT
+///
+#define QS_INVALID_HUD_MSG_SYNC_OBJECT ( -1 ) /// -1
 
 ///
 /// ###################################################################################################
@@ -836,7 +863,7 @@ static Array: g_pFlawless = Invalid_Array;
 ///
 /// CHANNEL HANDLES
 ///
-static g_pnHudMsgObj[QS_HUD_MAX] = { 0, ... };
+static g_pnHudMsgObj[QS_HUD_MAX] = { QS_INVALID_HUD_MSG_SYNC_OBJECT, ... };
 
 ///
 /// RED
@@ -996,6 +1023,11 @@ static g_szSqlSecChars[64] = { EOS, ... };
 ///
 static g_nSqlMaxSecondsError = 0;
 
+///
+/// SQL TOTAL TABLES TO CREATE
+///
+static g_nSqlTablesToCreate = 0;
+
 /**
 * PLAYERS RELATED
 */
@@ -1025,9 +1057,14 @@ static bool: g_pbHLTV[QS_MAX_PLAYERS + 1] = { false, ... };
 static bool: g_pbBOT[QS_MAX_PLAYERS + 1] = { false, ... };
 
 ///
-/// CONNECTED
+/// IN GAME
 ///
-static bool: g_pbConnected[QS_MAX_PLAYERS + 1] = { false, ... };
+static bool: g_pbInGame[QS_MAX_PLAYERS + 1] = { false, ... };
+
+///
+/// VALID STEAM AND AUTHORIZED
+///
+static bool: g_pbValidSteam[QS_MAX_PLAYERS + 1] = { false, ... };
 
 ///
 /// NAME
@@ -1062,17 +1099,39 @@ static g_pszRevengeStamp[QS_MAX_PLAYERS + 1][QS_NAME_MAX_LEN];
 ///
 /// REVENGE KILL USER ID STAMP
 ///
-static g_pnRevengeStamp[QS_MAX_PLAYERS + 1] = { QS_INVALID_PLAYER, ... };
+static g_pnRevengeStamp[QS_MAX_PLAYERS + 1] = { QS_INVALID_USER_ID, ... };
+
+#if defined QS_ON_BY_DEFAULT
+
+#if QS_ON_BY_DEFAULT == 1
 
 ///
 /// SOUNDS DISABLED PER PLAYER
 ///
 static bool: g_pbDisabled[QS_MAX_PLAYERS + 1] = { false, ... };
 
+#else
+
+///
+/// SOUNDS DISABLED PER PLAYER
+///
+static bool: g_pbDisabled[QS_MAX_PLAYERS + 1] = { true, ... };
+
+#endif
+
+#else
+
+///
+/// SOUNDS DISABLED PER PLAYER
+///
+static bool: g_pbDisabled[QS_MAX_PLAYERS + 1] = { false, ... };
+
+#endif
+
 ///
 /// CACHED PLAYER'S USER ID
 ///
-static g_pnUserId[QS_MAX_PLAYERS + 1] = { QS_INVALID_PLAYER, ... };
+static g_pnUserId[QS_MAX_PLAYERS + 1] = { QS_INVALID_USER_ID, ... };
 
 ///
 /// LAST KILL TIME STAMP ( GAME TIME )
@@ -1467,6 +1526,8 @@ public plugin_end()
                 g_pSqlDb = Empty_Handle;
             }
         }
+
+        g_bSql = false;
     }
 
     return PLUGIN_CONTINUE;
@@ -1661,7 +1722,7 @@ public plugin_init()
         }
 
         ///
-        /// SQL CONNECTION
+        /// ESTABLISH THE SQL CONNECTION
         ///
         g_pSqlDb = SQL_MakeDbTuple(g_szSqlAddr, g_szSqlUser, g_szSqlPassword, g_szSqlDatabase, g_nSqlMaxSecondsError);
 
@@ -1673,7 +1734,7 @@ public plugin_init()
             new szBuffer[128] = { EOS, ... };
 
             ///
-            /// SQL CHARSET
+            /// SQL PRIMARY ( MAIN ) CHARSET
             ///
             if (!QS_EmptyString(g_szSqlChars) && !g_bSqlLocal && !SQL_SetCharset(g_pSqlDb, g_szSqlChars))
             {
@@ -1682,6 +1743,9 @@ public plugin_init()
                 log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetCharset ( '%s' ) ].", !QS_EmptyString(g_szSqlChars) ? g_szSqlChars : "N/ A");
                 log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Still Be Stored Into The Database. This Is Just A Warning, Not An Error.");
 
+                ///
+                /// SQL SECONDARY CHARSET IF THE PRIMARY CHARSET FAILED
+                ///
                 if (!QS_EmptyString(g_szSqlSecChars) && !g_bSqlLocal && !SQL_SetCharset(g_pSqlDb, g_szSqlSecChars))
                 {
                     log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
@@ -1692,7 +1756,7 @@ public plugin_init()
             }
 
             ///
-            /// SQL TABLES
+            /// SPAWN THE SQL TABLES
             ///
             if (!g_bSqlLocal)
             {
@@ -1711,6 +1775,8 @@ public plugin_init()
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
                         "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
+
+                    g_nSqlTablesToCreate = 3;
                 }
 
                 else
@@ -1728,6 +1794,8 @@ public plugin_init()
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
                         "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
+
+                    g_nSqlTablesToCreate = 3;
                 }
             }
 
@@ -1742,6 +1810,8 @@ public plugin_init()
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
                         "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));", szBuffer, charsmax(szBuffer));
+
+                    g_nSqlTablesToCreate = 2;
                 }
 
                 else
@@ -1753,6 +1823,8 @@ public plugin_init()
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
                         "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));", szBuffer, charsmax(szBuffer));
+
+                    g_nSqlTablesToCreate = 2;
                 }
             }
         }
@@ -1782,7 +1854,7 @@ public QS_HAM_PlayerKilled(nVictim)
 {
     static nWeapon = QS_INVALID_WEAPON;
 
-    if (!QS_IsPlayer(nVictim) || !g_pbConnected[nVictim])
+    if (!QS_IsPlayer(nVictim) || !g_pbInGame[nVictim])
     {
         return PLUGIN_CONTINUE;
     }
@@ -1798,7 +1870,7 @@ public QS_HAM_PlayerKilled(nVictim)
 
     g_nKiller = get_user_attacker(g_nVictim, g_nWeapon, g_nPlace);
 
-    if (QS_IsPlayer(g_nKiller) && g_pbConnected[g_nKiller])
+    if (QS_IsPlayer(g_nKiller) && g_pbInGame[g_nKiller])
     {
         if (!QS_ValidWeapon(g_nWeapon))
         {
@@ -1813,7 +1885,7 @@ public QS_HAM_PlayerKilled(nVictim)
 
         g_nTeamKill = (get_user_team(g_nKiller) == get_user_team(g_nVictim)) ? 1 : 0;
 
-        set_task(0.000000, "QS_ProcessDeathMsg");
+        set_task(0.000000, "QS_ProcessDeathMsg", get_systime(0));
     }
 
     else
@@ -1909,9 +1981,9 @@ public client_infochanged(nPlayer)
     }
 
     ///
-    /// PLAYER IS CONNECTED AND IT'S NOT A HLTV
+    /// PLAYER IS IN GAME AND IT'S NOT A HLTV
     ///
-    if (g_pbConnected[nPlayer] && !g_pbHLTV[nPlayer])
+    if (g_pbInGame[nPlayer] && !g_pbHLTV[nPlayer])
     {
         ///
         /// RETRIEVES NEW NAME ( IF ANY )
@@ -1963,21 +2035,40 @@ public client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen)
     ///
     if (g_bRevenge)
     {
-        g_pnRevengeStamp[nPlayer] = QS_INVALID_PLAYER;
+        g_pnRevengeStamp[nPlayer] = QS_INVALID_USER_ID;
     }
 
-    g_pnUserId[nPlayer] = QS_INVALID_PLAYER;
+    g_pnUserId[nPlayer] = QS_INVALID_USER_ID;
 
     ///
     /// NO MORE TRUE DATA
     ///
     g_pbHLTV[nPlayer] = false;
     g_pbBOT[nPlayer] = false;
+
+#if defined QS_ON_BY_DEFAULT
+
+#if QS_ON_BY_DEFAULT == 1
+
     g_pbDisabled[nPlayer] = false;
-    g_pbConnected[nPlayer] = false;
+
+#else
+
+    g_pbDisabled[nPlayer] = true;
+
+#endif
+
+#else
+
+    g_pbDisabled[nPlayer] = false;
+
+#endif
+
+    g_pbInGame[nPlayer] = false;
     g_pbAccess[nPlayer] = false;
     g_pbLoaded[nPlayer] = false;
     g_pbExisting[nPlayer] = false;
+    g_pbValidSteam[nPlayer] = false;
 
     ///
     /// NO MORE VALID STRINGS
@@ -2011,7 +2102,7 @@ public client_command(nPlayer)
     ///
     /// DATA
     ///
-    static szArg[16] = { EOS, ... }, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0;
+    static szArg[16] = { EOS, ... }, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
 
     ///
     /// SANITY CHECK
@@ -2022,9 +2113,9 @@ public client_command(nPlayer)
     }
 
     ///
-    /// CONNECTED, NOT BOT AND NOT HLTV
+    /// IN GAME, NOT BOT AND NOT HLTV
     ///
-    if (g_pbConnected[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+    if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
     {
         ///
         /// RETRIEVES THE ARGUMENT
@@ -2041,9 +2132,20 @@ public client_command(nPlayer)
             ///
             if (g_pbAccess[nPlayer])
             {
-                client_print(nPlayer, print_chat, ">> QUAKE SOUNDS HAVE BEEN %s.", g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
+                if (!g_bSql || Empty_Handle == g_pSqlDb || !g_pbValidSteam[nPlayer] || g_pbLoaded[nPlayer])
                 {
-                    g_pbDisabled[nPlayer] = !g_pbDisabled[nPlayer];
+                    client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s.", g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
+                    {
+                        g_pbDisabled[nPlayer] = !g_pbDisabled[nPlayer];
+                    }
+                }
+
+                else
+                {
+                    ///
+                    /// THE USER MUST WAIT BEFORE TYPING '/SOUNDS' BECAUSE THE STEAM SERVERS ARE DOWN OR THE MYSQL SERVER ENCOUNTERS ISSUES
+                    ///
+                    client_print(nPlayer, print_chat, ">> WAIT.");
                 }
 
                 if (g_bSql)
@@ -2058,7 +2160,7 @@ public client_command(nPlayer)
                             ///
                             /// VALID STEAM ID
                             ///
-                            if ((((nLen = strlen(g_pszSteam[nPlayer])) > 0) && isdigit(g_pszSteam[nPlayer][0])) || ((nLen > 10) && isdigit(g_pszSteam[nPlayer][10])))
+                            if (g_pbValidSteam[nPlayer])
                             {
                                 if (g_bSqlLocal)
                                 {
@@ -2106,7 +2208,7 @@ public client_command(nPlayer)
             ///
             else
             {
-                client_print(nPlayer, print_chat, ">> WAIT A FEW MOMENTS.");
+                client_print(nPlayer, print_chat, ">> WAIT.");
             }
         }
     }
@@ -2139,6 +2241,8 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     if (!g_bSql)
     {
+        g_pbValidSteam[nPlayer] = false;
+
         return PLUGIN_CONTINUE;
     }
 
@@ -2147,6 +2251,8 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     if (Empty_Handle == g_pSqlDb)
     {
+        g_pbValidSteam[nPlayer] = false;
+
         return PLUGIN_CONTINUE;
     }
 
@@ -2179,6 +2285,11 @@ public client_authorized(nPlayer, const szSteam[])
     g_pbBOT[nPlayer] = bool: is_user_bot(nPlayer); /// MIGHT EXECUTE client_authorized BEFORE client_putinserver OR AFTER AS WELL
 
     ///
+    /// STEAM VALID
+    ///
+    g_pbValidSteam[nPlayer] = ((((nLen = strlen(g_pszSteam[nPlayer])) > 0) && isdigit(g_pszSteam[nPlayer][0])) || ((nLen > 10) && isdigit(g_pszSteam[nPlayer][10])));
+
+    ///
     /// SQL STORAGE SELECT QUERY
     ///
     if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
@@ -2186,7 +2297,7 @@ public client_authorized(nPlayer, const szSteam[])
         ///
         /// VALID STEAM ID ONLY
         ///
-        if ((((nLen = strlen(g_pszSteam[nPlayer])) > 0) && isdigit(g_pszSteam[nPlayer][0])) || ((nLen > 10) && isdigit(g_pszSteam[nPlayer][10])))
+        if (g_pbValidSteam[nPlayer])
         {
             if (!g_bSqlFullSteam)
             {
@@ -2215,6 +2326,8 @@ public client_authorized(nPlayer, const szSteam[])
 ///
 public client_putinserver(nPlayer)
 {
+    static szParam[16] = { EOS, ... }, nSysTime = 0;
+
     ///
     /// SANITY CHECK
     ///
@@ -2255,17 +2368,9 @@ public client_putinserver(nPlayer)
     }
 
     ///
-    /// CONNECTED
+    /// IN GAME
     ///
-    g_pbConnected[nPlayer] = true;
-
-    ///
-    /// SOUNDS ENABLED IF NO SQL STORAGE IN USE
-    ///
-    if ((false == g_bSql) || (g_pSqlDb == Empty_Handle))
-    {
-        g_pbDisabled[nPlayer] = false;
-    }
+    g_pbInGame[nPlayer] = true;
 
     ///
     /// PLAYER PREFERENCES ACCESS
@@ -2284,7 +2389,7 @@ public client_putinserver(nPlayer)
     {
         QS_ClearString(g_pszRevengeStamp[nPlayer]);
         {
-            g_pnRevengeStamp[nPlayer] = QS_INVALID_PLAYER;
+            g_pnRevengeStamp[nPlayer] = QS_INVALID_USER_ID;
         }
     }
 
@@ -2303,7 +2408,10 @@ public client_putinserver(nPlayer)
     {
         if (g_bChatInfo)
         {
-            set_task(QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", nPlayer);
+            num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+            {
+                set_task(QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", g_pnUserId[nPlayer] + nSysTime, szParam, charsmax(szParam));
+            }
         }
     }
 
@@ -2313,28 +2421,52 @@ public client_putinserver(nPlayer)
 ///
 /// PRINTS INFORMATION TO PLAYER
 ///
-public QS_DisplayPlayerInfo(nPlayer)
+public QS_DisplayPlayerInfo(szParam[], nTaskId)
 {
+    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID;
+
     ///
-    /// ONLY IF CONNECTED
+    /// ESTABLISH THE USER ID
     ///
-    if (g_pbConnected[nPlayer])
+    nUserId = (nTaskId - str_to_num(szParam));
+
+    ///
+    /// INVALID PLAYER
+    ///
+    if ((nUserId < QS_FIRST_VALID_USER_ID) || ((nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId)) < QS_MIN_PLAYER))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
+    /// ONLY IF IN GAME
+    ///
+    if (g_pbInGame[nPlayer])
     {
         if (g_bSql)
         {
-            if (g_bSkipExisting)
+            if (g_pSqlDb != Empty_Handle)
             {
-                if (g_pbLoaded[nPlayer])
+                if (g_bSkipExisting)
                 {
-                    if (g_pbExisting[nPlayer])
+                    if (g_pbLoaded[nPlayer])
                     {
-                        return PLUGIN_CONTINUE;
+                        if (g_pbExisting[nPlayer])
+                        {
+                            if (g_pbValidSteam[nPlayer])
+                            {
+                                return PLUGIN_CONTINUE;
+                            }
+                        }
                     }
                 }
             }
         }
 
-        client_print(nPlayer, print_chat, ">> TYPE 'sounds' TO TURN QUAKE SOUNDS ON OR OFF.");
+        ///
+        /// NOTICE THE USER
+        ///
+        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s. TYPE 'sounds' TO %s.", g_pbDisabled[nPlayer] ? "DISABLED" : "ENABLED", g_pbDisabled[nPlayer] ? "ENABLE" : "DISABLE");
     }
 
     return PLUGIN_CONTINUE;
@@ -2376,7 +2508,7 @@ public client_death(nKiller, nVictim, nWeapon, nPlace, nTeamKill)
     ///
     if (g_bTLMStanding)
     {
-        set_task(QS_STANDING_TRIGGER_DELAY, "QS_PrepareManStanding");
+        set_task(QS_STANDING_TRIGGER_DELAY, "QS_PrepareManStanding", get_systime(0));
     }
 
     return PLUGIN_CONTINUE;
@@ -2385,11 +2517,11 @@ public client_death(nKiller, nVictim, nWeapon, nPlace, nTeamKill)
 ///
 /// PREPARES THE LAST MAN STANDING
 ///
-public QS_PrepareManStanding()
+public QS_PrepareManStanding(nTaskId)
 {
     if (QS_GetTeamTotalAlive(QS_CSCZ_TEAM_TE) == 1 || QS_GetTeamTotalAlive(QS_CSCZ_TEAM_CT) == 1)
     {
-        set_task(0.000000, "QS_PerformManStanding");
+        set_task(0.000000, "QS_PerformManStanding", get_systime(0));
     }
 
     return PLUGIN_CONTINUE;
@@ -2398,7 +2530,7 @@ public QS_PrepareManStanding()
 ///
 /// PERFORMS THE LAST MAN STANDING
 ///
-public QS_PerformManStanding()
+public QS_PerformManStanding(nTaskId)
 {
     static nPlayer = QS_INVALID_PLAYER, nTEGuy = QS_INVALID_PLAYER, nTEs = 0, nCTGuy = QS_INVALID_PLAYER, nCTs = 0;
 
@@ -2418,7 +2550,7 @@ public QS_PerformManStanding()
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
-            if (!g_pbConnected[nPlayer] || g_pbBOT[nPlayer] || g_pbHLTV[nPlayer] || get_user_team(nPlayer) != QS_CSCZ_TEAM_TE)
+            if (!g_pbInGame[nPlayer] || g_pbBOT[nPlayer] || g_pbHLTV[nPlayer] || get_user_team(nPlayer) != QS_CSCZ_TEAM_TE)
             {
                 continue;
             }
@@ -2454,7 +2586,7 @@ public QS_PerformManStanding()
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
-            if (!g_pbConnected[nPlayer] || g_pbBOT[nPlayer] || g_pbHLTV[nPlayer] || get_user_team(nPlayer) != QS_CSCZ_TEAM_CT)
+            if (!g_pbInGame[nPlayer] || g_pbBOT[nPlayer] || g_pbHLTV[nPlayer] || get_user_team(nPlayer) != QS_CSCZ_TEAM_CT)
             {
                 continue;
             }
@@ -2506,7 +2638,7 @@ public QS_OnRoundRefresh()
         {
             QS_ClearString(g_pszRevengeStamp[nPlayer]);
             {
-                g_pnRevengeStamp[nPlayer] = QS_INVALID_PLAYER;
+                g_pnRevengeStamp[nPlayer] = QS_INVALID_USER_ID;
             }
         }
     }
@@ -2581,7 +2713,7 @@ public QS_OnRoundEnd()
     ///
     if (g_bHattrick)
     {
-        set_task(QS_HATTRICK_ROUND_END_DELAY, "QS_Hattrick");
+        set_task(QS_HATTRICK_ROUND_END_DELAY, "QS_Hattrick", get_systime(0));
     }
 
     ///
@@ -2589,7 +2721,7 @@ public QS_OnRoundEnd()
     ///
     if (g_bFlawless)
     {
-        set_task(QS_FLAWLESS_ROUND_END_DELAY, "QS_Flawless");
+        set_task(QS_FLAWLESS_ROUND_END_DELAY, "QS_Flawless", get_systime(0));
     }
 
     return PLUGIN_CONTINUE;
@@ -2598,13 +2730,16 @@ public QS_OnRoundEnd()
 ///
 /// PREPARES HATTRICK
 ///
-public QS_Hattrick()
+public QS_Hattrick(nTaskId)
 {
     ///
-    /// RETRIEVES THE LEADER'S ID
+    /// DATA
     ///
     static nLeader = QS_INVALID_PLAYER;
 
+    ///
+    /// RETRIEVES THE LEADER'S ID
+    ///
     nLeader = QS_Leader();
 
     ///
@@ -2650,7 +2785,7 @@ public QS_Hattrick()
 ///
 /// PREPARES FLAWLESS
 ///
-public QS_Flawless()
+public QS_Flawless(nTaskId)
 {
     static nAliveTeam_1 = 0, nAliveTeam_2 = 0, nAllTeam_1 = 0, nAllTeam_2 = 0;
 
@@ -2770,7 +2905,7 @@ public QS_FM_OnMsgEnd()
         ///
         /// FIRES
         ///
-        set_task(0.000000, "QS_ProcessDeathMsg");
+        set_task(0.000000, "QS_ProcessDeathMsg", get_systime(0));
     }
 
     return PLUGIN_CONTINUE;
@@ -2784,7 +2919,15 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
     ///
     /// DATA
     ///
-    static nUserId = 0, nPlayer = 0;
+    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szParam[16] = { EOS, ... }, nSysTime = 0, Float: fErrorStamp = 0.0, Float: fGameTime = 0.0;
+
+    ///
+    /// EXCEPTION
+    ///
+    if (!g_bSql || Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
 
     ///
     /// SUCCESS
@@ -2793,43 +2936,80 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
     {
         nUserId = str_to_num(szCustomUserData);
         {
-            if (nUserId > -1)
+            if (nUserId > QS_INVALID_USER_ID)
             {
                 nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
                 {
-                    if (nPlayer > 0)
+                    if (nPlayer > QS_INVALID_PLAYER)
                     {
-                        if (pQuery != Empty_Handle)
+                        if (pQuery != Empty_Handle) /** SUCCESS */
                         {
+                            ///
+                            /// INSERTED A ROW INTO THE SQL TABLE
+                            ///
                             if (SQL_AffectedRows(pQuery) > 0)
                             {
                                 ///
-                                /// SOUNDS ENABLED
+                                /// INSERTION OF PLAYER STEAM ID INTO THE DATABASE SUCCEEDED
                                 ///
-                                g_pbDisabled[nPlayer] = false;
-                                {
-                                    ///
-                                    /// INSERTION OF PLAYER STEAM ID INTO THE DATABASE SUCCEEDED
-                                    ///
-                                    g_pbLoaded[nPlayer] = true; /** CAN NOW SAVE THEIR PREFERENCE IF THEY TYPE '/SOUNDS' */
-                                }
+                                g_pbLoaded[nPlayer] = true; /** CAN NOW SAVE THEIR PREFERENCE IF THEY TYPE '/SOUNDS' */
                             }
 
+                            ///
+                            /// ERROR
+                            ///
                             else
                             {
+                                fGameTime = get_gametime();
+
+                                if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+                                {
+                                    fErrorStamp = fGameTime;
+
+                                    log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                                    log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+                                    log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+                                    log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+                                    log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+                                    log_to_file(QS_LOG_FILE_NAME, "Function [ QS_AddThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+                                }
+
                                 ///
-                                /// SOUNDS ENABLED
+                                /// RETRY THE ACTION
                                 ///
-                                g_pbDisabled[nPlayer] = false;
+                                num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                                {
+                                    set_task(QS_CONNECTION_DELAY, "QS_RetryPick", nUserId + nSysTime, szParam, charsmax(szParam));
+                                }
                             }
                         }
 
+                        ///
+                        /// ERROR
+                        ///
                         else
                         {
+                            fGameTime = get_gametime();
+
+                            if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+                            {
+                                fErrorStamp = fGameTime;
+
+                                log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                                log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+                                log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+                                log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+                                log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+                                log_to_file(QS_LOG_FILE_NAME, "Function [ QS_AddThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+                            }
+
                             ///
-                            /// SOUNDS ENABLED
+                            /// RETRY THE ACTION
                             ///
-                            g_pbDisabled[nPlayer] = false;
+                            num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                            {
+                                set_task(QS_CONNECTION_DELAY, "QS_RetryPick", nUserId + nSysTime, szParam, charsmax(szParam));
+                            }
                         }
                     }
                 }
@@ -2842,25 +3022,35 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
     ///
     else
     {
-        log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
-        log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
-        log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
-        log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_AddThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        fGameTime = get_gametime();
+
+        if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+        {
+            fErrorStamp = fGameTime;
+
+            log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+            log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+            log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+            log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+            log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+            log_to_file(QS_LOG_FILE_NAME, "Function [ QS_AddThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        }
 
         nUserId = str_to_num(szCustomUserData);
         {
-            if (nUserId > -1)
+            if (nUserId > QS_INVALID_USER_ID)
             {
                 nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
                 {
-                    if (nPlayer > 0)
+                    if (nPlayer > QS_INVALID_PLAYER)
                     {
                         ///
-                        /// SOUNDS ENABLED
+                        /// RETRY THE ACTION
                         ///
-                        g_pbDisabled[nPlayer] = false;
+                        num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                        {
+                            set_task(QS_CONNECTION_DELAY, "QS_RetryPick", nUserId + nSysTime, szParam, charsmax(szParam));
+                        }
                     }
                 }
             }
@@ -2878,7 +3068,15 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
     ///
     /// DATA
     ///
-    static nUserId = 0, nPlayer = 0;
+    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szParam[16] = { EOS, ... }, nSysTime = 0, Float: fErrorStamp = 0.0, Float: fGameTime = 0.0;
+
+    ///
+    /// EXCEPTION
+    ///
+    if (!g_bSql || Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
 
     ///
     /// SUCCESS
@@ -2887,14 +3085,17 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
     {
         nUserId = str_to_num(szCustomUserData);
         {
-            if (nUserId > -1)
+            if (nUserId > QS_INVALID_USER_ID)
             {
                 nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
                 {
-                    if (nPlayer > 0)
+                    if (nPlayer > QS_INVALID_PLAYER)
                     {
                         if (pQuery != Empty_Handle)
                         {
+                            ///
+                            /// THE ROW HAS BEEN UPDATED
+                            ///
                             if (SQL_AffectedRows(pQuery) > 0)
                             {
                                 ///
@@ -2903,21 +3104,61 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
                                 g_pbAccess[nPlayer] = true;
                             }
 
+                            ///
+                            /// ERROR
+                            ///
                             else
                             {
+                                fGameTime = get_gametime();
+
+                                if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+                                {
+                                    fErrorStamp = fGameTime;
+
+                                    log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                                    log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+                                    log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+                                    log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+                                    log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+                                    log_to_file(QS_LOG_FILE_NAME, "Function [ QS_StoreThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+                                }
+
                                 ///
-                                /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                                /// RETRY THE ACTION
                                 ///
-                                g_pbAccess[nPlayer] = true;
+                                num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                                {
+                                    set_task(QS_CONNECTION_DELAY, "QS_RetryStore", nUserId + nSysTime, szParam, charsmax(szParam));
+                                }
                             }
                         }
 
+                        ///
+                        /// ERROR
+                        ///
                         else
                         {
+                            fGameTime = get_gametime();
+
+                            if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+                            {
+                                fErrorStamp = fGameTime;
+
+                                log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                                log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+                                log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+                                log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+                                log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+                                log_to_file(QS_LOG_FILE_NAME, "Function [ QS_StoreThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+                            }
+
                             ///
-                            /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                            /// RETRY THE ACTION
                             ///
-                            g_pbAccess[nPlayer] = true;
+                            num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                            {
+                                set_task(QS_CONNECTION_DELAY, "QS_RetryStore", nUserId + nSysTime, szParam, charsmax(szParam));
+                            }
                         }
                     }
                 }
@@ -2930,28 +3171,40 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
     ///
     else
     {
-        log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
-        log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
-        log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
-        log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_StoreThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        fGameTime = get_gametime();
+
+        if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+        {
+            fErrorStamp = fGameTime;
+
+            log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+            log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+            log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+            log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+            log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+            log_to_file(QS_LOG_FILE_NAME, "Function [ QS_StoreThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        }
 
         ///
         /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
         ///
+        /// BUT THE SQL CONNECTION MUST BE ESTABLISHED
+        ///
         nUserId = str_to_num(szCustomUserData);
         {
-            if (nUserId > -1)
+            if (nUserId > QS_INVALID_USER_ID)
             {
                 nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
                 {
-                    if (nPlayer > 0)
+                    if (nPlayer > QS_INVALID_PLAYER)
                     {
                         ///
-                        /// ALLOW ACCESS TO TYPE '/SOUNDS' AGAIN
+                        /// RETRY THE ACTION
                         ///
-                        g_pbAccess[nPlayer] = true;
+                        num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                        {
+                            set_task(QS_CONNECTION_DELAY, "QS_RetryStore", nUserId + nSysTime, szParam, charsmax(szParam));
+                        }
                     }
                 }
             }
@@ -2969,7 +3222,15 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
     ///
     /// DATA
     ///
-    static nUserId = 0, nPlayer = 0, szQuery[128] = { EOS, ... };
+    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szQuery[128] = { EOS, ... }, bWasDisabled = false, nSysTime = 0, szParam[16] = { EOS, ... }, Float: fErrorStamp = 0.0, Float: fGameTime = 0.0;
+
+    ///
+    /// EXCEPTION
+    ///
+    if (!g_bSql || Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
 
     ///
     /// SUCCESS
@@ -2978,16 +3239,29 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
     {
         nUserId = str_to_num(szCustomUserData);
         {
-            if (nUserId > -1)
+            if (nUserId > QS_INVALID_USER_ID)
             {
                 nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
                 {
-                    if (nPlayer > 0)
+                    if (nPlayer > QS_INVALID_PLAYER)
                     {
                         if (pQuery != Empty_Handle)
                         {
+                            ///
+                            /// SELECTED THE SETTING ( STEAM ID EXISTING ALREADY )
+                            ///
                             if (SQL_NumResults(pQuery) > 0)
                             {
+                                if (g_pbDisabled[nPlayer])
+                                {
+                                    bWasDisabled = true;
+                                }
+
+                                else
+                                {
+                                    bWasDisabled = false;
+                                }
+
                                 g_pbDisabled[nPlayer] = !(bool: SQL_ReadResult(pQuery, 0 /** COLUMN #0 */)); /** USER PREFERENCE ON/ OFF */
                                 {
                                     g_pbLoaded[nPlayer] = true; /** CAN NOW SAVE THEIR PREFERENCE IF THEY TYPE '/SOUNDS' */
@@ -2995,6 +3269,43 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                         g_pbExisting[nPlayer] = true; /** ALREADY EXISTING INTO THE DATABASE ( NO DATABASE STEAM ID INSERTION NEEDED ) */
                                     }
                                 }
+
+#if defined QS_ON_BY_DEFAULT
+
+#if QS_ON_BY_DEFAULT == 1
+
+                                if (bWasDisabled)
+                                {
+                                    if (!g_pbDisabled[nPlayer])
+                                    {
+                                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.");
+                                    }
+                                }
+
+#else
+
+                                if (!bWasDisabled)
+                                {
+                                    if (g_pbDisabled[nPlayer])
+                                    {
+                                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS DISABLED. TYPE 'sounds' TO ENABLE.");
+                                    }
+                                }
+
+#endif
+
+#else
+
+                                if (bWasDisabled)
+                                {
+                                    if (!g_pbDisabled[nPlayer])
+                                    {
+                                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.");
+                                    }
+                                }
+
+#endif
+
                             }
 
                             ///
@@ -3006,12 +3317,12 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                 {
                                     if (!g_bSqlFullSteam)
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', 1) LIMIT 1;", g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', %d) LIMIT 1;", g_pszSteam[nPlayer], g_pbDisabled[nPlayer] ? 0 : 1);
                                     }
 
                                     else
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_full (aqs_steam, aqs_option) VALUES ('%s', 1) LIMIT 1;", g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_full (aqs_steam, aqs_option) VALUES ('%s', %d) LIMIT 1;", g_pszSteam[nPlayer], g_pbDisabled[nPlayer] ? 0 : 1);
                                     }
                                 }
 
@@ -3019,12 +3330,12 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                 {
                                     if (!g_bSqlFullSteam)
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "INSERT INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', 1);", g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "INSERT INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', %d);", g_pszSteam[nPlayer], g_pbDisabled[nPlayer] ? 0 : 1);
                                     }
 
                                     else
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "INSERT INTO aqs_enabled_full (aqs_steam, aqs_option) VALUES ('%s', 1);", g_pszSteam[nPlayer]);
+                                        formatex(szQuery, charsmax(szQuery), "INSERT INTO aqs_enabled_full (aqs_steam, aqs_option) VALUES ('%s', %d);", g_pszSteam[nPlayer], g_pbDisabled[nPlayer] ? 0 : 1);
                                     }
                                 }
 
@@ -3032,9 +3343,32 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                             }
                         }
 
+                        ///
+                        /// ERROR
+                        ///
                         else
                         {
-                            g_pbDisabled[nPlayer] = false; /** SOUNDS ENABLED */
+                            fGameTime = get_gametime();
+
+                            if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+                            {
+                                fErrorStamp = fGameTime;
+
+                                log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                                log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+                                log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+                                log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+                                log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+                                log_to_file(QS_LOG_FILE_NAME, "Function [ QS_PickThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+                            }
+
+                            ///
+                            /// RETRY THE ACTION
+                            ///
+                            num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                            {
+                                set_task(QS_CONNECTION_DELAY, "QS_RetryPick", nUserId + nSysTime, szParam, charsmax(szParam));
+                            }
                         }
                     }
                 }
@@ -3047,22 +3381,35 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
     ///
     else
     {
-        log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
-        log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
-        log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
-        log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_PickThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        fGameTime = get_gametime();
+
+        if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+        {
+            fErrorStamp = fGameTime;
+
+            log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+            log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+            log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+            log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+            log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+            log_to_file(QS_LOG_FILE_NAME, "Function [ QS_PickThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        }
 
         nUserId = str_to_num(szCustomUserData);
         {
-            if (nUserId > -1)
+            if (nUserId > QS_INVALID_USER_ID)
             {
                 nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
                 {
-                    if (nPlayer > 0)
+                    if (nPlayer > QS_INVALID_PLAYER)
                     {
-                        g_pbDisabled[nPlayer] = false; /** SOUNDS ENABLED */
+                        ///
+                        /// RETRY THE ACTION
+                        ///
+                        num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
+                        {
+                            set_task(QS_CONNECTION_DELAY, "QS_RetryPick", nUserId + nSysTime, szParam, charsmax(szParam));
+                        }
                     }
                 }
             }
@@ -3078,6 +3425,19 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
 public QS_CreateThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorCode, szCustomUserData[], nCustomUserDataSize /** != LENGTH */, Float: fQueueTimeSeconds)
 {
     ///
+    /// DATA
+    ///
+    static nFails = 0, Float: fGameTime = 0.0, Float: fErrorStamp = 0.0;
+
+    ///
+    /// EXCEPTION
+    ///
+    if (!g_bSql || Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
     /// SUCCESS
     ///
     if (!nFailState && QS_EmptyString(szError) && !nErrorCode)
@@ -3092,11 +3452,36 @@ public QS_CreateThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErr
             ///
         }
 
+        ///
+        /// ERROR
+        ///
         else
         {
+            fGameTime = get_gametime();
+
+            if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+            {
+                fErrorStamp = fGameTime;
+
+                log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+                log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+                log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+                log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+                log_to_file(QS_LOG_FILE_NAME, "Parameter [ %s ].", !QS_EmptyString(szCustomUserData) ? szCustomUserData : "N/ A");
+                log_to_file(QS_LOG_FILE_NAME, "Function [ QS_CreateThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+            }
+
             ///
-            /// ?
+            /// TRIED TO CREATE AT LEAST ONE SQL TABLE BUT FAILED
             ///
+            if (g_nSqlTablesToCreate == ++nFails)
+            {
+                log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+                log_to_file(QS_LOG_FILE_NAME, "Failed To Create At Least One Sql Table. The Sql Storage Is Disabled For Now.");
+
+                set_task(0.100000, "QS_DisableSql", get_systime(0));
+            }
         }
     }
 
@@ -3105,13 +3490,172 @@ public QS_CreateThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErr
     ///
     else
     {
-        log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
-        log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
-        log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
-        log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
-        log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < -1 ? "CONNECTION ERROR" : "QUERY ERROR");
-        log_to_file(QS_LOG_FILE_NAME, "Parameter [ %s ].", !QS_EmptyString(szCustomUserData) ? szCustomUserData : "N/ A");
-        log_to_file(QS_LOG_FILE_NAME, "Function [ QS_CreateThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        fGameTime = get_gametime();
+
+        if ((0.0 == fErrorStamp) || ((fGameTime - fErrorStamp) > 120.0))
+        {
+            fErrorStamp = fGameTime;
+
+            log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+            log_to_file(QS_LOG_FILE_NAME, "Sql Threaded Query Failed [ SQL_ThreadQuery ].");
+            log_to_file(QS_LOG_FILE_NAME, "Error Code [ %d ].", nErrorCode);
+            log_to_file(QS_LOG_FILE_NAME, "Error Description [ %s ].", !QS_EmptyString(szError) ? szError : "N/ A");
+            log_to_file(QS_LOG_FILE_NAME, "Fail State [ %s ].", nFailState < TQUERY_QUERY_FAILED ? "SQL SERVER CONNECTION ERROR" : "SQL DATABASE QUERY ERROR");
+            log_to_file(QS_LOG_FILE_NAME, "Parameter [ %s ].", !QS_EmptyString(szCustomUserData) ? szCustomUserData : "N/ A");
+            log_to_file(QS_LOG_FILE_NAME, "Function [ QS_CreateThreadedQueryHandler ]. This Error Can Be Ignored If It Happens Rarely.");
+        }
+
+        ///
+        /// TRIED TO CREATE AT LEAST ONE SQL TABLE BUT FAILED
+        ///
+        if (g_nSqlTablesToCreate == ++nFails)
+        {
+            log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
+            log_to_file(QS_LOG_FILE_NAME, "Failed To Create At Least One Sql Table. The Sql Storage Is Disabled For Now.");
+
+            set_task(0.100000, "QS_DisableSql", get_systime(0));
+        }
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// DISABLE THE SQL CONNECTION
+///
+public QS_DisableSql(nTaskId)
+{
+    if (g_bSql)
+    {
+        if (Empty_Handle != g_pSqlDb)
+        {
+            SQL_FreeHandle(g_pSqlDb);
+            {
+                g_pSqlDb = Empty_Handle;
+            }
+        }
+
+        g_bSql = false;
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// RETRY PICKING THE STEAM ID '/SOUNDS' SETTING AFTER A DATABASE ERROR
+///
+public QS_RetryPick(szParam[], nTaskId)
+{
+    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+
+    ///
+    /// EXCEPTION
+    ///
+    if (!g_bSql || Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
+    /// ESTABLISH THE USER ID
+    ///
+    nUserId = (nTaskId - str_to_num(szParam));
+
+    ///
+    /// INVALID PLAYER
+    ///
+    if ((nUserId < QS_FIRST_VALID_USER_ID) || ((nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId)) < QS_MIN_PLAYER))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
+    /// ONLY IF IN GAME
+    ///
+    if (g_pbInGame[nPlayer])
+    {
+        if (!g_bSqlFullSteam)
+        {
+            formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_fast WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
+        }
+
+        else
+        {
+            formatex(szQuery, charsmax(szQuery), "SELECT aqs_option FROM aqs_enabled_full WHERE aqs_steam = '%s' LIMIT 1;", g_pszSteam[nPlayer]);
+        }
+
+        num_to_str(nUserId, szUserId, charsmax(szUserId));
+        {
+            SQL_ThreadQuery(g_pSqlDb, "QS_PickThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+        }
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// RETRY SAVING THE STEAM ID '/SOUNDS' SETTING AFTER A DATABASE ERROR
+///
+public QS_RetryStore(szParam[], nTaskId)
+{
+    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+
+    ///
+    /// EXCEPTION
+    ///
+    if (!g_bSql || Empty_Handle == g_pSqlDb)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
+    /// ESTABLISH THE USER ID
+    ///
+    nUserId = (nTaskId - str_to_num(szParam));
+
+    ///
+    /// INVALID PLAYER
+    ///
+    if ((nUserId < QS_FIRST_VALID_USER_ID) || ((nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId)) < QS_MIN_PLAYER))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    ///
+    /// ONLY IF IN GAME
+    ///
+    if (g_pbInGame[nPlayer])
+    {
+        if (g_bSqlLocal)
+        {
+            if (!g_bSqlFullSteam)
+            {
+                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+            }
+
+            else
+            {
+                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+            }
+        }
+
+        else
+        {
+            if (!g_bSqlFullSteam)
+            {
+                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+            }
+
+            else
+            {
+                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+            }
+        }
+
+        num_to_str(nUserId, szUserId, charsmax(szUserId));
+        {
+            SQL_ThreadQuery(g_pSqlDb, "QS_StoreThreadedQueryHandler", szQuery, szUserId, charsmax(szUserId));
+        }
     }
 
     return PLUGIN_CONTINUE;
@@ -3122,7 +3666,7 @@ public QS_CreateThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErr
 ///
 /// THIS IS EXECUTED AFTER THE XSTATS MODULE'S "client_death" FORWARD
 ///
-public QS_ProcessDeathMsg()
+public QS_ProcessDeathMsg(nTaskId)
 {
     ///
     /// DECLARES THE HIT PLACE AND THE WEAPON ID
@@ -3138,7 +3682,7 @@ public QS_ProcessDeathMsg()
     ///
     /// SANITY CHECK
     ///
-    if (!QS_IsPlayer(g_nVictim) || !g_pbConnected[g_nVictim] || !QS_IsPlayerOrWorld(g_nKiller))
+    if (!QS_IsPlayer(g_nVictim) || !g_pbInGame[g_nVictim] || !QS_IsPlayerOrWorld(g_nKiller))
     {
         return PLUGIN_CONTINUE;
     }
@@ -3160,7 +3704,7 @@ public QS_ProcessDeathMsg()
         {
             if (!QS_ValidWeapon(nWeapon))
             {
-                if (g_pbConnected[g_nKiller])
+                if (g_pbInGame[g_nKiller])
                 {
                     g_nWeapon = get_user_weapon(g_nKiller);
                 }
@@ -3191,7 +3735,7 @@ public QS_ProcessDeathMsg()
     {
         if (g_bDeathMsgOnly) /// OTHERWISE, THIS IS PREPARED WITHIN THE "client_death ( )" FORWARD
         {
-            if (g_pbConnected[g_nKiller])
+            if (g_pbInGame[g_nKiller])
             {
                 g_nTeamKill = (get_user_team(g_nKiller) == get_user_team(g_nVictim)) ? 1 : 0;
             }
@@ -3241,7 +3785,7 @@ static QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamKill)
     ///
     /// INVALID KILLER ( WORLD, ... )
     ///
-    if (!g_pbConnected[nKiller])
+    if (!g_pbInGame[nKiller])
     {
         if (!QS_IsPlayer(nKiller)) /** WORLDSPAWN */
         {
@@ -3344,7 +3888,7 @@ static QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamKill)
             ///
             /// CLEARS THE REVENGE STAMP
             ///
-            g_pnRevengeStamp[nKiller] = QS_INVALID_PLAYER;
+            g_pnRevengeStamp[nKiller] = QS_INVALID_USER_ID;
             {
                 QS_ClearString(g_pszRevengeStamp[nKiller]);
             }
@@ -4215,9 +4759,9 @@ static QS_ActivePlayersNum(bool: bAlive, nTeam = QS_INVALID_TEAM)
     for (nTotal = 0, nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
     {
         ///
-        /// CONNECTED, NOT HLTV, IN SPECIFIED TEAM AND ALIVE/ DEAD
+        /// IN GAME, NOT HLTV, IN SPECIFIED TEAM AND ALIVE/ DEAD
         ///
-        if ((g_pbConnected[nPlayer]) && (!(g_pbHLTV[nPlayer])) && ((nTeam == QS_INVALID_TEAM) || (get_user_team(nPlayer) == nTeam)) && (bAlive == bool: is_user_alive(nPlayer)))
+        if ((g_pbInGame[nPlayer]) && (!(g_pbHLTV[nPlayer])) && ((nTeam == QS_INVALID_TEAM) || (get_user_team(nPlayer) == nTeam)) && (bAlive == bool: is_user_alive(nPlayer)))
         {
             ///
             /// TOTAL = TOTAL + 1
@@ -4250,9 +4794,9 @@ static QS_Leader()
     for (nPlayer = QS_MIN_PLAYER, nLeader = QS_INVALID_PLAYER, nKills = 0; nPlayer <= g_nMaxPlayers; nPlayer++)
     {
         ///
-        /// CONNECTED AND NOT HLTV
+        /// IN GAME AND NOT HLTV
         ///
-        if (g_pbConnected[nPlayer] && !g_pbHLTV[nPlayer])
+        if (g_pbInGame[nPlayer] && !g_pbHLTV[nPlayer])
         {
             ///
             /// HAS MANY KILLS THAN THE ONE PREVIOUSLY CHECKED
@@ -4309,7 +4853,7 @@ static QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
     ///
     /// SPECIFIED CLIENT
     ///
-    if (bIsPlayer && g_pbConnected[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
+    if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
     {
         ShowSyncHudMsg(nTo, nObj, szBuffer);
     }
@@ -4321,7 +4865,7 @@ static QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
     {
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
-            if (g_pbConnected[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
+            if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
             {
                 ShowSyncHudMsg(nPlayer, nObj, szBuffer);
             }
@@ -4364,7 +4908,7 @@ static QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
     ///
     /// SPECIFIED CLIENT
     ///
-    if (bIsPlayer && g_pbConnected[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
+    if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
     {
         ShowSyncHudMsg(nTo, nObj, szBuffer);
     }
@@ -4376,7 +4920,7 @@ static QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
     {
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
-            if (g_pbConnected[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+            if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
             {
                 ShowSyncHudMsg(nPlayer, nObj, szBuffer);
             }
@@ -4419,7 +4963,7 @@ static QS_ClientCmd(nTo, szRules[], any: ...)
     ///
     /// SPECIFIED CLIENT
     ///
-    if (bIsPlayer && g_pbConnected[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
+    if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
     {
         client_cmd(nTo, szBuffer);
     }
@@ -4431,7 +4975,7 @@ static QS_ClientCmd(nTo, szRules[], any: ...)
     {
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
-            if (g_pbConnected[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
+            if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
             {
                 client_cmd(nPlayer, szBuffer);
             }
@@ -4474,7 +5018,7 @@ static QS_ClientCmdAll(nTo, szRules[], any: ...)
     ///
     /// SPECIFIED CLIENT
     ///
-    if (bIsPlayer && g_pbConnected[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
+    if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
     {
         client_cmd(nTo, szBuffer);
     }
@@ -4486,7 +5030,7 @@ static QS_ClientCmdAll(nTo, szRules[], any: ...)
     {
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
-            if (g_pbConnected[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+            if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
             {
                 client_cmd(nPlayer, szBuffer);
             }
@@ -4572,7 +5116,7 @@ static QS_GetTeamTotalAlive(nTeam, &nPlayer = QS_INVALID_PLAYER) /// CSTRIKE AND
 {
     static pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0;
 
-    get_players(pnPlayers, nTotal, "aeh", ((nTeam == QS_CSCZ_TEAM_TE) ? ("TERRORIST") : ("CT")));
+    get_players(pnPlayers, nTotal, "aeh", ((nTeam == QS_CSCZ_TEAM_TE) ? ("TERRORIST") : ("CT"))); /// aeh = EXCLUDE DEAD [a], EXCLUDE HLTV PROXIES [h] & MATCH WITH TEAM NAME [e]
 
     if (nTotal == 1)
     {
