@@ -76,7 +76,7 @@
 ///
 /// PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "6.5" ) /// "6.5"
+#define QS_PLUGIN_VERSION ( "6.6" ) /// "6.6"
 
 ///
 /// STARTING WITH '/', THE CONFIG FILE NAME
@@ -351,6 +351,18 @@ enum /** HUD MESSAGE PURPOSE */
     QS_HUD_STREAK = 0, QS_HUD_EVENT = 1, QS_HUD_REVENGE = 2, QS_HUD_STANDING = 3, QS_HUD_FLAWLESS = 4, QS_HUD_HATTRICK = 5, QS_HUD_ROUND = 6, QS_HUD_MAX = 7,
 };
 
+///
+/// ###################################################################################################
+///
+
+///
+/// CUSTOM COLORED CHAT SAY TEXT PURPOSES
+///
+enum /** CUSTOM COLORED CHAT SAY TEXT PURPOSE */
+{
+    QS_CC_ST_X03_MIN = 33, QS_CC_ST_X03_GREY = QS_CC_ST_X03_MIN, QS_CC_ST_X03_RED = 34, QS_CC_ST_X03_BLUE = 35, QS_CC_ST_X03_MAX = QS_CC_ST_X03_BLUE,
+};
+
 /*************************************************************************************
 ******* GLOBAL VARIABLES *************************************************************
 *************************************************************************************/
@@ -374,6 +386,11 @@ static bool: g_bChatInfo = false;
 /// WHEN TRUE, DO NOT SHOW THE CHAT '/SOUNDS' INFORMATION ANYMORE IF IT HAS ALREADY BEEN SHOWN TO THAT STEAM
 ///
 static bool: g_bSkipExisting = false;
+
+///
+/// WHEN TRUE, DO NOT SHOW THAT THE USER HAS TYPED '/sounds' INTO THE CHAT AREA
+///
+static bool: g_bHideCmd = false;
 
 /**
  * HEAD SHOT
@@ -913,6 +930,16 @@ static g_nMaxPlayers = 0;
 /// THE DEATHMSG USER MESSAGE'S ID
 ///
 static g_nDeathMsg = QS_INVALID_MSG;
+
+///
+/// THE SAYTEXT USER MESSAGE'S ID
+///
+static g_nSayText = QS_INVALID_MSG;
+
+///
+/// CHAT COLORS
+///
+static bool: g_bColors = false;
 
 ///
 /// ON DEATHMSG
@@ -1957,6 +1984,19 @@ public plugin_cfg()
         register_forward(FM_MessageEnd, "QS_FM_OnMsgEnd", 1);
     }
 
+    if (QS_CSCZRunning())
+    {
+        g_nSayText = get_user_msgid("SayText");
+
+        if (QS_ValidMsg(g_nSayText))
+        {
+            ///
+            /// COLORED CHAT FOR CS/ CZ
+            ///
+            g_bColors = true;
+        }
+    }
+
     return PLUGIN_CONTINUE;
 }
 
@@ -2134,10 +2174,17 @@ public client_command(nPlayer)
             {
                 if (!g_bSql || Empty_Handle == g_pSqlDb || !g_pbValidSteam[nPlayer] || g_pbLoaded[nPlayer])
                 {
-                    client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s.", g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
+                    if (!g_bColors)
                     {
-                        g_pbDisabled[nPlayer] = !g_pbDisabled[nPlayer];
+                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s.", g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
                     }
+
+                    else
+                    {
+                        QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS %c%s\x01.", g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
+                    }
+
+                    g_pbDisabled[nPlayer] = !g_pbDisabled[nPlayer];
                 }
 
                 else
@@ -2145,7 +2192,15 @@ public client_command(nPlayer)
                     ///
                     /// THE USER MUST WAIT BEFORE TYPING '/SOUNDS' BECAUSE THE STEAM SERVERS ARE DOWN OR THE MYSQL SERVER ENCOUNTERS ISSUES
                     ///
-                    client_print(nPlayer, print_chat, ">> WAIT.");
+                    if (!g_bColors)
+                    {
+                        client_print(nPlayer, print_chat, ">> WAIT.");
+                    }
+
+                    else
+                    {
+                        QS_CSCZColored(nPlayer, QS_CC_ST_X03_GREY, "\x01>> \x03WAIT\x01.");
+                    }
                 }
 
                 if (g_bSql)
@@ -2208,7 +2263,23 @@ public client_command(nPlayer)
             ///
             else
             {
-                client_print(nPlayer, print_chat, ">> WAIT.");
+                if (!g_bColors)
+                {
+                    client_print(nPlayer, print_chat, ">> WAIT.");
+                }
+
+                else
+                {
+                    QS_CSCZColored(nPlayer, QS_CC_ST_X03_GREY, "\x01>> \x03WAIT\x01.");
+                }
+            }
+
+            ///
+            /// HIDE THAT THEY TYPED '/sounds'
+            ///
+            if (g_bHideCmd)
+            {
+                return PLUGIN_HANDLED;
             }
         }
     }
@@ -2466,7 +2537,17 @@ public QS_DisplayPlayerInfo(szParam[], nTaskId)
         ///
         /// NOTICE THE USER
         ///
-        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s. TYPE 'sounds' TO %s.", g_pbDisabled[nPlayer] ? "DISABLED" : "ENABLED", g_pbDisabled[nPlayer] ? "ENABLE" : "DISABLE");
+        if (!g_bColors)
+        {
+            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s. TYPE 'sounds' TO %s.",
+                g_pbDisabled[nPlayer] ? "DISABLED" : "ENABLED", g_pbDisabled[nPlayer] ? "ENABLE" : "DISABLE");
+        }
+
+        else
+        {
+            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS %c%s\x01. TYPE '%c%s\x01' TO %c%s\x01.",
+                g_pbDisabled[nPlayer] ? 3 : 4, g_pbDisabled[nPlayer] ? "DISABLED" : "ENABLED", g_pbDisabled[nPlayer] ? 4 : 3, "sounds", g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? "ENABLE" : "DISABLE");
+        }
     }
 
     return PLUGIN_CONTINUE;
@@ -3278,7 +3359,15 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                 {
                                     if (!g_pbDisabled[nPlayer])
                                     {
-                                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.");
+                                        if (!g_bColors)
+                                        {
+                                            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.");
+                                        }
+
+                                        else
+                                        {
+                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03sounds\x01' TO \x03DISABLE\x01.");
+                                        }
                                     }
                                 }
 
@@ -3288,7 +3377,15 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                 {
                                     if (g_pbDisabled[nPlayer])
                                     {
-                                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS DISABLED. TYPE 'sounds' TO ENABLE.");
+                                        if (!g_bColors)
+                                        {
+                                            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS DISABLED. TYPE 'sounds' TO ENABLE.");
+                                        }
+
+                                        else
+                                        {
+                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x03DISABLED\x01. TYPE '\x04sounds\x01' TO \x04ENABLE\x01.");
+                                        }
                                     }
                                 }
 
@@ -3300,7 +3397,15 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                 {
                                     if (!g_pbDisabled[nPlayer])
                                     {
-                                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.");
+                                        if (!g_bColors)
+                                        {
+                                            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.");
+                                        }
+
+                                        else
+                                        {
+                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03sounds\x01' TO \x03DISABLE\x01.");
+                                        }
                                     }
                                 }
 
@@ -4123,6 +4228,11 @@ static QS_LoadSettings()
         else if (equali(szKey, "SKIP EXISTING INFO") || equali(szKey, "SKIP EXISTING INFORMATION")) /** COMPATIBILITY */
         {
             g_bSkipExisting = bool: str_to_num(szVal);
+        }
+
+        else if (equali(szKey, "HIDE CMD") || equali(szKey, "HIDE COMMAND") || equali(szKey, "HIDE CHAT CMD") || equali(szKey, "HIDE CHAT COMMAND")) /** COMPATIBILITY */
+        {
+            g_bHideCmd = bool: str_to_num(szVal);
         }
 
         else if (equali(szKey, "HEADSHOT ONLY KILLER") || equali(szKey, "HEAD SHOT ONLY KILLER")) /** COMPATIBILITY */
@@ -5212,6 +5322,98 @@ static bool: QS_ShrinkSteam(szSteam[QS_STEAM_MAX_LEN])
                 szSteam = szBuffer;
                 {
                     return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+///
+/// COLORED MESSAGE IN CS/ CZ
+///
+/// '\x01' -> DEFAULT
+/// '\x04' -> GREEN
+///
+/// ------
+/// nIndex
+/// ------
+///
+/// IF nIndex = 'QS_CC_ST_X03_GREY -> [ 33 ]' THEN ('\x03' IS GREY)
+/// IF nIndex = 'QS_CC_ST_X03_RED -> [ 34 ]' THEN ('\x03' IS RED)
+/// IF nIndex = 'QS_CC_ST_X03_BLUE -> [ 35 ]' THEN ('\x03' IS BLUE)
+///
+/// IF nIndex = ANYTHING ELSE THEN ('\x03' IS THEIR TEAM COLOR)
+///
+static bool: QS_CSCZColored(nPlayer, nIndex, szIn[], any: ...)
+{
+    static szMsg[256] = { EOS, ... }, nPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nIter = 0, nOther = QS_INVALID_PLAYER, bool: bSuccess = false;
+
+    if (g_bColors)
+    {
+        if (!QS_EmptyString(szIn))
+        {
+            if (QS_ValidMsg(g_nSayText))
+            {
+                if (vformat(szMsg, charsmax(szMsg), szIn, 4) > 0)
+                {
+                    if (nPlayer >= QS_MIN_PLAYER && nPlayer <= g_nMaxPlayers)
+                    {
+                        if (g_pbInGame[nPlayer])
+                        {
+                            if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+                            {
+                                message_begin(MSG_ONE_UNRELIABLE, g_nSayText, { 0, 0, 0 } /** MESSAGE ORIGIN */, nPlayer);
+                                {
+                                    write_byte((((nIndex >= QS_CC_ST_X03_MIN) && (nIndex <= QS_CC_ST_X03_MAX)) ? (nIndex) : (nPlayer)));
+                                    {
+                                        write_string(szMsg);
+                                        {
+                                            message_end();
+                                            {
+                                                return true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    else
+                    {
+                        get_players(nPlayers, nTotal, "ch", ""); /// NO BOTS & HLTV PROXIES
+                        {
+                            if (nTotal > 0)
+                            {
+                                for (bSuccess = false, nIter = 0; nIter < nTotal; nIter++)
+                                {
+                                    nOther = nPlayers[nIter];
+                                    {
+                                        if (g_pbInGame[nOther])
+                                        {
+                                            message_begin(MSG_ONE_UNRELIABLE, g_nSayText, { 0, 0, 0 } /** MESSAGE ORIGIN */, nOther);
+                                            {
+                                                write_byte((((nIndex >= QS_CC_ST_X03_MIN) && (nIndex <= QS_CC_ST_X03_MAX)) ? (nIndex) : (nOther)));
+                                                {
+                                                    write_string(szMsg);
+                                                    {
+                                                        message_end();
+                                                        {
+                                                            bSuccess = true;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                return bSuccess;
+                            }
+                        }
+                    }
                 }
             }
         }
