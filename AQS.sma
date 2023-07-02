@@ -70,13 +70,29 @@
 #include < hamsandwich > /// Ham_Killed +
 
 /*************************************************************************************
+******* NATIVE ***********************************************************************
+*************************************************************************************/
+
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS
+///
+
+#if !defined SQL_SetCharset
+
+native bool: SQL_SetCharset(Handle: pSqlDbOrSqlTuple, const szCharSet[]);
+
+#endif
+
+static bool: g_bSQL_SetCharset_Unavail = false;
+
+/*************************************************************************************
 ******* DEFINE ***********************************************************************
 *************************************************************************************/
 
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.0" ) /// "7.0"
+#define QS_PLUGIN_VERSION ( "7.1" ) /// "7.1"
 
 ///
 /// ###################################################################################################
@@ -359,18 +375,18 @@
 ///
 
 ///
-/// HUD MESSAGE'S EFFECT
+/// HUD MESSAGE'S EFFECTS
 ///
-#define QS_HUD_MSG_EFFECT ( 0 ) /// 0
+#define QS_HUD_MSG_EFFECTS ( 0 ) /// 0
 
 ///
 /// ###################################################################################################
 ///
 
 ///
-/// HUD MESSAGE'S EFFECT TIME
+/// HUD MESSAGE'S EFFECTS TIME
 ///
-#define QS_HUD_MSG_EFFECT_TIME ( 0.000001 ) /// .000001
+#define QS_HUD_MSG_EFFECTS_TIME ( 0.000001 ) /// .000001
 
 ///
 /// ###################################################################################################
@@ -1366,11 +1382,16 @@ public plugin_natives()
     ///
     set_module_filter("QS_ModuleFilter");
 
+    ///
+    /// SETS THE NATIVE FILTER
+    ///
+    set_native_filter("QS_NativeFilter");
+
     return PLUGIN_CONTINUE;
 }
 
 ///
-/// PERFORMS THE FILTERING
+/// PERFORMS THE FILTERING OF MODULE
 ///
 public QS_ModuleFilter(szModule[])
 {
@@ -1388,6 +1409,25 @@ public QS_ModuleFilter(szModule[])
     ///
     /// OK
     ///
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// PERFORMS THE FILTERING OF NATIVE
+///
+public QS_NativeFilter(szNative[], nNative, bool: bFound)
+{
+    if (!bFound)
+    {
+        if (strcmp(szNative, "SQL_SetCharset", true) == 0)
+        {
+            g_bSQL_SetCharset_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+    }
+
     return PLUGIN_CONTINUE;
 }
 
@@ -1773,6 +1813,17 @@ public plugin_end()
         g_bSql = false;
     }
 
+    ///
+    /// AMXX OLDER EDITIONS COMPATIBILITY
+    ///
+    for (new nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
+    {
+        if (g_pbInGame[nPlayer])
+        {
+            client_disconnected(nPlayer, true, "", 0);
+        }
+    }
+
     return PLUGIN_CONTINUE;
 }
 
@@ -1989,7 +2040,7 @@ public plugin_init()
             ///
             /// SQL PRIMARY ( MAIN ) CHARSET
             ///
-            if (!QS_EmptyString(g_szSqlChars) && !g_bSqlLocal && !SQL_SetCharset(g_pSqlDb, g_szSqlChars))
+            if (!QS_EmptyString(g_szSqlChars) && !g_bSqlLocal && !g_bSQL_SetCharset_Unavail && !SQL_SetCharset(g_pSqlDb, g_szSqlChars))
             {
                 log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
                 log_to_file(QS_LOG_FILE_NAME, "Sql Primary Character Set Update Failed.");
@@ -1999,7 +2050,7 @@ public plugin_init()
                 ///
                 /// SQL SECONDARY CHARSET IF THE PRIMARY CHARSET FAILED
                 ///
-                if (!QS_EmptyString(g_szSqlSecChars) && !g_bSqlLocal && !SQL_SetCharset(g_pSqlDb, g_szSqlSecChars))
+                if (!QS_EmptyString(g_szSqlSecChars) && !g_bSqlLocal && !g_bSQL_SetCharset_Unavail && !SQL_SetCharset(g_pSqlDb, g_szSqlSecChars))
                 {
                     log_to_file(QS_LOG_FILE_NAME, "****************************************************************************************************************");
                     log_to_file(QS_LOG_FILE_NAME, "Sql Secondary Character Set Update Failed.");
@@ -2241,6 +2292,12 @@ public plugin_cfg()
         }
     }
 
+    ///
+    /// ENSURE THE AQS WORKS ON OLDER AMXX VERSIONS AS WELL
+    ///
+    register_forward(FM_ClientDisconnect, "QS_FM_OnClientDisconnect", 1 /** POST = 1 */);
+    register_forward(FM_ClientDisconnect, "QS_FM_OnClientDisconnect", 0 /** PRE = 0 */);
+
     if (QS_CSCZRunning())
     {
         ///
@@ -2298,6 +2355,19 @@ public client_infochanged(nPlayer)
     }
 
     return PLUGIN_CONTINUE;
+}
+
+///
+/// CALLED WHEN A CLIENT DISCONNECTS
+///
+/// DEPRECATED NOW BUT STILL NEEDED FOR OLDER AMXX EDITIONS
+///
+public QS_FM_OnClientDisconnect(nPlayer)
+{
+    ///
+    /// REDIRECT THE CALL
+    ///
+    return client_disconnected(nPlayer, true, "", 0);
 }
 
 ///
@@ -2549,16 +2619,53 @@ public client_command(nPlayer)
 }
 
 ///
-/// client_authorized ( nPlayer, const szSteam [ ] )
+/// client_authorized ( nPlayer ) FOR THE OLDER AMXX EDITIONS
+///
+/// client_authorized ( nPlayer, const szSteam [ ] ) FOR THE LATEST AMXX EDITIONS
 ///
 /// EXECUTES WHEN CLIENT TELLS THEIR STEAM ID
 ///
-public client_authorized(nPlayer, const szSteam[])
+
+#if defined AMXX_VERSION_NUM
+
+#if AMXX_VERSION_NUM > 183
+
+public client_authorized(nPlayer, const szSteam[]) /// LATEST
+
+#else /// AMXX_VERSION_NUM > 183
+
+public client_authorized(nPlayer) /// OLDER
+
+#endif
+
+#else /// defined AMXX_VERSION_NUM
+
+public client_authorized(nPlayer) /// OLDER
+
+#endif
+
 {
     ///
     /// DATA
     ///
-    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0;
+
+#if defined AMXX_VERSION_NUM
+
+#if AMXX_VERSION_NUM > 183
+
+    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0; /// LATEST
+
+#else /// AMXX_VERSION_NUM > 183
+
+    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
+
+#endif
+
+#else /// defined AMXX_VERSION_NUM
+
+    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
+
+#endif
 
     ///
     /// SANITY CHECK
@@ -2591,7 +2698,15 @@ public client_authorized(nPlayer, const szSteam[])
     ///
     /// RETRIEVES PLAYER STEAM
     ///
-    copy(g_pszSteam[nPlayer], charsmax(g_pszSteam[]), szSteam);
+    if (!QS_EmptyString(szSteam))
+    {
+        copy(g_pszSteam[nPlayer], charsmax(g_pszSteam[]), szSteam);
+    }
+
+    else
+    {
+        get_user_authid(nPlayer, g_pszSteam[nPlayer], charsmax(g_pszSteam[]));
+    }
 
     ///
     /// SHRINK THE STEAM
@@ -2773,7 +2888,7 @@ public QS_DisplayPlayerInfo(szParam[], nTaskId)
     ///
     /// PLAYER ENTITY INDEX BY PLAYER USER ID
     ///
-    nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+    nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
 
     ///
     /// INVALID PLAYER
@@ -2892,7 +3007,7 @@ public QS_PrepareManStanding(nTaskId)
 ///
 public QS_PerformManStanding(nTaskId)
 {
-    static nPlayer = QS_INVALID_PLAYER, nTEGuy = QS_INVALID_PLAYER, nTEs = 0, nCTGuy = QS_INVALID_PLAYER, nCTs = 0, pnColors[4] = { QS_MAX_BYTE, ... };
+    static nPlayer = QS_INVALID_PLAYER, nTEGuy = QS_INVALID_PLAYER, nTEs = 0, nCTGuy = QS_INVALID_PLAYER, nCTs = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     nTEs = QS_GetTeamTotalAlive(QS_CSCZ_TEAM_TE, nTEGuy);
     nCTs = QS_GetTeamTotalAlive(QS_CSCZ_TEAM_CT, nCTGuy);
@@ -2905,9 +3020,9 @@ public QS_PerformManStanding(nTaskId)
 
         QS_HudMsgColor();
         {
-            QS_MakeRGBA(pnColors);
+            QS_MakeRGBA(pnColor);
             {
-                set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
             }
         }
 
@@ -2944,9 +3059,9 @@ public QS_PerformManStanding(nTaskId)
 
         QS_HudMsgColor();
         {
-            QS_MakeRGBA(pnColors);
+            QS_MakeRGBA(pnColor);
             {
-                set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
             }
         }
 
@@ -3150,7 +3265,7 @@ public QS_RoundStart(nTaskId)
     ///
     /// DATA
     ///
-    static pnColors[4] = { QS_MAX_BYTE, ... };
+    static pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
     /// PREPARES ROUND START EVENT
@@ -3161,9 +3276,9 @@ public QS_RoundStart(nTaskId)
         {
             QS_HudMsgColor();
             {
-                QS_MakeRGBA(pnColors);
+                QS_MakeRGBA(pnColor);
                 {
-                    set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_ROUND_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_ROUND_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
                     {
                         QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_ROUND], g_szRStartMsg);
                     }
@@ -3185,7 +3300,7 @@ public QS_Hattrick(nTaskId)
     ///
     /// DATA
     ///
-    static nLeader = QS_INVALID_PLAYER, nTeam = QS_INVALID_TEAM, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nPlayer = QS_INVALID_PLAYER, nIter = 0, pnColors[4] = { QS_MAX_BYTE, ... };
+    static nLeader = QS_INVALID_PLAYER, nTeam = QS_INVALID_TEAM, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nPlayer = QS_INVALID_PLAYER, nIter = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
     /// SANITY CHECK
@@ -3211,9 +3326,9 @@ public QS_Hattrick(nTaskId)
             {
                 QS_HudMsgColor();
                 {
-                    QS_MakeRGBA(pnColors);
+                    QS_MakeRGBA(pnColor);
                     {
-                        set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_HATTRICK_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+                        QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_HATTRICK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
                     }
                 }
 
@@ -3336,7 +3451,7 @@ public QS_Hattrick(nTaskId)
 ///
 public QS_Flawless(nTaskId)
 {
-    static nAliveTeam_1 = 0, nAliveTeam_2 = 0, nAllTeam_1 = 0, nAllTeam_2 = 0, pnColors[4] = { QS_MAX_BYTE, ... };
+    static nAliveTeam_1 = 0, nAliveTeam_2 = 0, nAllTeam_1 = 0, nAllTeam_2 = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
     /// SANITY CHECK
@@ -3354,9 +3469,9 @@ public QS_Flawless(nTaskId)
 
     QS_HudMsgColor();
     {
-        QS_MakeRGBA(pnColors);
+        QS_MakeRGBA(pnColor);
         {
-            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+            QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
         }
     }
 
@@ -3594,7 +3709,7 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
         {
             if (QS_ValidUserId(nUserId))
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
                 {
                     if (QS_IsPlayer(nPlayer))
                     {
@@ -3696,7 +3811,7 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
         {
             if (QS_ValidUserId(nUserId))
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
                 {
                     if (QS_IsPlayer(nPlayer))
                     {
@@ -3743,7 +3858,7 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
         {
             if (QS_ValidUserId(nUserId))
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
                 {
                     if (QS_IsPlayer(nPlayer))
                     {
@@ -3850,7 +3965,7 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
         {
             if (QS_ValidUserId(nUserId))
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
                 {
                     if (QS_IsPlayer(nPlayer))
                     {
@@ -3897,7 +4012,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
         {
             if (QS_ValidUserId(nUserId))
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
                 {
                     if (QS_IsPlayer(nPlayer))
                     {
@@ -4079,7 +4194,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
         {
             if (QS_ValidUserId(nUserId))
             {
-                nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+                nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
                 {
                     if (QS_IsPlayer(nPlayer))
                     {
@@ -4252,7 +4367,7 @@ public QS_RetryPick(szParam[], nTaskId)
     ///
     /// PLAYER ENTITY INDEX BY PLAYER USER ID
     ///
-    nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+    nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
 
     ///
     /// INVALID PLAYER
@@ -4317,7 +4432,7 @@ public QS_RetryStore(szParam[], nTaskId)
     ///
     /// PLAYER ENTITY INDEX BY PLAYER USER ID
     ///
-    nPlayer = find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, nUserId);
+    nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
 
     ///
     /// INVALID PLAYER
@@ -4648,7 +4763,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
     /// VARIABLES
     ///
     static nIter = 0, Float: fGameTime = 0.000000, szWeapon[QS_WORD_MAX_LEN] = { EOS, ... }, szSnd[QS_SND_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... },
-        bool: bExecutedTeamKill = false, bool: bDiedByWorldDmg = false /** OR BY THE 'KILL' COMMAND */, pnColors[4] = { QS_MAX_BYTE, ... };
+        bool: bExecutedTeamKill = false, bool: bDiedByWorldDmg = false /** OR BY THE 'KILL' COMMAND */, pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
     /// RESETS THE SUICIDE TYPE STAMP [ WORLD DAMAGE/ 'KILL' COMMAND ]
@@ -4709,12 +4824,12 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE RGBA ARRAY
                     ///
-                    QS_MakeRGBA(pnColors);
+                    QS_MakeRGBA(pnColor);
 
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE @ QS_EVENT_Y_POS
                     ///
-                    set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
 
                     ///
                     /// SHOWS THE FIRST BLOOD HUD MESSAGE
@@ -4740,12 +4855,12 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
     ///
     /// PREPARES THE RGBA ARRAY
     ///
-    QS_MakeRGBA(pnColors);
+    QS_MakeRGBA(pnColor);
 
     ///
     /// PREPARES THE HUD MESSAGE @ QS_EVENT_Y_POS
     ///
-    set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
 
     ///
     /// SUICIDE
@@ -4891,12 +5006,12 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             ///
             /// PREPARES THE REVENGE HUD MESSAGE RGBA ARRAY
             ///
-            QS_MakeRGBA(pnColors);
+            QS_MakeRGBA(pnColor);
 
             ///
             /// PREPARES THE REVENGE ( QS_HUD_REVENGE ) HUD MESSAGE @ QS_REVENGE_Y_POS
             ///
-            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_REVENGE_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+            QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_REVENGE_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
 
             if (g_bRevengeMsgKiller)
             {
@@ -4923,12 +5038,12 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             ///
             /// PREPARES THE RGBA ARRAY
             ///
-            QS_MakeRGBA(pnColors);
+            QS_MakeRGBA(pnColor);
 
             ///
             /// PREPARES THE MINOR EVENTS ( QS_HUD_EVENT ) HUD MESSAGE @ QS_EVENT_Y_POS
             ///
-            set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+            QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
         }
 
         if (g_bHShot && nPlace == HIT_HEAD)
@@ -5836,15 +5951,15 @@ static bool: QS_LoadSettings()
 ///
 static bool: QS_DisplayKStreak(&nKiller, szMsg[], szSnd[])
 {
-    static pnColors[4] = { QS_MAX_BYTE, ... };
+    static pnColor[4] = { QS_MIN_BYTE, ... };
 
     if (!QS_EmptyString(szMsg))
     {
         QS_HudMsgColor();
         {
-            QS_MakeRGBA(pnColors);
+            QS_MakeRGBA(pnColor);
             {
-                set_hudmessage(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, QS_HUD_MSG_EFFECT, QS_HUD_MSG_EFFECT_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColors);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STREAK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
                 {
                     QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_STREAK], szMsg, g_pszName[nKiller]);
                 }
@@ -6133,7 +6248,7 @@ static bool: QS_ClearString(szString[])
 ///
 /// EMPTY STRING
 ///
-static bool: QS_EmptyString(szString[])
+static bool: QS_EmptyString(const szString[])
 {
     return (szString[0] == EOS);
 }
@@ -6501,13 +6616,123 @@ static bool: QS_CSCZColoredFiltered(nPlayer, nIndex, szIn[], any: ...)
 ///
 /// MAKE RGBA ARRAY
 ///
-static bool: QS_MakeRGBA(pnColors[4])
+static bool: QS_MakeRGBA(pnColor[4])
 {
-    pnColors[0] = g_nRed;
-    pnColors[1] = g_nGreen;
-    pnColors[2] = g_nBlue;
+    pnColor[0] = g_nRed;
+    pnColor[1] = g_nGreen;
+    pnColor[2] = g_nBlue;
 
-    pnColors[3] = QS_HUD_MSG_ALPHA_AMOUNT;
+    pnColor[3] = QS_HUD_MSG_ALPHA_AMOUNT;
 
     return true;
+}
+
+///
+/// SETS A HUD MESSAGE
+///
+static bool: QS_SetHudMsg(nRed = 200, nGreen = 100, nBlue = 0, Float: fX = -1.000000, Float: fY = 0.350000, nEffects = 0, Float: fEffectsTime = 6.000000,
+    Float: fHoldTime = 12.000000, Float: fFadeInTime = 0.100000, Float: fFadeOutTime = 0.200000, nChannel = -1, nAlpha = 0, pnColor[4] = { 255, 255, 250, 0 })
+{
+
+#if defined AMXX_VERSION_LOCAL_REV_NUM
+
+#if AMXX_VERSION_LOCAL_REV_NUM > 5281
+
+#if defined AMXX_VERSION_NUM
+
+#if AMXX_VERSION_NUM > 189
+
+    set_hudmessage(nRed, nGreen, nBlue, fX, fY, nEffects, fEffectsTime, fHoldTime, fFadeInTime, fFadeOutTime, nChannel, nAlpha, pnColor); /// LATEST
+
+#else /// AMXX_VERSION_NUM > 189
+
+    nAlpha = 0;
+    {
+        pnColor[0] = 0;
+        pnColor[1] = 0;
+        pnColor[2] = 0;
+        pnColor[3] = 0;
+        {
+            pnColor[3] += nAlpha; /// SUPRESS A COMPILER WARNING
+            {
+                set_hudmessage(nRed, nGreen, nBlue, fX, fY, nEffects, fEffectsTime, fHoldTime, fFadeInTime, fFadeOutTime, nChannel); /// COMPATIBILITY
+            }
+        }
+    }
+
+#endif
+
+#else /// defined AMXX_VERSION_NUM
+
+    nAlpha = 0;
+    {
+        pnColor[0] = 0;
+        pnColor[1] = 0;
+        pnColor[2] = 0;
+        pnColor[3] = 0;
+        {
+            pnColor[3] += nAlpha; /// SUPRESS A COMPILER WARNING
+            {
+                set_hudmessage(nRed, nGreen, nBlue, fX, fY, nEffects, fEffectsTime, fHoldTime, fFadeInTime, fFadeOutTime, nChannel); /// COMPATIBILITY
+            }
+        }
+    }
+
+#endif
+
+#else /// AMXX_VERSION_LOCAL_REV_NUM > 5281
+
+    nAlpha = 0;
+    {
+        pnColor[0] = 0;
+        pnColor[1] = 0;
+        pnColor[2] = 0;
+        pnColor[3] = 0;
+        {
+            pnColor[3] += nAlpha; /// SUPRESS A COMPILER WARNING
+            {
+                set_hudmessage(nRed, nGreen, nBlue, fX, fY, nEffects, fEffectsTime, fHoldTime, fFadeInTime, fFadeOutTime, nChannel); /// COMPATIBILITY
+            }
+        }
+    }
+
+#endif
+
+#else /// defined AMXX_VERSION_LOCAL_REV_NUM
+
+    nAlpha = 0;
+    {
+        pnColor[0] = 0;
+        pnColor[1] = 0;
+        pnColor[2] = 0;
+        pnColor[3] = 0;
+        {
+            pnColor[3] += nAlpha; /// SUPRESS A COMPILER WARNING
+            {
+                set_hudmessage(nRed, nGreen, nBlue, fX, fY, nEffects, fEffectsTime, fHoldTime, fFadeInTime, fFadeOutTime, nChannel); /// COMPATIBILITY
+            }
+        }
+    }
+
+#endif
+
+    return true;
+}
+
+///
+/// PLAYER ID BY PLAYER USER ID
+///
+static QS_PlayerIdByPlayerUserId(&nUserId)
+{
+    static nPlayer = QS_INVALID_PLAYER;
+
+    for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
+    {
+        if (nUserId == get_user_userid(nPlayer))
+        {
+            return nPlayer;
+        }
+    }
+
+    return QS_INVALID_PLAYER;
 }
