@@ -91,7 +91,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 
 #if !defined strtok2
 
-#define strtok2 strtok
+#define strtok2(%0,%1,%2,%3,%4,%5,%6) strtok(%0, %1, %2, %3, %4, %5, 0)
 
 #endif
 
@@ -112,7 +112,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.2" ) /// "7.2"
+#define QS_PLUGIN_VERSION ( "7.3" ) /// "7.3"
 
 ///
 /// ###################################################################################################
