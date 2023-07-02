@@ -85,6 +85,26 @@ native bool: SQL_SetCharset(Handle: pSqlDbOrSqlTuple, const szCharSet[]);
 
 static bool: g_bSQL_SetCharset_Unavail = false;
 
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS
+///
+
+#if !defined strtok2
+
+#define strtok2 strtok
+
+#endif
+
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS
+///
+
+#if !defined ByteCountToCells
+
+#define ByteCountToCells(%0) (%0)
+
+#endif
+
 /*************************************************************************************
 ******* DEFINE ***********************************************************************
 *************************************************************************************/
@@ -92,7 +112,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.1" ) /// "7.1"
+#define QS_PLUGIN_VERSION ( "7.2" ) /// "7.2"
 
 ///
 /// ###################################################################################################
@@ -2277,7 +2297,25 @@ public plugin_cfg()
             ///
             if (g_bDeathMsgOnly)
             {
-                RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */, false /** IF TRUE THEN IT WILL PROVIDE SOME KIND OF SUPPORT FOR SPECIAL BOTS */);
+
+#if defined AMXX_VERSION_NUM
+
+#if AMXX_VERSION_NUM > 183
+
+                RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */, true /** IF TRUE THEN IT WILL PROVIDE SOME KIND OF SUPPORT FOR SPECIAL BOTS WITHOUT "player" CLASS NAME */); /// LATEST
+
+#else /// AMXX_VERSION_NUM > 183
+
+                RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */); /// OLDER
+
+#endif
+
+#else /// defined AMXX_VERSION_NUM
+
+                RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */); /// OLDER
+
+#endif
+
             }
         }
 
@@ -5312,10 +5350,7 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "ROUNDSTART DELAY SECONDS") || equali(szKey, "ROUNDSTART SECONDS DELAY")) /** COMPATIBILITY */
         {
-            nVal = 0;
-            {
-                g_fRStartDelay = floatabs(strtof(szVal, nVal));
-            }
+            g_fRStartDelay = floatabs(str_to_float(szVal));
         }
 
         else if (equali(szKey, "MIN FRAGS FOR HATTRICK") || equali(szKey, "MINIMUM FRAGS FOR HATTRICK")) /** COMPATIBILITY */
