@@ -12,3 +12,12 @@ Upload `AQS.amxx` to `/addons/amxmodx/plugins/`
 Upload `AQS` folder to `/sound/`
 
 Type `AQS.amxx` in `/addons/amxmodx/configs/plugins.ini`
+
+## Pictures ##
+`CS/ CZ`
+
+![CS/ CZ](https://hattrick.go.ro/aqs-cscz.png)
+
+`DOD`
+
+![DOD](https://hattrick.go.ro/aqs-dod.png)
