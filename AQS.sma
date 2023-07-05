@@ -112,7 +112,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.4" ) /// "7.4"
+#define QS_PLUGIN_VERSION ( "7.5" ) /// "7.5"
 
 ///
 /// ###################################################################################################
@@ -185,14 +185,24 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 #define QS_HATTRICK_ROUND_END_DELAY ( 2.800000 ) /// 2.8
 
-/// # DAY OF DEFEAT # ///
+///
+/// THE HATTRICK FEATURE :: ROUND END TRIGGER DELAY /// # DAY OF DEFEAT # ///
 ///
 #define QS_HATTRICK_ROUND_END_DELAY_DOD ( 0.000001 ) /// .000001 [[[ DAY OF DEFEAT ]]]
+
+///
+/// ###################################################################################################
+///
 
 ///
 /// THE FLAWLESS VICTORY FEATURE :: ROUND END TRIGGER DELAY
 ///
 #define QS_FLAWLESS_ROUND_END_DELAY ( 1.200000 ) /// 1.2
+
+///
+/// MINIMUM TOTAL PLAYERS IN A TEAM IN ORDER TO ALLOW THE FLAWLESS FEATURE TO BE TRIGGERED FOR THAT TEAM
+///
+#define QS_FLAWLESS_MIN_PLAYERS_IN_TEAM ( 2 ) /// 2
 
 ///
 /// ###################################################################################################
@@ -1147,14 +1157,14 @@ static bool: g_bFlawlessMsg = false;
 static g_szFlawlessMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... };
 
 ///
-/// FLAWLESS TEAM NAME FOR TEAM [ 1 ]
+/// FLAWLESS TEAM NAME FOR TEAM [ TE ]
 ///
-static g_szFlawlessTeamName_1[QS_WORD_MAX_LEN] = { EOS, ... };
+static g_szFlawlessTeamName_TE[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
-/// FLAWLESS TEAM NAME FOR TEAM [ 2 ]
+/// FLAWLESS TEAM NAME FOR TEAM [ CT ]
 ///
-static g_szFlawlessTeamName_2[QS_WORD_MAX_LEN] = { EOS, ... };
+static g_szFlawlessTeamName_CT[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// FLAWLESS SOUNDS COUNT
@@ -3665,7 +3675,7 @@ public QS_Hattrick(nTaskId)
 ///
 public QS_Flawless(nTaskId)
 {
-    static nAliveTeam_1 = 0, nAliveTeam_2 = 0, nAllTeam_1 = 0, nAllTeam_2 = 0, pnColor[4] = { QS_MIN_BYTE, ... };
+    static nAliveTeam_TE = 0, nAliveTeam_CT = 0, nAllTeam_TE = 0, nAllTeam_CT = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
     /// SANITY CHECK
@@ -3675,11 +3685,11 @@ public QS_Flawless(nTaskId)
         return PLUGIN_CONTINUE;
     }
 
-    nAliveTeam_1 = QS_ActivePlayersNum(true, 1);
-    nAliveTeam_2 = QS_ActivePlayersNum(true, 2);
+    nAliveTeam_TE = QS_ActivePlayersNum(true /** true = ALIVE PLAYERS */, QS_CSCZ_TEAM_TE);
+    nAliveTeam_CT = QS_ActivePlayersNum(true /** true = ALIVE PLAYERS */, QS_CSCZ_TEAM_CT);
 
-    nAllTeam_1 = nAliveTeam_1 + QS_ActivePlayersNum(false, 1);
-    nAllTeam_2 = nAliveTeam_2 + QS_ActivePlayersNum(false, 2);
+    nAllTeam_TE = nAliveTeam_TE + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_TE);
+    nAllTeam_CT = nAliveTeam_CT + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_CT);
 
     QS_HudMsgColor();
     {
@@ -3689,21 +3699,21 @@ public QS_Flawless(nTaskId)
         }
     }
 
-    if (nAllTeam_1 == nAliveTeam_1)
+    if (nAllTeam_TE >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM && (nAllTeam_TE == nAliveTeam_TE) && nAllTeam_CT)
     {
         if (g_bFlawlessMsg)
         {
-            QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_1);
+            QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_TE);
         }
 
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_nFlawlessSize - 1)));
     }
 
-    else if (nAllTeam_2 == nAliveTeam_2)
+    else if (nAllTeam_CT >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM && (nAllTeam_CT == nAliveTeam_CT) && nAllTeam_TE)
     {
         if (g_bFlawlessMsg)
         {
-            QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_2);
+            QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_CT);
         }
 
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_nFlawlessSize - 1)));
@@ -3722,7 +3732,7 @@ public QS_FM_OnMsgBegin(nDestination, nType)
     ///
     /// IF GLOBALLY SENT
     ///
-    if (nType == g_nDeathMsg && (nDestination == MSG_ALL || nDestination == MSG_BROADCAST))
+    if ((nType == g_nDeathMsg) && ((nDestination == MSG_ALL) || (nDestination == MSG_BROADCAST)))
     {
         g_bOnDeathMsg = true;
         {
@@ -3779,6 +3789,9 @@ public QS_FM_OnMsgEnd()
     ///
     if (g_bOnDeathMsg)
     {
+        ///
+        /// GAME TIME
+        ///
         fGameTime = get_gametime();
 
         g_bOnDeathMsg = false;
@@ -4753,6 +4766,11 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskId)
     get_user_attacker(nVictim, nWeapon, nPlace);
 
     ///
+    /// GAME TIME
+    ///
+    fGameTime = get_gametime();
+
+    ///
     /// LET'S SAY XSTATS MODULE'S "client_death ( )" FORWARD PROPERLY EXECUTED
     ///
     bReExec = false;
@@ -4885,7 +4903,8 @@ public QS_ProcessDeathHook(pnInfo[], nTaskId)
     ///
     /// DECLARES THE HIT PLACE, THE WEAPON ID & THE TEAM KILL BOOLEAN
     ///
-    static nPlace = QS_INVALID_PLACE, nWeapon = QS_INVALID_WEAPON, nKiller = QS_INVALID_PLAYER, nVictim = QS_INVALID_PLAYER, nOrigPlace = QS_INVALID_PLACE, nOrigWeapon = QS_INVALID_WEAPON, nOrigTeamKill = QS_TEAM_KILL_NO;
+    static nPlace = QS_INVALID_PLACE, nWeapon = QS_INVALID_WEAPON, nKiller = QS_INVALID_PLAYER, nVictim = QS_INVALID_PLAYER,
+        nOrigPlace = QS_INVALID_PLACE, nOrigWeapon = QS_INVALID_WEAPON, nOrigTeamKill = QS_TEAM_KILL_NO;
 
     ///
     /// PLAYER INFO
@@ -5178,7 +5197,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
         ///
         /// EXECUTED TEAM KILL YES/ NO
         ///
-        bExecutedTeamKill = (nTeamKill > QS_TEAM_KILL_NO) ? true : false;
+        bExecutedTeamKill = QS_IsTeamKill(nTeamKill);
 
         ///
         /// REVENGE KILLER STAMP
@@ -5738,7 +5757,7 @@ static bool: QS_LoadSettings()
             ///
             QS_ClearString(szType);
             {
-                if (parse(szVal, szDummy, charsmax(szDummy), szType, charsmax(szType)) > 1)
+                if (parse(szVal, szDummy, charsmax(szDummy), szType, charsmax(szType)) > 1 || !QS_EmptyString(szType))
                 {
                     trim(szType);
                     {
@@ -6234,12 +6253,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "TERRO TEAM NAME") || equali(szKey, "TE TEAM NAME") || equali(szKey, "T TEAM NAME")) /** COMPATIBILITY */
         {
-            copy(g_szFlawlessTeamName_1, charsmax(g_szFlawlessTeamName_1), szVal);
+            copy(g_szFlawlessTeamName_TE, charsmax(g_szFlawlessTeamName_TE), szVal);
         }
 
         else if (equali(szKey, "CT TEAM NAME"))
         {
-            copy(g_szFlawlessTeamName_2, charsmax(g_szFlawlessTeamName_2), szVal);
+            copy(g_szFlawlessTeamName_CT, charsmax(g_szFlawlessTeamName_CT), szVal);
         }
     }
 
@@ -7061,4 +7080,12 @@ static bool: QS_IsThereAnyAlivePlayer()
     }
 
     return false;
+}
+
+///
+/// IS TEAM KILL
+///
+static bool: QS_IsTeamKill(&nTeamKill)
+{
+    return (nTeamKill > QS_TEAM_KILL_NO);
 }
