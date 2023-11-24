@@ -112,7 +112,16 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.5" ) /// "7.5"
+#define QS_PLUGIN_VERSION ( "7.6" ) /// "7.6"
+
+///
+/// ###################################################################################################
+///
+
+///
+/// INCLUDE THE AQS VERSION CONSOLE VARIABLE INTO THE GAME LOGGING SYSTEM
+///
+#define QS_INCLUDE_VERSION_CVAR_IN_LOGS 0 /// 0
 
 ///
 /// ###################################################################################################
@@ -164,6 +173,19 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 /// NO TEAM KILL
 ///
 #define QS_TEAM_KILL_NO ( 0 ) /// 0
+
+///
+/// ###################################################################################################
+///
+
+///
+/// SECONDS DELAY BETWEEN DISPLAYING MULTIPLE PLAYER EVENTS ( SOUNDS & MESSAGES )
+///
+/// VERSION 7.5 & -     ⤵
+///
+///     THIS VALUE WAS  0.000000
+///
+#define QS_DISPLAY_PLAYER_EVENT_DELAY ( 0.412345 ) /// .412345
 
 ///
 /// ###################################################################################################
@@ -331,6 +353,11 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 #define QS_MOD_MAX_LEN ( 64 ) /// 64
 
 ///
+/// CHAT PHRASE MAXIMUM LENGTH
+///
+#define QS_CHAT_PHRASE_MAX_LEN ( 128 ) /// 128
+
+///
 /// SOUND FILE PATH MAXIMUM LENGTH
 ///
 #define QS_SND_MAX_LEN ( 256 ) /// 256
@@ -403,6 +430,16 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 /// MINIMUM UNSIGNED BYTE
 ///
 #define QS_MIN_BYTE ( 0x00000000 ) /// 0 [[[ 0x00000000 ]]]
+
+///
+/// MEDIUM UNSIGNED BYTE
+///
+#define QS_MEDIUM_BYTE ( 0x0000007F ) /// 127 [[[ 0x0000007F ]]]
+
+///
+/// BIG UNSIGNED BYTE
+///
+#define QS_BIG_BYTE ( 0x000000BF ) /// 191 [[[ 0x000000BF ]]]
 
 ///
 /// MAXIMUM UNSIGNED BYTE
@@ -604,6 +641,11 @@ static bool: g_bSkipExisting = false;
 /// WHEN TRUE, DO NOT SHOW THAT THE USER HAS TYPED '/sounds' INTO THE CHAT AREA
 ///
 static bool: g_bHideCmd = false;
+
+///
+/// SECONDS DELAY BETWEEN DISPLAYING MULTIPLE PLAYER EVENTS ( SOUNDS & MESSAGES )
+///
+static Float: g_fSecDelayDisplayPlayerEvents = QS_DISPLAY_PLAYER_EVENT_DELAY;
 
 /**
  * HEAD SHOT
@@ -1188,7 +1230,12 @@ static g_pnHudMsgObj[QS_HUD_MAX] = { QS_INVALID_HUD_MSG_SYNC_OBJECT, ... };
 ///
 /// RED
 ///
-static g_nRed = QS_MIN_BYTE;
+static g_nRed = QS_MAX_BYTE;
+
+///
+/// RED ORIGINAL
+///
+static g_nRedOrg = QS_MAX_BYTE;
 
 ///
 /// RANDOM RED
@@ -1198,7 +1245,12 @@ static bool: g_bRandomRed = false;
 ///
 /// GREEN
 ///
-static g_nGreen = QS_MIN_BYTE;
+static g_nGreen = QS_MAX_BYTE;
+
+///
+/// GREEN ORIGINAL
+///
+static g_nGreenOrg = QS_MAX_BYTE;
 
 ///
 /// RANDOM GREEN
@@ -1208,12 +1260,63 @@ static bool: g_bRandomGreen = false;
 ///
 /// BLUE
 ///
-static g_nBlue = QS_MIN_BYTE;
+static g_nBlue = QS_MAX_BYTE;
+
+///
+/// BLUE ORIGINAL
+///
+static g_nBlueOrg = QS_MAX_BYTE;
 
 ///
 /// RANDOM BLUE
 ///
 static bool: g_bRandomBlue = false;
+
+///
+/// CUSTOM OPTIONAL HUD MESSAGE RGB COLORS
+///
+
+/** EVENT (KNIFE, GRENADE, FIRST BLOOD, ...) */
+//
+static g_nRedEvent = -1;
+static g_nGreenEvent = -1;
+static g_nBlueEvent = -1;
+
+/** FLAWLESS VICTORY */
+//
+static g_nRedFlawless = -1;
+static g_nGreenFlawless = -1;
+static g_nBlueFlawless = -1;
+
+/** HATTRICK */
+//
+static g_nRedHattrick = -1;
+static g_nGreenHattrick = -1;
+static g_nBlueHattrick = -1;
+
+/** REVENGE */
+//
+static g_nRedRevenge = -1;
+static g_nGreenRevenge = -1;
+static g_nBlueRevenge = -1;
+
+/** ROUND START */
+//
+static g_nRedRound = -1;
+static g_nGreenRound = -1;
+static g_nBlueRound = -1;
+
+/** CS/ CZ THE LAST MAN STANDING */
+//
+static g_nRedStanding = -1;
+static g_nGreenStanding = -1;
+static g_nBlueStanding = -1;
+
+/** RAMPAGE, OWNAGE, EXCELLENT, IMPRESSIVE, ... */
+//
+static g_nRedStreak = -1;
+static g_nGreenStreak = -1;
+static g_nBlueStreak = -1;
 
 /**
 * GAME RELATED
@@ -1489,6 +1592,16 @@ static g_pnUserId[QS_MAX_PLAYERS + 1] = { QS_INVALID_USER_ID, ... };
 static Float: g_pfLastKillTimeStamp[QS_MAX_PLAYERS + 1] = { 0.000000, ... };
 
 ///
+/// LAST DISPLAYED MESSAGE TIME STAMP ( GAME TIME )
+///
+static Float: g_pfLastDisplayedMsgTimeStamp[QS_MAX_PLAYERS + 1] = { 0.000000, ... };
+
+///
+/// LAST PLAYED SOUND TIME STAMP ( GAME TIME )
+///
+static Float: g_pfLastPlayedSoundTimeStamp[QS_MAX_PLAYERS + 1] = { 0.000000, ... };
+
+///
 /// XSTATS [ client_death ( ) ] HIT PLACE ID STAMP FOR EVERY VICTIM
 ///
 static g_pnPlace[QS_MAX_PLAYERS + 1] = { QS_INVALID_PLACE, ... };
@@ -1507,6 +1620,36 @@ static g_pnTeamKill[QS_MAX_PLAYERS + 1] = { QS_TEAM_KILL_NO, ... };
 /// XSTATS [ client_death ( ) ] EXECUTION TIME STAMP FOR EVERY VICTIM
 ///
 static Float: g_pfXStatsTimeStamp[QS_MAX_PLAYERS + 1] = { 0.000000, ... };
+
+/**
+* CHAT TEXT PHRASES
+*/
+
+static g_szPhrWait[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> \x03WAIT\x01.
+static g_szPhrWaitDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> WAIT.
+
+static g_szPhrStatus[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS %c%s\x01.
+static g_szPhrStatusDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s.
+
+static g_szPhrStatusType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS %c%s\x01. TYPE '%c%s\x01' TO %c%s\x01.
+static g_szPhrStatusTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s. TYPE 'sounds' TO %s.
+
+static g_szPhrHattrickVictims[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.
+static g_szPhrHattrickVictimsDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s HAD %d VICTIM%s.
+
+static g_szPhrHattrickVictimsPluralSuf[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// S
+
+static g_szPhrStatusEnabledType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03sounds\x01' TO \x03DISABLE\x01.
+static g_szPhrStatusEnabledTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.
+
+static g_szPhrStatusDisabledType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x03DISABLED\x01. TYPE '\x04sounds\x01' TO \x04ENABLE\x01.
+static g_szPhrStatusDisabledTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS DISABLED. TYPE 'sounds' TO ENABLE.
+
+static g_szPhrEnable[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// ENABLE
+static g_szPhrDisable[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// DISABLE
+
+static g_szPhrEnabled[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// ENABLED
+static g_szPhrDisabled[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// DISABLED
 
 /*************************************************************************************
 ******* FORWARDS *********************************************************************
@@ -1983,7 +2126,24 @@ public plugin_init()
     ///
     /// REGISTERS THE PLUGIN'S CONSOLE VARIABLE
     ///
-    new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_SPONLY);
+
+#if defined QS_INCLUDE_VERSION_CVAR_IN_LOGS
+
+#if QS_INCLUDE_VERSION_CVAR_IN_LOGS == 1
+
+    new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL);
+
+#else
+
+    new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
+
+#endif
+
+#else
+
+    new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
+
+#endif
 
     ///
     /// SETS THE CONSOLE VARIABLE STRING
@@ -2124,6 +2284,42 @@ public plugin_init()
     ///
     for (new nIter = 0; nIter < QS_HUD_MAX; nIter++)
     {
+        if (g_bDOD)
+        {
+            if (QS_HUD_FLAWLESS == nIter)
+            {
+                continue;
+            }
+
+            else if (QS_HUD_STANDING == nIter)
+            {
+                continue;
+            }
+        }
+
+        else if (!g_bCSCZ)
+        {
+            if (QS_HUD_FLAWLESS == nIter)
+            {
+                continue;
+            }
+
+            else if (QS_HUD_STANDING == nIter)
+            {
+                continue;
+            }
+
+            else if (QS_HUD_HATTRICK == nIter)
+            {
+                continue;
+            }
+
+            else if (QS_HUD_ROUND == nIter)
+            {
+                continue;
+            }
+        }
+
         g_pnHudMsgObj[nIter] = CreateHudSyncObj();
     }
 
@@ -2670,12 +2866,12 @@ public client_command(nPlayer)
                 {
                     if (!g_bColors)
                     {
-                        client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s.", g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
+                        client_print(nPlayer, print_chat, g_szPhrStatusDef, g_pbDisabled[nPlayer] ? g_szPhrEnabled : g_szPhrDisabled);
                     }
 
                     else
                     {
-                        QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS %c%s\x01.", g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? "ENABLED" : "DISABLED");
+                        QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, g_szPhrStatus, g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? g_szPhrEnabled : g_szPhrDisabled);
                     }
 
                     g_pbDisabled[nPlayer] = !g_pbDisabled[nPlayer];
@@ -2688,12 +2884,12 @@ public client_command(nPlayer)
                     ///
                     if (!g_bColors)
                     {
-                        client_print(nPlayer, print_chat, ">> WAIT.");
+                        client_print(nPlayer, print_chat, g_szPhrWaitDef);
                     }
 
                     else
                     {
-                        QS_CSCZColored(nPlayer, QS_CC_ST_X03_GREY, "\x01>> \x03WAIT\x01.");
+                        QS_CSCZColored(nPlayer, QS_CC_ST_X03_GREY, g_szPhrWait);
                     }
                 }
 
@@ -2759,12 +2955,12 @@ public client_command(nPlayer)
             {
                 if (!g_bColors)
                 {
-                    client_print(nPlayer, print_chat, ">> WAIT.");
+                    client_print(nPlayer, print_chat, g_szPhrWaitDef);
                 }
 
                 else
                 {
-                    QS_CSCZColored(nPlayer, QS_CC_ST_X03_GREY, "\x01>> \x03WAIT\x01.");
+                    QS_CSCZColored(nPlayer, QS_CC_ST_X03_GREY, g_szPhrWait);
                 }
             }
 
@@ -3011,6 +3207,9 @@ public client_putinserver(nPlayer)
         g_pfLastKillTimeStamp[nPlayer] = 0.000000;
     }
 
+    g_pfLastPlayedSoundTimeStamp[nPlayer] = 0.000000;
+    g_pfLastDisplayedMsgTimeStamp[nPlayer] = 0.000000;
+
     ///
     /// PRINTS INFORMATION FOR VALID PLAYERS ONLY
     ///
@@ -3023,6 +3222,176 @@ public client_putinserver(nPlayer)
                 set_task(QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", g_pnUserId[nPlayer] + nSysTime, szParam, charsmax(szParam), "", 0);
             }
         }
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// PROCESSES A DELAYED PLAYER MESSAGE ( HUD MESSAGE )
+///
+public QS_DelayedPlayerMessage(pnInfo[], nTask)
+{
+    static nUserId = QS_INVALID_USER_ID, nTaskParamSize = 0, nHudObj = QS_INVALID_HUD_MSG_SYNC_OBJECT, nPlayer = QS_INVALID_PLAYER,
+        Float: fTheGameTime = 0.000000, bool: bHidden = false, pnColor[4] = { QS_MIN_BYTE, ... };
+
+    nUserId = pnInfo[0];
+
+    if (!QS_ValidUserId(nUserId))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    bHidden = (EOS == pnInfo[3]);
+
+    nHudObj = pnInfo[1];
+
+    if (!QS_ValidHudMsgSyncObj(nHudObj))
+    {
+        if (!bHidden)
+        {
+            return PLUGIN_CONTINUE;
+        }
+    }
+
+    nTaskParamSize = pnInfo[2];
+
+    if (nTaskParamSize < 1)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
+
+    if (!QS_IsPlayer(nPlayer))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (!g_pbInGame[nPlayer])
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    fTheGameTime = get_gametime();
+
+    if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+    {
+        if (!bHidden)
+        {
+            if (g_pnHudMsgObj[QS_HUD_EVENT] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_EVENT);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_EVENT_Y_POS_DOD : QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            else if (g_pnHudMsgObj[QS_HUD_REVENGE] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_REVENGE);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_REVENGE_Y_POS_DOD : QS_REVENGE_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            else if (g_pnHudMsgObj[QS_HUD_STANDING] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_STANDING);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            else if (g_pnHudMsgObj[QS_HUD_STREAK] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_STREAK);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_STREAK_Y_POS_DOD : QS_STREAK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            else if (g_pnHudMsgObj[QS_HUD_FLAWLESS] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_FLAWLESS);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            else if (g_pnHudMsgObj[QS_HUD_HATTRICK] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_HATTRICK);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_HATTRICK_Y_POS_DOD : QS_HATTRICK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            else if (g_pnHudMsgObj[QS_HUD_ROUND] == nHudObj)
+            {
+                QS_HudMsgColor(QS_HUD_ROUND);
+                QS_MakeRGBA(pnColor);
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_ROUND_Y_POS_DOD : QS_ROUND_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+
+            ShowSyncHudMsg(nPlayer, nHudObj, pnInfo[3]);
+        }
+
+        g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
+    }
+
+    else
+    {
+        set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, nTaskParamSize, "", 0);
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// PROCESSES A DELAYED PLAYER COMMAND ( SPEAK COMMAND )
+///
+public QS_DelayedPlayerCommand(pnInfo[], nTask)
+{
+    static nUserId = QS_INVALID_USER_ID, nTaskParamSize = 0, nPlayer = QS_INVALID_PLAYER, Float: fTheGameTime = 0.000000, bool: bHidden = false;
+
+    nUserId = pnInfo[0];
+
+    if (!QS_ValidUserId(nUserId))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    nTaskParamSize = pnInfo[1];
+
+    if (nTaskParamSize < 1)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    nPlayer = QS_PlayerIdByPlayerUserId(nUserId);
+
+    if (!QS_IsPlayer(nPlayer))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (!g_pbInGame[nPlayer])
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    fTheGameTime = get_gametime();
+
+    if ((fTheGameTime - g_pfLastPlayedSoundTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+    {
+        bHidden = (EOS == pnInfo[2]);
+
+        if (!bHidden)
+        {
+            client_cmd(nPlayer, pnInfo[2]);
+        }
+
+        g_pfLastPlayedSoundTimeStamp[nPlayer] = fTheGameTime;
+    }
+
+    else
+    {
+        set_task(0.050000, "QS_DelayedPlayerCommand", get_systime(0), pnInfo, nTaskParamSize, "", 0);
     }
 
     return PLUGIN_CONTINUE;
@@ -3091,14 +3460,14 @@ public QS_DisplayPlayerInfo(szParam[], nTaskId)
         ///
         if (!g_bColors)
         {
-            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS %s. TYPE 'sounds' TO %s.",
-                g_pbDisabled[nPlayer] ? "DISABLED" : "ENABLED", g_pbDisabled[nPlayer] ? "ENABLE" : "DISABLE");
+            client_print(nPlayer, print_chat, g_szPhrStatusTypeDef,
+                g_pbDisabled[nPlayer] ? g_szPhrDisabled : g_szPhrEnabled, g_pbDisabled[nPlayer] ? g_szPhrEnable : g_szPhrDisable);
         }
 
         else
         {
-            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS %c%s\x01. TYPE '%c%s\x01' TO %c%s\x01.",
-                g_pbDisabled[nPlayer] ? 3 : 4, g_pbDisabled[nPlayer] ? "DISABLED" : "ENABLED", g_pbDisabled[nPlayer] ? 4 : 3, "sounds", g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? "ENABLE" : "DISABLE");
+            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, g_szPhrStatusType,
+                g_pbDisabled[nPlayer] ? 3 : 4, g_pbDisabled[nPlayer] ? g_szPhrDisabled : g_szPhrEnabled, g_pbDisabled[nPlayer] ? 4 : 3, "sounds", g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? g_szPhrEnable : g_szPhrDisable);
         }
     }
 
@@ -3181,7 +3550,7 @@ public QS_PerformManStanding(nTaskId)
 
         QS_ClientCmd(nTEGuy, "SPK \"%a\"", ArrayGetStringHandle(g_pTLMStanding, random_num(0, g_nTLMStandingSize - 1)));
 
-        QS_HudMsgColor();
+        QS_HudMsgColor(QS_HUD_STANDING);
         {
             QS_MakeRGBA(pnColor);
             {
@@ -3202,6 +3571,11 @@ public QS_PerformManStanding(nTaskId)
                 {
                     QS_ShowHudMsg(nTEGuy, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingSelfMsg, ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
                 }
+
+                else
+                {
+                    QS_ShowHiddenHudMsg(nTEGuy);
+                }
             }
 
             else
@@ -3209,6 +3583,11 @@ public QS_PerformManStanding(nTaskId)
                 if (g_bTLMStandingTeamMsg)
                 {
                     QS_ShowHudMsg(nPlayer, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingTeamMsg, g_pszName[nTEGuy], ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
+                }
+
+                else
+                {
+                    QS_ShowHiddenHudMsg(nPlayer);
                 }
             }
         }
@@ -3220,7 +3599,7 @@ public QS_PerformManStanding(nTaskId)
 
         QS_ClientCmd(nCTGuy, "SPK \"%a\"", ArrayGetStringHandle(g_pTLMStanding, random_num(0, g_nTLMStandingSize - 1)));
 
-        QS_HudMsgColor();
+        QS_HudMsgColor(QS_HUD_STANDING);
         {
             QS_MakeRGBA(pnColor);
             {
@@ -3241,6 +3620,11 @@ public QS_PerformManStanding(nTaskId)
                 {
                     QS_ShowHudMsg(nCTGuy, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingSelfMsg, ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
                 }
+
+                else
+                {
+                    QS_ShowHiddenHudMsg(nCTGuy);
+                }
             }
 
             else
@@ -3248,6 +3632,11 @@ public QS_PerformManStanding(nTaskId)
                 if (g_bTLMStandingTeamMsg)
                 {
                     QS_ShowHudMsg(nPlayer, g_pnHudMsgObj[QS_HUD_STANDING], g_szTLMStandingTeamMsg, g_pszName[nCTGuy], ArrayGetStringHandle(g_pTLMStandingWords, random_num(0, g_nTLMStandingWordsSize - 1)));
+                }
+
+                else
+                {
+                    QS_ShowHiddenHudMsg(nPlayer);
                 }
             }
         }
@@ -3498,13 +3887,27 @@ public QS_RoundStart(nTaskId)
     {
         if (g_bRStartMsg)
         {
-            QS_HudMsgColor();
+            QS_HudMsgColor(QS_HUD_ROUND);
             {
                 QS_MakeRGBA(pnColor);
                 {
                     QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_ROUND_Y_POS_DOD : QS_ROUND_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
                     {
                         QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_ROUND], g_szRStartMsg);
+                    }
+                }
+            }
+        }
+
+        else
+        {
+            QS_HudMsgColor(QS_HUD_ROUND);
+            {
+                QS_MakeRGBA(pnColor);
+                {
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_ROUND_Y_POS_DOD : QS_ROUND_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                    {
+                        QS_ShowHiddenHudMsg(QS_EVERYONE);
                     }
                 }
             }
@@ -3548,7 +3951,7 @@ public QS_Hattrick(nTaskId)
         {
             if (g_bHattrickMsg)
             {
-                QS_HudMsgColor();
+                QS_HudMsgColor(QS_HUD_HATTRICK);
                 {
                     QS_MakeRGBA(pnColor);
                     {
@@ -3564,6 +3967,27 @@ public QS_Hattrick(nTaskId)
                 else
                 {
                     QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_HATTRICK], g_szHattrickMsg, g_pszName[nLeader]);
+                }
+            }
+
+            else
+            {
+                QS_HudMsgColor(QS_HUD_HATTRICK);
+                {
+                    QS_MakeRGBA(pnColor);
+                    {
+                        QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_HATTRICK_Y_POS_DOD : QS_HATTRICK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                    }
+                }
+
+                if (g_bHattrickToAll)
+                {
+                    QS_ShowHiddenHudMsgAll(QS_EVERYONE);
+                }
+
+                else
+                {
+                    QS_ShowHiddenHudMsg(QS_EVERYONE);
                 }
             }
 
@@ -3583,17 +4007,17 @@ public QS_Hattrick(nTaskId)
                                 {
                                     case QS_CSCZ_TEAM_CT:
                                     {
-                                        QS_CSCZColored(QS_EVERYONE, QS_CC_ST_X03_BLUE, "\x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                        QS_CSCZColored(QS_EVERYONE, QS_CC_ST_X03_BLUE, g_szPhrHattrickVictims, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                     }
 
                                     case QS_CSCZ_TEAM_TE:
                                     {
-                                        QS_CSCZColored(QS_EVERYONE, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                        QS_CSCZColored(QS_EVERYONE, QS_CC_ST_X03_RED, g_szPhrHattrickVictims, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                     }
 
                                     default:
                                     {
-                                        QS_CSCZColored(QS_EVERYONE, QS_CC_ST_X03_GREY, "\x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                        QS_CSCZColored(QS_EVERYONE, QS_CC_ST_X03_GREY, g_szPhrHattrickVictims, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                     }
                                 }
                             }
@@ -3601,7 +4025,7 @@ public QS_Hattrick(nTaskId)
 
                         default:
                         {
-                            client_print(QS_EVERYONE, print_chat, ">> QUAKE SOUNDS %s HAD %d VICTIM%s.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                            client_print(QS_EVERYONE, print_chat, g_szPhrHattrickVictimsDef, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                         }
                     }
                 }
@@ -3623,17 +4047,17 @@ public QS_Hattrick(nTaskId)
                                 {
                                     case QS_CSCZ_TEAM_CT:
                                     {
-                                        QS_CSCZColoredFiltered(QS_EVERYONE, QS_CC_ST_X03_BLUE, "\x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                        QS_CSCZColoredFiltered(QS_EVERYONE, QS_CC_ST_X03_BLUE, g_szPhrHattrickVictims, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                     }
 
                                     case QS_CSCZ_TEAM_TE:
                                     {
-                                        QS_CSCZColoredFiltered(QS_EVERYONE, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                        QS_CSCZColoredFiltered(QS_EVERYONE, QS_CC_ST_X03_RED, g_szPhrHattrickVictims, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                     }
 
                                     default:
                                     {
-                                        QS_CSCZColoredFiltered(QS_EVERYONE, QS_CC_ST_X03_GREY, "\x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                        QS_CSCZColoredFiltered(QS_EVERYONE, QS_CC_ST_X03_GREY, g_szPhrHattrickVictims, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                     }
                                 }
                             }
@@ -3653,7 +4077,7 @@ public QS_Hattrick(nTaskId)
                                             {
                                                 if (!g_pbDisabled[nPlayer])
                                                 {
-                                                    client_print(QS_EVERYONE, print_chat, ">> QUAKE SOUNDS %s HAD %d VICTIM%s.", g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : "S");
+                                                    client_print(QS_EVERYONE, print_chat, g_szPhrHattrickVictimsDef, g_pszName[nLeader], g_pnKillsThisRound[nLeader], g_pnKillsThisRound[nLeader] == 1 ? "" : g_szPhrHattrickVictimsPluralSuf);
                                                 }
                                             }
                                         }
@@ -3691,7 +4115,7 @@ public QS_Flawless(nTaskId)
     nAllTeam_TE = nAliveTeam_TE + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_TE);
     nAllTeam_CT = nAliveTeam_CT + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_CT);
 
-    QS_HudMsgColor();
+    QS_HudMsgColor(QS_HUD_FLAWLESS);
     {
         QS_MakeRGBA(pnColor);
         {
@@ -3699,21 +4123,31 @@ public QS_Flawless(nTaskId)
         }
     }
 
-    if (nAllTeam_TE >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM && (nAllTeam_TE == nAliveTeam_TE) && nAllTeam_CT)
+    if ((nAllTeam_TE >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM) && (nAllTeam_TE == nAliveTeam_TE) && nAllTeam_CT)
     {
         if (g_bFlawlessMsg)
         {
             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_TE);
         }
 
+        else
+        {
+            QS_ShowHiddenHudMsg(QS_EVERYONE);
+        }
+
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_nFlawlessSize - 1)));
     }
 
-    else if (nAllTeam_CT >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM && (nAllTeam_CT == nAliveTeam_CT) && nAllTeam_TE)
+    else if ((nAllTeam_CT >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM) && (nAllTeam_CT == nAliveTeam_CT) && nAllTeam_TE)
     {
         if (g_bFlawlessMsg)
         {
             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_CT);
+        }
+
+        else
+        {
+            QS_ShowHiddenHudMsg(QS_EVERYONE);
         }
 
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_nFlawlessSize - 1)));
@@ -4278,12 +4712,12 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                     {
                                         if (!g_bColors)
                                         {
-                                            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE."); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
+                                            client_print(nPlayer, print_chat, g_szPhrStatusEnabledTypeDef); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
                                         }
 
                                         else
                                         {
-                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03sounds\x01' TO \x03DISABLE\x01."); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
+                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, g_szPhrStatusEnabledType); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
                                         }
                                     }
                                 }
@@ -4296,12 +4730,12 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                     {
                                         if (!g_bColors)
                                         {
-                                            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS DISABLED. TYPE 'sounds' TO ENABLE."); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
+                                            client_print(nPlayer, print_chat, g_szPhrStatusDisabledTypeDef); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
                                         }
 
                                         else
                                         {
-                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x03DISABLED\x01. TYPE '\x04sounds\x01' TO \x04ENABLE\x01."); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
+                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, g_szPhrStatusDisabledType); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
                                         }
                                     }
                                 }
@@ -4316,12 +4750,12 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                     {
                                         if (!g_bColors)
                                         {
-                                            client_print(nPlayer, print_chat, ">> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE."); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
+                                            client_print(nPlayer, print_chat, g_szPhrStatusEnabledTypeDef); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
                                         }
 
                                         else
                                         {
-                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, "\x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03sounds\x01' TO \x03DISABLE\x01."); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
+                                            QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, g_szPhrStatusEnabledType); /// THEIR PREFERENCE LOADED MAYBE AFTER 1 MINUTE SINCE THEY'VE JOINED THE GAME SERVER
                                         }
                                     }
                                 }
@@ -5052,7 +5486,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE COLOR
                     ///
-                    QS_HudMsgColor();
+                    QS_HudMsgColor(QS_HUD_EVENT);
 
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE RGBA ARRAY
@@ -5070,6 +5504,29 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szFBloodMsgNoKiller, g_pszName[nVictim]);
                 }
 
+                else
+                {
+                    ///
+                    /// PREPARES THE FIRST BLOOD HUD MESSAGE COLOR
+                    ///
+                    QS_HudMsgColor(QS_HUD_EVENT);
+
+                    ///
+                    /// PREPARES THE FIRST BLOOD HUD MESSAGE RGBA ARRAY
+                    ///
+                    QS_MakeRGBA(pnColor);
+
+                    ///
+                    /// PREPARES THE FIRST BLOOD HUD MESSAGE @ QS_EVENT_Y_POS
+                    ///
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_EVENT_Y_POS_DOD : QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+
+                    ///
+                    /// SHOWS THE FIRST BLOOD HUD MESSAGE
+                    ///
+                    QS_ShowHiddenHudMsg(QS_EVERYONE);
+                }
+
                 QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFBlood, random_num(0, g_nFBloodSize - 1)));
             }
 
@@ -5083,7 +5540,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
     ///
     /// PREPARES THE HUD MESSAGE COLOR
     ///
-    QS_HudMsgColor();
+    QS_HudMsgColor(QS_HUD_EVENT);
 
     ///
     /// PREPARES THE RGBA ARRAY
@@ -5110,6 +5567,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                 QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szSuicideMsg, g_pszName[nVictim]);
             }
 
+            else
+            {
+                QS_ShowHiddenHudMsg(QS_EVERYONE);
+            }
+
             QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pSuicide, random_num(0, g_nSuicideSize - 1)));
         }
 
@@ -5129,6 +5591,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szFBloodMsgNoKiller, g_pszName[nVictim]);
                         }
 
+                        else
+                        {
+                            QS_ShowHiddenHudMsg(QS_EVERYONE);
+                        }
+
                         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFBlood, random_num(0, g_nFBloodSize - 1)));
                     }
                 }
@@ -5140,6 +5607,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                         if (g_bFBloodMsgNoKiller)
                         {
                             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szFBloodMsgNoKiller, g_pszName[nVictim]);
+                        }
+
+                        else
+                        {
+                            QS_ShowHiddenHudMsg(QS_EVERYONE);
                         }
 
                         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFBlood, random_num(0, g_nFBloodSize - 1)));
@@ -5239,7 +5711,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             ///
             /// PREPARES THE REVENGE HUD MESSAGE COLOR
             ///
-            QS_HudMsgColor();
+            QS_HudMsgColor(QS_HUD_REVENGE);
 
             ///
             /// PREPARES THE REVENGE HUD MESSAGE RGBA ARRAY
@@ -5256,9 +5728,19 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                 QS_ShowHudMsg(nKiller, g_pnHudMsgObj[QS_HUD_REVENGE], g_szRevengeMsgKiller, g_pszName[nVictim]);
             }
 
+            else
+            {
+                QS_ShowHiddenHudMsg(nKiller);
+            }
+
             if (g_bRevengeMsgVictim && !g_bRevengeOnlyKiller)
             {
                 QS_ShowHudMsg(nVictim, g_pnHudMsgObj[QS_HUD_REVENGE], g_szRevengeMsgVictim, g_pszName[nKiller]);
+            }
+
+            else if (!g_bRevengeOnlyKiller)
+            {
+                QS_ShowHiddenHudMsg(nVictim);
             }
 
             QS_ClientCmd(nKiller, "SPK \"%a\"", ArrayGetStringHandle(g_pRevenge, random_num(0, g_nRevengeSize - 1)));
@@ -5271,7 +5753,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             ///
             /// PREPARES THE HUD MESSAGE COLOR
             ///
-            QS_HudMsgColor();
+            QS_HudMsgColor(QS_HUD_EVENT);
 
             ///
             /// PREPARES THE RGBA ARRAY
@@ -5291,6 +5773,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                 QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szHShotMsg, g_pszName[nKiller], g_pszName[nVictim]);
             }
 
+            else
+            {
+                QS_ShowHiddenHudMsg(QS_EVERYONE);
+            }
+
             QS_ClientCmd(g_bHShotOnlyKiller ? nKiller : QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pHShot, random_num(0, g_nHShotSize - 1)));
         }
 
@@ -5299,6 +5786,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             if (g_bFBloodMsg)
             {
                 QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szFBloodMsg, g_pszName[nKiller]);
+            }
+
+            else
+            {
+                QS_ShowHiddenHudMsg(QS_EVERYONE);
             }
 
             QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFBlood, random_num(0, g_nFBloodSize - 1)));
@@ -5311,6 +5803,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                 if (g_bTKillMsg)
                 {
                     QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szTKillMsg, g_pszName[nKiller]);
+                }
+
+                else
+                {
+                    QS_ShowHiddenHudMsg(QS_EVERYONE);
                 }
 
                 QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pTKill, random_num(0, g_nTKillSize - 1)));
@@ -5338,6 +5835,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szGrenadeMsg, g_pszName[nKiller], g_pszName[nVictim]);
                         }
 
+                        else
+                        {
+                            QS_ShowHiddenHudMsg(QS_EVERYONE);
+                        }
+
                         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pGrenade, random_num(0, g_nGrenadeSize - 1)));
 
                         break;
@@ -5357,6 +5859,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                         if (g_bKnifeMsg)
                         {
                             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szKnifeMsg, g_pszName[nKiller], g_pszName[nVictim]);
+                        }
+
+                        else
+                        {
+                            QS_ShowHiddenHudMsg(QS_EVERYONE);
                         }
 
                         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pKnife, random_num(0, g_nKnifeSize - 1)));
@@ -5381,6 +5888,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     if (g_bDKillMsg)
                     {
                         QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szDKillMsg, g_pszName[nKiller]);
+                    }
+
+                    else
+                    {
+                        QS_ShowHiddenHudMsg(QS_EVERYONE);
                     }
 
                     QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pDKill, random_num(0, g_nDKillSize - 1)));
@@ -5468,7 +5980,8 @@ static bool: QS_LoadSettings()
     /// PREPARES THE FILE LINES
     ///
     new szLine[2048] = { EOS, ... }, szKey[2048] = { EOS, ... }, szVal[2048] = { EOS, ... }, szType[QS_WORD_MAX_LEN] = { EOS, ... }, szSnd[QS_SND_MAX_LEN] = { EOS, ... },
-        szReqKills[QS_WORD_MAX_LEN] = { EOS, ... }, szDummy[QS_WORD_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nVal = 0;
+        szReqKills[QS_WORD_MAX_LEN] = { EOS, ... }, szDummy[QS_WORD_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nVal = 0, szRed[4] = { EOS, ... },
+        szGreen[4] = { EOS, ... }, szBlue[4] = { EOS, ... };
 
     ///
     /// READS THE FILE
@@ -5551,6 +6064,11 @@ static bool: QS_LoadSettings()
         else if (equali(szKey, "HIDE CMD") || equali(szKey, "HIDE COMMAND") || equali(szKey, "HIDE CHAT CMD") || equali(szKey, "HIDE CHAT COMMAND")) /** COMPATIBILITY */
         {
             g_bHideCmd = bool: str_to_num(szVal);
+        }
+
+        else if (equali(szKey, "QS_DISPLAY_PLAYER_EVENT_DELAY") || equali(szKey, "QS_DISPLAY_PLAYER_DELAY") || equali(szKey, "QS_DISPLAY_DELAY") || equali(szKey, "QS_DISPLAY_EVENT_DELAY")) /** COMPATIBILITY */
+        {
+            g_fSecDelayDisplayPlayerEvents = floatabs(str_to_float(szVal));
         }
 
         ///
@@ -5717,7 +6235,7 @@ static bool: QS_LoadSettings()
 
             else
             {
-                g_nRed = clamp(abs(str_to_num(szVal)), QS_MIN_BYTE, QS_MAX_BYTE);
+                g_nRedOrg = clamp(abs(str_to_num(szVal)), QS_MIN_BYTE, QS_MAX_BYTE);
             }
         }
 
@@ -5730,7 +6248,7 @@ static bool: QS_LoadSettings()
 
             else
             {
-                g_nGreen = clamp(abs(str_to_num(szVal)), QS_MIN_BYTE, QS_MAX_BYTE);
+                g_nGreenOrg = clamp(abs(str_to_num(szVal)), QS_MIN_BYTE, QS_MAX_BYTE);
             }
         }
 
@@ -5743,7 +6261,248 @@ static bool: QS_LoadSettings()
 
             else
             {
-                g_nBlue = clamp(abs(str_to_num(szVal)), QS_MIN_BYTE, QS_MAX_BYTE);
+                g_nBlueOrg = clamp(abs(str_to_num(szVal)), QS_MIN_BYTE, QS_MAX_BYTE);
+            }
+        }
+
+        ///
+        /// CUSTOM HUD MESSAGES
+        ///
+        else if (equali(szKey, "HUD RGB EVENT"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedEvent = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenEvent = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueEvent = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedEvent = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenEvent = -1;
+                    g_nBlueEvent = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedEvent = -1;
+                    g_nGreenEvent = -1;
+                    g_nBlueEvent = -1;
+                }
+
+                default:
+                {
+                    g_nRedEvent = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenEvent = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueEvent = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB STREAK"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedStreak = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStreak = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStreak = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedStreak = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStreak = -1;
+                    g_nBlueStreak = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedStreak = -1;
+                    g_nGreenStreak = -1;
+                    g_nBlueStreak = -1;
+                }
+
+                default:
+                {
+                    g_nRedStreak = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStreak = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStreak = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB REVENGE"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedRevenge = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenRevenge = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueRevenge = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedRevenge = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenRevenge = -1;
+                    g_nBlueRevenge = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedRevenge = -1;
+                    g_nGreenRevenge = -1;
+                    g_nBlueRevenge = -1;
+                }
+
+                default:
+                {
+                    g_nRedRevenge = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenRevenge = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueRevenge = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB ROUND"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedRound = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenRound = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueRound = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedRound = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenRound = -1;
+                    g_nBlueRound = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedRound = -1;
+                    g_nGreenRound = -1;
+                    g_nBlueRound = -1;
+                }
+
+                default:
+                {
+                    g_nRedRound = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenRound = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueRound = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB FLAWLESS"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedFlawless = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawless = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueFlawless = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedFlawless = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawless = -1;
+                    g_nBlueFlawless = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedFlawless = -1;
+                    g_nGreenFlawless = -1;
+                    g_nBlueFlawless = -1;
+                }
+
+                default:
+                {
+                    g_nRedFlawless = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawless = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueFlawless = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB HATTRICK"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedHattrick = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenHattrick = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueHattrick = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedHattrick = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenHattrick = -1;
+                    g_nBlueHattrick = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedHattrick = -1;
+                    g_nGreenHattrick = -1;
+                    g_nBlueHattrick = -1;
+                }
+
+                default:
+                {
+                    g_nRedHattrick = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenHattrick = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueHattrick = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB STANDING"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedStanding = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStanding = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStanding = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedStanding = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStanding = -1;
+                    g_nBlueStanding = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedStanding = -1;
+                    g_nGreenStanding = -1;
+                    g_nBlueStanding = -1;
+                }
+
+                default:
+                {
+                    g_nRedStanding = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStanding = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStanding = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
             }
         }
 
@@ -6260,6 +7019,184 @@ static bool: QS_LoadSettings()
         {
             copy(g_szFlawlessTeamName_CT, charsmax(g_szFlawlessTeamName_CT), szVal);
         }
+
+        ///
+        /// CHAT TEXT PHRASES
+        ///
+        else if (equali(szKey, "QS_PHR_WAIT"))
+        {
+            copy(g_szPhrWait, charsmax(g_szPhrWait), szVal);
+
+            while (contain(g_szPhrWait, "\\x01") > -1)
+            {
+                replace(g_szPhrWait, charsmax(g_szPhrWait), "\\x01", { 1, EOS });
+            }
+
+            while (contain(g_szPhrWait, "\\x03") > -1)
+            {
+                replace(g_szPhrWait, charsmax(g_szPhrWait), "\\x03", { 3, EOS });
+            }
+
+            while (contain(g_szPhrWait, "\\x04") > -1)
+            {
+                replace(g_szPhrWait, charsmax(g_szPhrWait), "\\x04", { 4, EOS });
+            }
+        }
+
+        else if (equali(szKey, "QS_PHR_WAIT_DEF"))
+        {
+            copy(g_szPhrWaitDef, charsmax(g_szPhrWaitDef), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS"))
+        {
+            copy(g_szPhrStatus, charsmax(g_szPhrStatus), szVal);
+
+            while (contain(g_szPhrStatus, "\\x01") > -1)
+            {
+                replace(g_szPhrStatus, charsmax(g_szPhrStatus), "\\x01", { 1, EOS });
+            }
+
+            while (contain(g_szPhrStatus, "\\x03") > -1)
+            {
+                replace(g_szPhrStatus, charsmax(g_szPhrStatus), "\\x03", { 3, EOS });
+            }
+
+            while (contain(g_szPhrStatus, "\\x04") > -1)
+            {
+                replace(g_szPhrStatus, charsmax(g_szPhrStatus), "\\x04", { 4, EOS });
+            }
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_DEF"))
+        {
+            copy(g_szPhrStatusDef, charsmax(g_szPhrStatusDef), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_TYPE"))
+        {
+            copy(g_szPhrStatusType, charsmax(g_szPhrStatusType), szVal);
+
+            while (contain(g_szPhrStatusType, "\\x01") > -1)
+            {
+                replace(g_szPhrStatusType, charsmax(g_szPhrStatusType), "\\x01", { 1, EOS });
+            }
+
+            while (contain(g_szPhrStatusType, "\\x03") > -1)
+            {
+                replace(g_szPhrStatusType, charsmax(g_szPhrStatusType), "\\x03", { 3, EOS });
+            }
+
+            while (contain(g_szPhrStatusType, "\\x04") > -1)
+            {
+                replace(g_szPhrStatusType, charsmax(g_szPhrStatusType), "\\x04", { 4, EOS });
+            }
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_TYPE_DEF"))
+        {
+            copy(g_szPhrStatusTypeDef, charsmax(g_szPhrStatusTypeDef), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_HATTRICK_VICTIMS"))
+        {
+            copy(g_szPhrHattrickVictims, charsmax(g_szPhrHattrickVictims), szVal);
+
+            while (contain(g_szPhrHattrickVictims, "\\x01") > -1)
+            {
+                replace(g_szPhrHattrickVictims, charsmax(g_szPhrHattrickVictims), "\\x01", { 1, EOS });
+            }
+
+            while (contain(g_szPhrHattrickVictims, "\\x03") > -1)
+            {
+                replace(g_szPhrHattrickVictims, charsmax(g_szPhrHattrickVictims), "\\x03", { 3, EOS });
+            }
+
+            while (contain(g_szPhrHattrickVictims, "\\x04") > -1)
+            {
+                replace(g_szPhrHattrickVictims, charsmax(g_szPhrHattrickVictims), "\\x04", { 4, EOS });
+            }
+        }
+
+        else if (equali(szKey, "QS_PHR_HATTRICK_VICTIMS_DEF"))
+        {
+            copy(g_szPhrHattrickVictimsDef, charsmax(g_szPhrHattrickVictimsDef), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_HATTRICK_VICTIMS_PLURAL_SUFFIX"))
+        {
+            copy(g_szPhrHattrickVictimsPluralSuf, charsmax(g_szPhrHattrickVictimsPluralSuf), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_ENABLED_TYPE"))
+        {
+            copy(g_szPhrStatusEnabledType, charsmax(g_szPhrStatusEnabledType), szVal);
+
+            while (contain(g_szPhrStatusEnabledType, "\\x01") > -1)
+            {
+                replace(g_szPhrStatusEnabledType, charsmax(g_szPhrStatusEnabledType), "\\x01", { 1, EOS });
+            }
+
+            while (contain(g_szPhrStatusEnabledType, "\\x03") > -1)
+            {
+                replace(g_szPhrStatusEnabledType, charsmax(g_szPhrStatusEnabledType), "\\x03", { 3, EOS });
+            }
+
+            while (contain(g_szPhrStatusEnabledType, "\\x04") > -1)
+            {
+                replace(g_szPhrStatusEnabledType, charsmax(g_szPhrStatusEnabledType), "\\x04", { 4, EOS });
+            }
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_ENABLED_TYPE_DEF"))
+        {
+            copy(g_szPhrStatusEnabledTypeDef, charsmax(g_szPhrStatusEnabledTypeDef), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_DISABLED_TYPE"))
+        {
+            copy(g_szPhrStatusDisabledType, charsmax(g_szPhrStatusDisabledType), szVal);
+
+            while (contain(g_szPhrStatusDisabledType, "\\x01") > -1)
+            {
+                replace(g_szPhrStatusDisabledType, charsmax(g_szPhrStatusDisabledType), "\\x01", { 1, EOS });
+            }
+
+            while (contain(g_szPhrStatusDisabledType, "\\x03") > -1)
+            {
+                replace(g_szPhrStatusDisabledType, charsmax(g_szPhrStatusDisabledType), "\\x03", { 3, EOS });
+            }
+
+            while (contain(g_szPhrStatusDisabledType, "\\x04") > -1)
+            {
+                replace(g_szPhrStatusDisabledType, charsmax(g_szPhrStatusDisabledType), "\\x04", { 4, EOS });
+            }
+        }
+
+        else if (equali(szKey, "QS_PHR_STATUS_DISABLED_TYPE_DEF"))
+        {
+            copy(g_szPhrStatusDisabledTypeDef, charsmax(g_szPhrStatusDisabledTypeDef), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_ENABLE"))
+        {
+            copy(g_szPhrEnable, charsmax(g_szPhrEnable), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_DISABLE"))
+        {
+            copy(g_szPhrDisable, charsmax(g_szPhrDisable), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_ENABLED"))
+        {
+            copy(g_szPhrEnabled, charsmax(g_szPhrEnabled), szVal);
+        }
+
+        else if (equali(szKey, "QS_PHR_DISABLED"))
+        {
+            copy(g_szPhrDisabled, charsmax(g_szPhrDisabled), szVal);
+        }
     }
 
     ///
@@ -6279,13 +7216,27 @@ static bool: QS_DisplayKStreak(&nKiller, szMsg[], szSnd[])
 
     if (!QS_EmptyString(szMsg))
     {
-        QS_HudMsgColor();
+        QS_HudMsgColor(QS_HUD_STREAK);
         {
             QS_MakeRGBA(pnColor);
             {
                 QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_STREAK_Y_POS_DOD : QS_STREAK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
                 {
                     QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_STREAK], szMsg, g_pszName[nKiller]);
+                }
+            }
+        }
+    }
+
+    else
+    {
+        QS_HudMsgColor(QS_HUD_STREAK);
+        {
+            QS_MakeRGBA(pnColor);
+            {
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_STREAK_Y_POS_DOD : QS_STREAK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                {
+                    QS_ShowHiddenHudMsg(QS_EVERYONE);
                 }
             }
         }
@@ -6387,12 +7338,12 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
+    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[3 + QS_HUD_MSG_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
     ///
-    if (QS_EmptyString(szRules) || vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1)
+    if (QS_EmptyString(szRules) || !QS_ValidHudMsgSyncObj(nObj) || vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1)
     {
         return false;
     }
@@ -6404,7 +7355,25 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
     ///
     if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
     {
-        ShowSyncHudMsg(nTo, nObj, szBuffer);
+        fTheGameTime = get_gametime();
+
+        if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nTo]) >= g_fSecDelayDisplayPlayerEvents)
+        {
+            ShowSyncHudMsg(nTo, nObj, szBuffer);
+
+            g_pfLastDisplayedMsgTimeStamp[nTo] = fTheGameTime;
+        }
+
+        else
+        {
+            pnInfo[0] = g_pnUserId[nTo];
+            pnInfo[1] = nObj;
+            pnInfo[2] = charsmax(pnInfo);
+
+            copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+
+            set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
+        }
     }
 
     ///
@@ -6412,11 +7381,102 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
     ///
     else if (!bIsPlayer)
     {
+        nSysTime = get_systime(0);
+
+        fTheGameTime = get_gametime();
+
+        pnInfo[1] = nObj;
+        pnInfo[2] = charsmax(pnInfo);
+
+        copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
             if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
             {
-                ShowSyncHudMsg(nPlayer, nObj, szBuffer);
+                if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+                {
+                    ShowSyncHudMsg(nPlayer, nObj, szBuffer);
+
+                    g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
+                }
+
+                else
+                {
+                    pnInfo[0] = g_pnUserId[nPlayer];
+
+                    set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+///
+/// PROCESSES HIDDEN HUD MESSAGE
+///
+static bool: QS_ShowHiddenHudMsg(nTo)
+{
+    ///
+    /// DATA
+    ///
+    static nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[4] = { 0, ... }, nSysTime = 0;
+
+    bIsPlayer = QS_IsPlayer(nTo);
+
+    ///
+    /// SPECIFIED CLIENT
+    ///
+    if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
+    {
+        fTheGameTime = get_gametime();
+
+        if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nTo]) >= g_fSecDelayDisplayPlayerEvents)
+        {
+            g_pfLastDisplayedMsgTimeStamp[nTo] = fTheGameTime;
+        }
+
+        else
+        {
+            pnInfo[0] = g_pnUserId[nTo];
+            pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
+            pnInfo[2] = charsmax(pnInfo);
+            pnInfo[3] = EOS;
+
+            set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
+        }
+    }
+
+    ///
+    /// NO TARGET
+    ///
+    else if (!bIsPlayer)
+    {
+        nSysTime = get_systime(0);
+
+        fTheGameTime = get_gametime();
+
+        pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
+        pnInfo[2] = charsmax(pnInfo);
+        pnInfo[3] = EOS;
+
+        for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
+        {
+            if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
+            {
+                if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+                {
+                    g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
+                }
+
+                else
+                {
+                    pnInfo[0] = g_pnUserId[nPlayer];
+
+                    set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
+                }
             }
         }
     }
@@ -6432,12 +7492,12 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
+    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[3 + QS_HUD_MSG_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
     ///
-    if (QS_EmptyString(szRules) || vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1)
+    if (QS_EmptyString(szRules) || !QS_ValidHudMsgSyncObj(nObj) || vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1)
     {
         return false;
     }
@@ -6449,7 +7509,25 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
     ///
     if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
     {
-        ShowSyncHudMsg(nTo, nObj, szBuffer);
+        fTheGameTime = get_gametime();
+
+        if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nTo]) >= g_fSecDelayDisplayPlayerEvents)
+        {
+            ShowSyncHudMsg(nTo, nObj, szBuffer);
+
+            g_pfLastDisplayedMsgTimeStamp[nTo] = fTheGameTime;
+        }
+
+        else
+        {
+            pnInfo[0] = g_pnUserId[nTo];
+            pnInfo[1] = nObj;
+            pnInfo[2] = charsmax(pnInfo);
+
+            copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+
+            set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
+        }
     }
 
     ///
@@ -6457,11 +7535,102 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
     ///
     else if (!bIsPlayer)
     {
+        nSysTime = get_systime(0);
+
+        fTheGameTime = get_gametime();
+
+        pnInfo[1] = nObj;
+        pnInfo[2] = charsmax(pnInfo);
+
+        copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
             if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
             {
-                ShowSyncHudMsg(nPlayer, nObj, szBuffer);
+                if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+                {
+                    ShowSyncHudMsg(nPlayer, nObj, szBuffer);
+
+                    g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
+                }
+
+                else
+                {
+                    pnInfo[0] = g_pnUserId[nPlayer];
+
+                    set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+///
+/// PROCESSES HIDDEN HUD MESSAGE ( ALL PLAYERS ON THE GAME SERVER NO MATTER WHAT )
+///
+static bool: QS_ShowHiddenHudMsgAll(nTo)
+{
+    ///
+    /// DATA
+    ///
+    static nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[4] = { 0, ... }, nSysTime = 0;
+
+    bIsPlayer = QS_IsPlayer(nTo);
+
+    ///
+    /// SPECIFIED CLIENT
+    ///
+    if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
+    {
+        fTheGameTime = get_gametime();
+
+        if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nTo]) >= g_fSecDelayDisplayPlayerEvents)
+        {
+            g_pfLastDisplayedMsgTimeStamp[nTo] = fTheGameTime;
+        }
+
+        else
+        {
+            pnInfo[0] = g_pnUserId[nTo];
+            pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
+            pnInfo[2] = charsmax(pnInfo);
+            pnInfo[3] = EOS;
+
+            set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
+        }
+    }
+
+    ///
+    /// NO TARGET
+    ///
+    else if (!bIsPlayer)
+    {
+        nSysTime = get_systime(0);
+
+        fTheGameTime = get_gametime();
+
+        pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
+        pnInfo[2] = charsmax(pnInfo);
+        pnInfo[3] = EOS;
+
+        for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
+        {
+            if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
+            {
+                if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+                {
+                    g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
+                }
+
+                else
+                {
+                    pnInfo[0] = g_pnUserId[nPlayer];
+
+                    set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
+                }
             }
         }
     }
@@ -6477,7 +7646,7 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
+    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[2 + QS_SND_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
@@ -6494,7 +7663,24 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
     ///
     if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo] && !g_pbDisabled[nTo])
     {
-        client_cmd(nTo, szBuffer);
+        fTheGameTime = get_gametime();
+
+        if ((fTheGameTime - g_pfLastPlayedSoundTimeStamp[nTo]) >= g_fSecDelayDisplayPlayerEvents)
+        {
+            client_cmd(nTo, szBuffer);
+
+            g_pfLastPlayedSoundTimeStamp[nTo] = fTheGameTime;
+        }
+
+        else
+        {
+            pnInfo[0] = g_pnUserId[nTo];
+            pnInfo[1] = charsmax(pnInfo);
+
+            copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+
+            set_task(0.050000, "QS_DelayedPlayerCommand", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
+        }
     }
 
     ///
@@ -6502,11 +7688,31 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
     ///
     else if (!bIsPlayer)
     {
+        nSysTime = get_systime(0);
+
+        fTheGameTime = get_gametime();
+
+        pnInfo[1] = charsmax(pnInfo);
+
+        copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
             if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer] && !g_pbDisabled[nPlayer])
             {
-                client_cmd(nPlayer, szBuffer);
+                if ((fTheGameTime - g_pfLastPlayedSoundTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+                {
+                    client_cmd(nPlayer, szBuffer);
+
+                    g_pfLastPlayedSoundTimeStamp[nPlayer] = fTheGameTime;
+                }
+
+                else
+                {
+                    pnInfo[0] = g_pnUserId[nPlayer];
+
+                    set_task(0.050000, "QS_DelayedPlayerCommand", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
+                }
             }
         }
     }
@@ -6522,7 +7728,7 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false;
+    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[2 + QS_SND_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
@@ -6539,7 +7745,24 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
     ///
     if (bIsPlayer && g_pbInGame[nTo] && !g_pbBOT[nTo] && !g_pbHLTV[nTo])
     {
-        client_cmd(nTo, szBuffer);
+        fTheGameTime = get_gametime();
+
+        if ((fTheGameTime - g_pfLastPlayedSoundTimeStamp[nTo]) >= g_fSecDelayDisplayPlayerEvents)
+        {
+            client_cmd(nTo, szBuffer);
+
+            g_pfLastPlayedSoundTimeStamp[nTo] = fTheGameTime;
+        }
+
+        else
+        {
+            pnInfo[0] = g_pnUserId[nTo];
+            pnInfo[1] = charsmax(pnInfo);
+
+            copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+
+            set_task(0.050000, "QS_DelayedPlayerCommand", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
+        }
     }
 
     ///
@@ -6547,11 +7770,31 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
     ///
     else if (!bIsPlayer)
     {
+        nSysTime = get_systime(0);
+
+        fTheGameTime = get_gametime();
+
+        pnInfo[1] = charsmax(pnInfo);
+
+        copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
             if (g_pbInGame[nPlayer] && !g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
             {
-                client_cmd(nPlayer, szBuffer);
+                if ((fTheGameTime - g_pfLastPlayedSoundTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
+                {
+                    client_cmd(nPlayer, szBuffer);
+
+                    g_pfLastPlayedSoundTimeStamp[nPlayer] = fTheGameTime;
+                }
+
+                else
+                {
+                    pnInfo[0] = g_pnUserId[nPlayer];
+
+                    set_task(0.050000, "QS_DelayedPlayerCommand", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
+                }
             }
         }
     }
@@ -6653,11 +7896,16 @@ static QS_GetTeamTotalAlive(nTeam, &nPlayer = QS_INVALID_PLAYER) /// CSTRIKE AND
 ///
 /// UPDATES THE HUD MESSAGE'S COLOR
 ///
-static bool: QS_HudMsgColor()
+static bool: QS_HudMsgColor(nHudObj)
 {
     if (g_bRandomRed)
     {
-        g_nRed = random_num(QS_MIN_BYTE, QS_MAX_BYTE);
+        g_nRed = random_num(QS_MIN_BYTE, QS_BIG_BYTE);
+    }
+
+    else
+    {
+        g_nRed = g_nRedOrg;
     }
 
     if (g_bRandomGreen)
@@ -6665,9 +7913,186 @@ static bool: QS_HudMsgColor()
         g_nGreen = random_num(QS_MIN_BYTE, QS_MAX_BYTE);
     }
 
+    else
+    {
+        g_nGreen = g_nGreenOrg;
+    }
+
     if (g_bRandomBlue)
     {
-        g_nBlue = random_num(QS_MIN_BYTE, QS_MAX_BYTE);
+        g_nBlue = random_num(QS_MIN_BYTE, QS_MEDIUM_BYTE);
+    }
+
+    else
+    {
+        g_nBlue = g_nBlueOrg;
+    }
+
+    if (g_bRandomRed)
+    {
+        if (g_bRandomGreen)
+        {
+            switch (random_num(1, 2))
+            {
+                case 1:
+                {
+                    g_nRed = QS_BIG_BYTE;
+                }
+
+                default:
+                {
+                    g_nGreen = random_num(QS_BIG_BYTE, QS_MAX_BYTE);
+                }
+            }
+
+            if (g_nRed >= QS_BIG_BYTE)
+            {
+                if (g_nGreen >= QS_BIG_BYTE)
+                {
+                    switch (random_num(1, 2))
+                    {
+                        case 1:
+                        {
+                            g_nRed = random_num(QS_MIN_BYTE, QS_MEDIUM_BYTE);
+                        }
+
+                        default:
+                        {
+                            g_nGreen = random_num(QS_MIN_BYTE, QS_MEDIUM_BYTE);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    switch (nHudObj)
+    {
+        case QS_HUD_EVENT:
+        {
+            if (g_nRedEvent > -1)
+            {
+                g_nRed = g_nRedEvent;
+            }
+
+            if (g_nGreenEvent > -1)
+            {
+                g_nGreen = g_nGreenEvent;
+            }
+
+            if (g_nBlueEvent > -1)
+            {
+                g_nBlue = g_nBlueEvent;
+            }
+        }
+
+        case QS_HUD_FLAWLESS:
+        {
+            if (g_nRedFlawless > -1)
+            {
+                g_nRed = g_nRedFlawless;
+            }
+
+            if (g_nGreenFlawless > -1)
+            {
+                g_nGreen = g_nGreenFlawless;
+            }
+
+            if (g_nBlueFlawless > -1)
+            {
+                g_nBlue = g_nBlueFlawless;
+            }
+        }
+
+        case QS_HUD_HATTRICK:
+        {
+            if (g_nRedHattrick > -1)
+            {
+                g_nRed = g_nRedHattrick;
+            }
+
+            if (g_nGreenHattrick > -1)
+            {
+                g_nGreen = g_nGreenHattrick;
+            }
+
+            if (g_nBlueHattrick > -1)
+            {
+                g_nBlue = g_nBlueHattrick;
+            }
+        }
+
+        case QS_HUD_REVENGE:
+        {
+            if (g_nRedRevenge > -1)
+            {
+                g_nRed = g_nRedRevenge;
+            }
+
+            if (g_nGreenRevenge > -1)
+            {
+                g_nGreen = g_nGreenRevenge;
+            }
+
+            if (g_nBlueRevenge > -1)
+            {
+                g_nBlue = g_nBlueRevenge;
+            }
+        }
+
+        case QS_HUD_ROUND:
+        {
+            if (g_nRedRound > -1)
+            {
+                g_nRed = g_nRedRound;
+            }
+
+            if (g_nGreenRound > -1)
+            {
+                g_nGreen = g_nGreenRound;
+            }
+
+            if (g_nBlueRound > -1)
+            {
+                g_nBlue = g_nBlueRound;
+            }
+        }
+
+        case QS_HUD_STANDING:
+        {
+            if (g_nRedStanding > -1)
+            {
+                g_nRed = g_nRedStanding;
+            }
+
+            if (g_nGreenStanding > -1)
+            {
+                g_nGreen = g_nGreenStanding;
+            }
+
+            if (g_nBlueStanding > -1)
+            {
+                g_nBlue = g_nBlueStanding;
+            }
+        }
+
+        case QS_HUD_STREAK:
+        {
+            if (g_nRedStreak > -1)
+            {
+                g_nRed = g_nRedStreak;
+            }
+
+            if (g_nGreenStreak > -1)
+            {
+                g_nGreen = g_nGreenStreak;
+            }
+
+            if (g_nBlueStreak > -1)
+            {
+                g_nBlue = g_nBlueStreak;
+            }
+        }
     }
 
     return true;
@@ -6721,6 +8146,14 @@ static bool: QS_ValidPlace(&nPlace)
 static bool: QS_ValidUserId(&nUserId)
 {
     return nUserId > QS_INVALID_USER_ID;
+}
+
+///
+/// VALID HUD MESSAGE SYNC OBJECT
+///
+static bool: QS_ValidHudMsgSyncObj(&nHudMsgSyncObj)
+{
+    return (QS_INVALID_HUD_MSG_SYNC_OBJECT != nHudMsgSyncObj);
 }
 
 ///
