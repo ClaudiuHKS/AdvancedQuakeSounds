@@ -1,0 +1,91 @@
+{
+    "name"          : "InstallGameRules",
+    "library"       : "mod",
+    "return"        :
+    {
+        "type"      : "CHalfLifeMultiplay *"
+    },
+    "identifiers"   :
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : [0x68,"*","*","*","*",0xFF,"*","*","*","*","*",0x83,0xC4,"*",0xFF,"*","*","*","*","*",0xA1,"*","*","*","*",0xD9,0x40]
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "cstrike",
+            "value" : "InstallGameRules__Fv"
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "cstrike",
+            "value" : "_Z16InstallGameRulesv"
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "SvenCoop",
+            "value" : [0x55,0x8B,0xEC,0x6A,0xFF,0x68,"*","*","*","*",0x64,"*","*","*","*","*",0x50,0x81,"*","*","*","*","*",0xA1,"*","*","*","*",0x33,0xC5,0x89,0x45,0xF0]
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "ns",
+            "value" : [0x6A,0xFF,0x68,"*","*","*","*",0x64,"*","*","*","*","*",0x50,0x64,"*","*","*","*","*","*",0x51,0x68]
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "ns",
+            "value" : "_Z16InstallGameRulesv"
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "ns",
+            "value" : "InstallGameRules__Fv"
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "dod",
+            "value" : [0x55,0x8B,0xEC,0x83,0xEC,0x48,0x53,0x56,0x57,0x68,"*","*","*","*",0xFF,"*","*","*","*","*",0x83,0xC4,0x04,0xFF]
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "dod",
+            "value" : "InstallGameRules__Fv"
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "dod",
+            "value" : "_Z16InstallGameRulesv"
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "valve",
+            "value" : [0x68,"*","*","*","*",0xFF,"*","*","*","*","*",0x83,0xC4,0x04,0xFF,"*","*","*","*","*",0x8B]
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "valve",
+            "value" : "InstallGameRules__Fv"
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "valve",
+            "value" : "_Z16InstallGameRulesv"
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "ts",
+            "value" : [0x6A,0xFF,0x68,"*","*","*","*",0x64,"*","*","*","*","*",0x50,0x64,"*","*","*","*","*","*",0x51,0x56,0x68]
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "ts",
+            "value" : "InstallGameRules__Fv"
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "ts",
+            "value" : "_Z16InstallGameRulesv"
+        }
+    ]
+}

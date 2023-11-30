@@ -1,0 +1,542 @@
+[
+    {
+        "name"          : "m_fTeamCount",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 48
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 40
+            }
+        ]
+    },
+    {
+        "name"          : "m_fRoundCount",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 56
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 48
+            }
+        ]
+    },
+    {
+        "name"          : "m_iRoundTimeSecs",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 64
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 56
+            }
+        ]
+    },
+    {
+        "name"          : "m_iAccountTerrorist",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 76
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 68
+            }
+        ]
+    },
+    {
+        "name"          : "m_iAccountCT",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 80
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 72
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumTerrorist",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 84
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 76
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumCT",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 88
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 80
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumSpawnableTerrorist",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 92
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 84
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumSpawnableCT",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 96
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 88
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumSpawnableTerrorist",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 92
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 84
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumSpawnableCT",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 96
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 88
+            }
+        ]
+    },
+    {
+        "name"          : "m_iHostagesRescued",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 108
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 100
+            }
+        ]
+    },
+    {
+        "name"          : "m_iRoundWinStatus",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 116
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 108
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumCTWins",
+        "type"          : "short",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 120
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 112
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumTerroristWins",
+        "type"          : "short",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 122
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 114
+            }
+        ]
+    },
+    {
+        "name"          : "m_bTargetBombed",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 124
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 116
+            }
+        ]
+    },
+    {
+        "name"          : "m_bBombDefused",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 125
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 117
+            }
+        ]
+    },
+    {
+        "name"          : "m_bMapHasBombTarget",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 126
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 118
+            }
+        ]
+    },
+    {
+        "name"          : "m_bMapHasBombZone",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 127
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 119
+            }
+        ]
+    },
+    {
+        "name"          : "m_bMapHasRescueZone",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 129
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 121
+            }
+        ]
+    },
+    {
+        "name"          : "m_bMapHasEscapeZone",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 130
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 122
+            }
+        ]
+    },
+    {
+        "name"          : "m_iMapHasVIPSafetyZone",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 132
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 124
+            }
+        ]
+    },
+    {
+        "name"          : "m_bCompleteReset",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 170
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 162
+            }
+        ]
+    },
+    {
+        "name"          : "m_bRoundTerminating",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 169
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 161
+            }
+        ]
+    },
+    {
+        "name"          : "m_flRequiredEscapeRatio",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 172
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 164
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumEscapers",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 176
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 166
+            }
+        ]
+    },
+    {
+        "name"          : "m_iHaveEscaped",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 180
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 172
+            }
+        ]
+    },
+    {
+        "name"          : "m_pVIP",
+        "type"          : "CBaseEntity *",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 652
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 644
+            }
+        ]
+    },
+    {
+        "name"          : "m_bFirstConnected",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 692
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 684
+            }
+        ]
+    },
+    {
+        "name"          : "m_bSkipSpawn",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 704
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 703
+            }
+        ]
+    }
+]

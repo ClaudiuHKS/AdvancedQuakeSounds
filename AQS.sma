@@ -6,7 +6,7 @@
 ///
 /// WHETHER OR NOT TO FORCE ';' AFTER EACH LINE
 ///
-#pragma semicolon 1
+#pragma semicolon 0 /// THE ORPHEU MODULE DOES NOT LIKE THIS TURNED ON
 
 ///
 /// WHETHER OR NOT TO INCREASE THE MEMORY FOR THIS SCRIPT [[[ DEFAULT 2^22 ( 4194304 ) ]]]
@@ -28,7 +28,7 @@
 #pragma tabsize 0
 
 ///
-/// REQUIRES THE XSTATS MODULE IF AVAILABLE [ client_death ( ) ]
+/// REQUIRES THE XSTATS MODULE IF AVAILABLE [ client_death ( ... ) FORWARD EXECUTION ]
 ///
 #pragma reqclass xstats
 
@@ -69,6 +69,21 @@
 ///
 #include < hamsandwich > /// Ham_Killed +
 
+///
+/// REAPI HEADER FILE ( OPTIONAL )
+///
+#tryinclude < reapi > /// m_flRestartRoundTime +
+
+///
+/// ORPHEU HEADER FILE ( OPTIONAL )
+///
+#tryinclude < orpheu > /// OrpheuRegisterHook ( ) +
+
+///
+/// ORPHEU MEMORY HEADER FILE ( OPTIONAL )
+///
+#tryinclude < orpheu_memory > /// OrpheuMemorySetAtAddress ( ) +
+
 /*************************************************************************************
 ******* NATIVE ***********************************************************************
 *************************************************************************************/
@@ -84,6 +99,42 @@ native bool: SQL_SetCharset(Handle: pSqlDbOrSqlTuple, const szCharSet[]);
 #endif
 
 static bool: g_bSQL_SetCharset_Unavail = false;
+
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'get_gamerules_float ( )' ]]]
+///
+
+#if !defined get_gamerules_float
+
+native Float: get_gamerules_float(const szClass[], const szMember[], nIndex = 0);
+
+#endif
+
+static bool: g_bGET_GameRules_Float_Unavail = false;
+
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'set_gamerules_float ( )' ]]]
+///
+
+#if !defined set_gamerules_float
+
+native set_gamerules_float(const szClass[], const szMember[], Float: fValue, nIndex = 0);
+
+#endif
+
+static bool: g_bSET_GameRules_Float_Unavail = false;
+
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'get_gamerules_size ( )' ]]]
+///
+
+#if !defined get_gamerules_size
+
+native get_gamerules_size(const szClass[], const szMember[]);
+
+#endif
+
+static bool: g_bGET_GameRules_Size_Unavail = false;
 
 ///
 /// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'strtok2 ( )' ]]]
@@ -112,7 +163,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.6" ) /// "7.6"
+#define QS_PLUGIN_VERSION ( "7.7" ) /// "7.7"
 
 ///
 /// ###################################################################################################
@@ -151,14 +202,24 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 
 ///
-/// CSTRIKE AND CZERO 'TE' TEAM NUMBER
+/// CSTRIKE AND CZERO 'NO' TEAM NUMBER ( UNASSIGNED )
+///
+#define QS_CSCZ_TEAM_NO ( 0 ) /// 0
+
+///
+/// CSTRIKE AND CZERO 'TE' TEAM NUMBER ( TERRORIST )
 ///
 #define QS_CSCZ_TEAM_TE ( 1 ) /// 1
 
 ///
-/// CSTRIKE AND CZERO 'CT' TEAM NUMBER
+/// CSTRIKE AND CZERO 'CT' TEAM NUMBER ( COUNTER-TERRORIST )
 ///
 #define QS_CSCZ_TEAM_CT ( 2 ) /// 2
+
+///
+/// CSTRIKE AND CZERO 'SP' TEAM NUMBER ( SPECTATOR )
+///
+#define QS_CSCZ_TEAM_SP ( 3 ) /// 3
 
 ///
 /// ###################################################################################################
@@ -203,6 +264,20 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 
 ///
+/// THE HATTRICK FEATURE :: ROUND END PERIOD SECONDS EXTENSION
+///
+#define QS_HATTRICK_ROUND_END_PERIOD_EX ( 1.000000 ) /// 1
+
+///
+/// THE FLAWLESS VICTORY FEATURE :: ROUND END PERIOD SECONDS EXTENSION
+///
+#define QS_FLAWLESS_ROUND_END_PERIOD_EX ( 1.000000 ) /// 1
+
+///
+/// ###################################################################################################
+///
+
+///
 /// THE HATTRICK FEATURE :: ROUND END TRIGGER DELAY
 ///
 #define QS_HATTRICK_ROUND_END_DELAY ( 2.800000 ) /// 2.8
@@ -222,7 +297,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 #define QS_FLAWLESS_ROUND_END_DELAY ( 1.200000 ) /// 1.2
 
 ///
-/// MINIMUM TOTAL PLAYERS IN A TEAM IN ORDER TO ALLOW THE FLAWLESS FEATURE TO BE TRIGGERED FOR THAT TEAM
+/// MINIMUM TOTAL PLAYERS IN A TEAM IN ORDER TO ALLOW THE FLAWLESS VICTORY FEATURE TO BE TRIGGERED FOR THAT TEAM
 ///
 #define QS_FLAWLESS_MIN_PLAYERS_IN_TEAM ( 2 ) /// 2
 
@@ -338,6 +413,11 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 ///
 
 ///
+/// MAXIMUM NUMBER STRING LENGTH
+///
+#define QS_NUMBER_MAX_LEN ( 16 ) /// 16
+
+///
 /// MAXIMUM PLAYER NAME LENGTH
 ///
 #define QS_NAME_MAX_LEN ( 32 ) /// 32
@@ -356,6 +436,11 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 /// CHAT PHRASE MAXIMUM LENGTH
 ///
 #define QS_CHAT_PHRASE_MAX_LEN ( 128 ) /// 128
+
+///
+/// MAXIMUM SQL QUERY STRING LENGTH
+///
+#define QS_SQL_QUERY_MAX_LEN ( 128 ) /// 128
 
 ///
 /// SOUND FILE PATH MAXIMUM LENGTH
@@ -633,6 +718,11 @@ static bool: g_bChatCmd = false;
 static bool: g_bChatInfo = false;
 
 ///
+/// '/SOUNDS' CHAT INFO SECONDS DELAY
+///
+static Float: g_fChatInfoDelaySeconds = QS_PLUGIN_INFO_DELAY;
+
+///
 /// WHEN TRUE, DO NOT SHOW THE CHAT '/SOUNDS' INFORMATION ANYMORE IF IT HAS ALREADY BEEN SHOWN TO THAT STEAM
 ///
 static bool: g_bSkipExisting = false;
@@ -646,6 +736,39 @@ static bool: g_bHideCmd = false;
 /// SECONDS DELAY BETWEEN DISPLAYING MULTIPLE PLAYER EVENTS ( SOUNDS & MESSAGES )
 ///
 static Float: g_fSecDelayDisplayPlayerEvents = QS_DISPLAY_PLAYER_EVENT_DELAY;
+
+///
+/// AMX MOD X GAME DATA OUTDATED YES/ NO
+///
+static bool: g_bGameDataError = false;
+
+#if defined _orpheu_included
+
+///
+/// ORPHEU UNAVAILABLE YES/ NO
+///
+static bool: g_bOrpheuUnavailable = false;
+
+///
+/// ORPHEU ERROR YES/ NO
+///
+static bool: g_bOrpheuError = false;
+
+#endif
+
+#if defined _reapi_included
+
+///
+/// REAPI UNAVAILABLE YES/ NO
+///
+static bool: g_bReAPIUnavailable = false;
+
+///
+/// REAPI ERROR YES/ NO
+///
+static bool: g_bReAPIError = false;
+
+#endif
 
 /**
  * HEAD SHOT
@@ -793,6 +916,21 @@ static Array: g_pHattrick = Invalid_Array;
 ///
 static bool: g_bHattrickToAll = false;
 
+///
+/// HATTRICK ROUND END DELAY BEFORE TRIGGERING ( CS/ CZ )
+///
+static Float: g_fHattrickRoundEndDelayCSCZ = QS_HATTRICK_ROUND_END_DELAY;
+
+///
+/// HATTRICK ROUND END DELAY BEFORE TRIGGERING ( DOD )
+///
+static Float: g_fHattrickRoundEndDelayDOD = QS_HATTRICK_ROUND_END_DELAY_DOD;
+
+///
+/// HATTRICK SECONDS TO EXTEND THE ROUND END PERIOD
+///
+static Float: g_fHattrickRoundEndSecExtension = QS_HATTRICK_ROUND_END_PERIOD_EX;
+
 /**
  * THE LAST MAN STANDING
  *
@@ -853,6 +991,16 @@ static bool: g_bTLMStandingDone_TE = false;
 /// THE LAST MAN STANDING PLAYED THIS ROUND [ CT ]
 ///
 static bool: g_bTLMStandingDone_CT = false;
+
+///
+/// THE LAST MAN STANDING GUY TEAM
+///
+static g_nTLMStandingGuyTeam = QS_INVALID_TEAM;
+
+///
+/// THE LAST MAN STANDING TRIGGER DELAY
+///
+static Float: g_fTLMStandingTriggerDelay = QS_STANDING_TRIGGER_DELAY;
 
 /**
  * SUICIDE
@@ -1175,6 +1323,11 @@ static g_nDKillSize = 0;
 ///
 static Array: g_pDKill = Invalid_Array;
 
+///
+/// DOUBLE KILL TIME FRAME
+///
+static Float: g_fDKillDelay = QS_DOUBLE_KILL_DELAY;
+
 /**
  * FLAWLESS
  *
@@ -1217,6 +1370,46 @@ static g_nFlawlessSize = 0;
 /// FLAWLESS SOUNDS CONTAINER
 ///
 static Array: g_pFlawless = Invalid_Array;
+
+///
+/// FLAWLESS VICTORY TEAM
+///
+static g_nFlawlessTeam = QS_INVALID_TEAM;
+
+///
+/// FLAWLESS VICTORY ROUND END DELAY BEFORE TRIGGERING
+///
+static Float: g_fFlawlessRoundEndDelay = QS_FLAWLESS_ROUND_END_DELAY;
+
+///
+/// FLAWLESS VICTORY SECONDS TO EXTEND THE ROUND END PERIOD
+///
+static Float: g_fFlawlessRoundEndSecExtension = QS_FLAWLESS_ROUND_END_PERIOD_EX;
+
+///
+/// FLAWLESS VICTORY MINIMUM REQUIRED PLAYERS IN THE TEAM
+///
+static g_nFlawlessMinimumReqPlayers = QS_FLAWLESS_MIN_PLAYERS_IN_TEAM;
+
+///
+/// FLAWLESS TE TEAM SIZE IN PLAYERS
+///
+static g_nFlawlessTESize = 0;
+
+///
+/// FLAWLESS CT TEAM SIZE IN PLAYERS
+///
+static g_nFlawlessCTSize = 0;
+
+///
+/// FLAWLESS TE ALIVE TEAM SIZE IN PLAYERS
+///
+static g_nFlawlessAliveTESize = 0;
+
+///
+/// FLAWLESS CT ALIVE TEAM SIZE IN PLAYERS
+///
+static g_nFlawlessAliveCTSize = 0;
 
 /**
  * HUD MESSAGE [ TE_TEXTMESSAGE ]
@@ -1276,17 +1469,23 @@ static bool: g_bRandomBlue = false;
 /// CUSTOM OPTIONAL HUD MESSAGE RGB COLORS
 ///
 
-/** EVENT (KNIFE, GRENADE, FIRST BLOOD, ...) */
+/** EVENT ( KNIFE, GRENADE, FIRST BLOOD, ... ) */
 //
 static g_nRedEvent = -1;
 static g_nGreenEvent = -1;
 static g_nBlueEvent = -1;
 
-/** FLAWLESS VICTORY */
+/** FLAWLESS VICTORY [ TE ( CS/ CZ TERRORIST            TEAM ) ] */
 //
-static g_nRedFlawless = -1;
-static g_nGreenFlawless = -1;
-static g_nBlueFlawless = -1;
+static g_nRedFlawlessTE = -1;
+static g_nGreenFlawlessTE = -1;
+static g_nBlueFlawlessTE = -1;
+
+/** FLAWLESS VICTORY [ CT ( CS/ CZ COUNTER-TERRORIST    TEAM ) ] */
+//
+static g_nRedFlawlessCT = -1;
+static g_nGreenFlawlessCT = -1;
+static g_nBlueFlawlessCT = -1;
 
 /** HATTRICK */
 //
@@ -1306,11 +1505,17 @@ static g_nRedRound = -1;
 static g_nGreenRound = -1;
 static g_nBlueRound = -1;
 
-/** CS/ CZ THE LAST MAN STANDING */
+/** CS/ CZ THE LAST MAN STANDING [ TE ( CS/ CZ TERRORIST            TEAM ) ] */
 //
-static g_nRedStanding = -1;
-static g_nGreenStanding = -1;
-static g_nBlueStanding = -1;
+static g_nRedStandingTE = -1;
+static g_nGreenStandingTE = -1;
+static g_nBlueStandingTE = -1;
+
+/** CS/ CZ THE LAST MAN STANDING [ CT ( CS/ CZ COUNTER-TERRORIST    TEAM ) ] */
+//
+static g_nRedStandingCT = -1;
+static g_nGreenStandingCT = -1;
+static g_nBlueStandingCT = -1;
 
 /** RAMPAGE, OWNAGE, EXCELLENT, IMPRESSIVE, ... */
 //
@@ -1412,6 +1617,16 @@ static g_nPlace = QS_INVALID_PLACE;
 ///
 static g_nTeamKill = QS_TEAM_KILL_NO;
 
+///
+/// ORPHEU DATA
+///
+
+#if defined _orpheu_included
+
+static g_nGameRules = -1;
+
+#endif
+
 /**
 * SQL STORAGE STUFF
 */
@@ -1439,37 +1654,37 @@ static bool: g_bSqlFullSteam = false;
 ///
 /// SQL ADDRESS
 ///
-static g_szSqlAddr[128] = { EOS, ... };
+static g_szSqlAddr[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL DATABASE USER NAME
 ///
-static g_szSqlUser[64] = { EOS, ... };
+static g_szSqlUser[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL DATABASE PASSWORD
 ///
-static g_szSqlPassword[64] = { EOS, ... };
+static g_szSqlPassword[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL EXTENSION TO USE
 ///
-static g_szSqlExtension[64] = { EOS, ... };
+static g_szSqlExtension[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL DATABASE NAME
 ///
-static g_szSqlDatabase[64] = { EOS, ... };
+static g_szSqlDatabase[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL PRIMARY ( MAIN ) CHARSET
 ///
-static g_szSqlChars[64] = { EOS, ... };
+static g_szSqlChars[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL SECONDARY CHARSET
 ///
-static g_szSqlSecChars[64] = { EOS, ... };
+static g_szSqlSecChars[QS_WORD_MAX_LEN] = { EOS, ... };
 
 ///
 /// SQL TIMEOUT SECONDS [ 0 = AMX MOD X'S DEFAULT ( SEE THE "CORE.INI" FILE ) ]
@@ -1556,14 +1771,14 @@ static g_pnRevengeStamp[QS_MAX_PLAYERS + 1] = { QS_INVALID_USER_ID, ... };
 
 #if defined QS_ON_BY_DEFAULT
 
-#if QS_ON_BY_DEFAULT == 1
+#if QS_ON_BY_DEFAULT != 0
 
 ///
 /// SOUNDS DISABLED PER PLAYER
 ///
 static bool: g_pbDisabled[QS_MAX_PLAYERS + 1] = { false, ... };
 
-#else
+#else /// QS_ON_BY_DEFAULT != 0
 
 ///
 /// SOUNDS DISABLED PER PLAYER
@@ -1572,7 +1787,7 @@ static bool: g_pbDisabled[QS_MAX_PLAYERS + 1] = { true, ... };
 
 #endif
 
-#else
+#else /// defined QS_ON_BY_DEFAULT
 
 ///
 /// SOUNDS DISABLED PER PLAYER
@@ -1620,6 +1835,26 @@ static g_pnTeamKill[QS_MAX_PLAYERS + 1] = { QS_TEAM_KILL_NO, ... };
 /// XSTATS [ client_death ( ) ] EXECUTION TIME STAMP FOR EVERY VICTIM
 ///
 static Float: g_pfXStatsTimeStamp[QS_MAX_PLAYERS + 1] = { 0.000000, ... };
+
+///
+/// ACTUAL DELAYED HUD MESSAGE INDEX THAT IS DISPLAYED [0 & +]
+///
+static g_pnActualDelayedMessage[QS_MAX_PLAYERS + 1] = { 0, ... };
+
+///
+/// ACTUAL DELAYED COMMAND INDEX ( SPEAK COMMAND ) THAT IS EXECUTED [0 & +]
+///
+static g_pnActualDelayedCommand[QS_MAX_PLAYERS + 1] = { 0, ... };
+
+///
+/// FUTURE DELAYED HUD MESSAGE INDEX ( SPEAK COMMAND ) THAT WILL BE DISPLAYED SHORTLY [0 & +]
+///
+static g_pnFutureDelayedMessage[1 + QS_MAX_PLAYERS] = { 0, ... };
+
+///
+/// FUTURE DELAYED COMMAND INDEX ( SPEAK COMMAND ) THAT WILL BE EXECUTED SHORTLY [0 & +]
+///
+static g_pnFutureDelayedCommand[1 + QS_MAX_PLAYERS] = { 0, ... };
 
 /**
 * CHAT TEXT PHRASES
@@ -1676,9 +1911,19 @@ public plugin_natives()
 }
 
 ///
-/// PERFORMS THE FILTERING OF MODULE
+/// PERFORMS THE FILTERING OF THE MODULES
 ///
+
+#if defined LibType
+
+public QS_ModuleFilter(szModule[], LibType: eTheLibraryType)
+
+#else
+
 public QS_ModuleFilter(szModule[])
+
+#endif
+
 {
     ///
     /// XSTATS
@@ -1686,24 +1931,66 @@ public QS_ModuleFilter(szModule[])
     if (equali(szModule, "XStats"))
     {
         ///
-        /// LOAD
+        /// HANDLE
         ///
         return PLUGIN_HANDLED;
     }
 
+#if defined _orpheu_included
+
     ///
-    /// OK
+    /// ORPHEU
+    ///
+    else if (equali(szModule, "Orpheu"))
+    {
+        ///
+        /// HANDLE
+        ///
+        g_bOrpheuError = true;
+        g_bOrpheuUnavailable = true;
+
+        g_nGameRules = -1;
+
+        return PLUGIN_HANDLED;
+    }
+
+#endif
+
+#if defined _reapi_included
+
+    ///
+    /// REAPI
+    ///
+    else if (equali(szModule, "ReAPI"))
+    {
+        ///
+        /// HANDLE
+        ///
+        g_bReAPIError = true;
+        g_bReAPIUnavailable = true;
+
+        return PLUGIN_HANDLED;
+    }
+
+#endif
+
+    ///
+    /// CONTINUE
     ///
     return PLUGIN_CONTINUE;
 }
 
 ///
-/// PERFORMS THE FILTERING OF NATIVE
+/// PERFORMS THE FILTERING OF THE NATIVES
 ///
 public QS_NativeFilter(szNative[], nNative, bool: bFound)
 {
     if (!bFound)
     {
+        /****************
+        *** AMX MOD X ***
+        ****************/
+
         if (strcmp(szNative, "SQL_SetCharset", true) == 0)
         {
             g_bSQL_SetCharset_Unavail = true;
@@ -1711,6 +1998,140 @@ public QS_NativeFilter(szNative[], nNative, bool: bFound)
                 return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
             }
         }
+
+        else if (strcmp(szNative, "get_gamerules_float", true) == 0)
+        {
+            g_bGameDataError = true;
+
+            g_bGET_GameRules_Size_Unavail = true;
+
+            g_bGET_GameRules_Float_Unavail = true;
+            g_bSET_GameRules_Float_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "set_gamerules_float", true) == 0)
+        {
+            g_bGameDataError = true;
+
+            g_bGET_GameRules_Size_Unavail = true;
+
+            g_bGET_GameRules_Float_Unavail = true;
+            g_bSET_GameRules_Float_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "get_gamerules_size", true) == 0)
+        {
+            g_bGameDataError = true;
+
+            g_bGET_GameRules_Size_Unavail = true;
+
+            g_bGET_GameRules_Float_Unavail = true;
+            g_bSET_GameRules_Float_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        /*************
+        *** ORPHEU ***
+        *************/
+
+#if defined _orpheu_included
+
+        else if (strcmp(szNative, "OrpheuGetFunction", true) == 0)
+        {
+            g_nGameRules = -1;
+
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "OrpheuGetReturn", true) == 0)
+        {
+            g_nGameRules = -1;
+
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "OrpheuMemoryGetAtAddress", true) == 0)
+        {
+            g_nGameRules = -1;
+
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "OrpheuMemorySetAtAddress", true) == 0)
+        {
+            g_nGameRules = -1;
+
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "OrpheuRegisterHook", true) == 0)
+        {
+            g_nGameRules = -1;
+
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+#endif
+
+        /************
+        *** REAPI ***
+        ************/
+
+#if defined _reapi_included
+
+        else if (strcmp(szNative, "get_member_game", true) == 0)
+        {
+            g_bReAPIError = true;
+            g_bReAPIUnavailable = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        else if (strcmp(szNative, "set_member_game", true) == 0)
+        {
+            g_bReAPIError = true;
+            g_bReAPIUnavailable = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+#endif
+
     }
 
     return PLUGIN_CONTINUE;
@@ -1890,7 +2311,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nHShotSize; nIter++)
         {
-            if (ArrayGetString(g_pHShot, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pHShot, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1901,7 +2322,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nSuicideSize; nIter++)
         {
-            if (ArrayGetString(g_pSuicide, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pSuicide, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1912,7 +2333,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nGrenadeSize; nIter++)
         {
-            if (ArrayGetString(g_pGrenade, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pGrenade, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1923,7 +2344,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nTKillSize; nIter++)
         {
-            if (ArrayGetString(g_pTKill, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pTKill, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1934,7 +2355,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nKnifeSize; nIter++)
         {
-            if (ArrayGetString(g_pKnife, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pKnife, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1945,7 +2366,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nFBloodSize; nIter++)
         {
-            if (ArrayGetString(g_pFBlood, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pFBlood, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1956,7 +2377,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nRStartSize; nIter++)
         {
-            if (ArrayGetString(g_pRStart, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pRStart, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1967,7 +2388,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nDKillSize; nIter++)
         {
-            if (ArrayGetString(g_pDKill, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pDKill, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1978,7 +2399,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nHattrickSize; nIter++)
         {
-            if (ArrayGetString(g_pHattrick, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pHattrick, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -1989,7 +2410,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nTLMStandingSize; nIter++)
         {
-            if (ArrayGetString(g_pTLMStanding, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pTLMStanding, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -2000,7 +2421,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nFlawlessSize; nIter++)
         {
-            if (ArrayGetString(g_pFlawless, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pFlawless, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -2011,7 +2432,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nRevengeSize; nIter++)
         {
-            if (ArrayGetString(g_pRevenge, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pRevenge, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -2022,7 +2443,7 @@ public plugin_precache()
     {
         for (nIter = 0; nIter < g_nKStreakSize; nIter++)
         {
-            if (ArrayGetString(g_pKStreakSnds, nIter, szSnd, charsmax(szSnd)) > 0 || !QS_EmptyString(szSnd))
+            if ((ArrayGetString(g_pKStreakSnds, nIter, szSnd, charsmax(szSnd)) > 0) || !(QS_EmptyString(szSnd)))
             {
                 precache_sound(szSnd);
             }
@@ -2034,8 +2455,142 @@ public plugin_precache()
     ///
     copy(g_pszName[QS_WORLDSPAWN], charsmax(g_pszName[]), QS_WORLDSPAWN_NAME);
 
+    ///
+    /// ORPHEU GAME RULES MANAGEMENT
+    ///
+
+#if defined _orpheu_included
+
+    if (!g_bOrpheuUnavailable)
+    {
+        if (QS_CSCZRunning()) /// NOT USING g_bCSCZ BEFORE THE plugin_init EXECUTION
+        {
+            if (((g_bHattrick) && (g_fHattrickRoundEndSecExtension > 0.000000)) || ((g_bFlawless) && (g_fFlawlessRoundEndSecExtension > 0.000000)) || (0.000000 < g_fSecDelayDisplayPlayerEvents))
+            {
+                g_nGameRules = -1; /// THIS HAS TO BE NEGATIVE HERE, SEE BELOW
+
+                g_bOrpheuError = true; /// THIS HAS TO BE TRUE HERE, SEE BELOW
+                g_bOrpheuUnavailable = true; /// THIS HAS TO BE TRUE HERE, SEE BELOW
+
+                new OrpheuFunction: hFunction = OrpheuGetFunction("InstallGameRules"); /// IF THE SIGNATURE IS OUT OF DATE, THE CODE BELOW THIS LINE WILL NEVER BE EXECUTED ... AN ERROR LOG WILL BE THROWN & THE plugin_precache EXECUTION STOPS RIGHT HERE ...
+
+                if (OrpheuInvalidFunction != hFunction)
+                {
+                    g_bOrpheuError = false;
+                    g_bOrpheuUnavailable = false;
+
+                    OrpheuRegisterHook(hFunction, "OnOrpheuGameRulesRevealed_POST", OrpheuHookPost);
+                }
+
+                else
+                {
+                    g_bOrpheuError = true;
+                    g_bOrpheuUnavailable = true;
+
+                    g_nGameRules = -1;
+                }
+            }
+
+            else
+            {
+                g_bOrpheuError = true;
+                g_bOrpheuUnavailable = true;
+
+                g_nGameRules = -1;
+            }
+        }
+
+        else
+        {
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            g_nGameRules = -1;
+        }
+    }
+
+    else
+    {
+        g_bOrpheuError = true;
+        g_bOrpheuUnavailable = true;
+
+        g_nGameRules = -1;
+    }
+
+#endif
+
     return PLUGIN_CONTINUE;
 }
+
+///
+/// ORPHEU GAME RULES MANAGEMENT
+///
+
+#if defined _orpheu_included
+
+public OrpheuHookReturn: OnOrpheuGameRulesRevealed_POST()
+{
+    if (g_bOrpheuUnavailable)
+    {
+        g_bOrpheuError = true;
+        g_bOrpheuUnavailable = true;
+
+        g_nGameRules = -1;
+
+        return OrpheuIgnored;
+    }
+
+    if (g_bOrpheuError)
+    {
+        g_bOrpheuError = true;
+        g_bOrpheuUnavailable = true;
+
+        g_nGameRules = -1;
+
+        return OrpheuIgnored;
+    }
+
+    if (!QS_CSCZRunning()) /// NOT USING g_bCSCZ BEFORE THE plugin_init EXECUTION
+    {
+        g_bOrpheuError = true;
+        g_bOrpheuUnavailable = true;
+
+        g_nGameRules = -1;
+
+        return OrpheuIgnored;
+    }
+
+    if (((g_bHattrick) && (g_fHattrickRoundEndSecExtension > 0.000000)) || ((g_bFlawless) && (g_fFlawlessRoundEndSecExtension > 0.000000)) || (0.000000 < g_fSecDelayDisplayPlayerEvents))
+    {
+        g_nGameRules = OrpheuGetReturn();
+
+        if (g_nGameRules < 0)
+        {
+            g_bOrpheuError = true;
+            g_bOrpheuUnavailable = true;
+
+            g_nGameRules = -1;
+        }
+
+        else
+        {
+            g_bOrpheuError = false;
+            g_bOrpheuUnavailable = false;
+        }
+    }
+
+    else
+    {
+        g_bOrpheuError = true;
+        g_bOrpheuUnavailable = true;
+
+        g_nGameRules = -1;
+    }
+
+    return OrpheuIgnored;
+}
+
+#endif
 
 ///
 /// plugin_end ( )
@@ -2133,13 +2688,13 @@ public plugin_init()
 
     new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL);
 
-#else
+#else /// QS_INCLUDE_VERSION_CVAR_IN_LOGS == 1
 
     new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
 
 #endif
 
-#else
+#else /// defined QS_INCLUDE_VERSION_CVAR_IN_LOGS
 
     new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
 
@@ -2328,7 +2883,7 @@ public plugin_init()
     ///
     if (g_bSql)
     {
-        new szAffinity[64] = { EOS, ... }, bool: bError = false;
+        new szAffinity[QS_WORD_MAX_LEN] = { EOS, ... }, bool: bError = false;
 
         ///
         /// READ THE ACTUAL SQL DRIVER
@@ -2376,7 +2931,7 @@ public plugin_init()
         ///
         if (g_pSqlDb != Empty_Handle)
         {
-            new szBuffer[128] = { EOS, ... };
+            new szBuffer[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... };
 
             ///
             /// SQL PRIMARY ( MAIN ) CHARSET
@@ -2674,8 +3229,174 @@ public plugin_cfg()
         }
     }
 
+    ///
+    /// REAPI FULLY WORKING YES/ NO
+    ///
+
+#if defined _reapi_included
+
+    if (!g_bReAPIUnavailable)
+    {
+        if (g_bCSCZ)
+        {
+            if (((g_bHattrick) && (g_fHattrickRoundEndSecExtension > 0.000000)) || ((g_bFlawless) && (g_fFlawlessRoundEndSecExtension > 0.000000)) || (0.000000 < g_fSecDelayDisplayPlayerEvents))
+            {
+                g_bReAPIError = true;
+
+                /// DO NOT SET g_bReAPIUnavailable TO TRUE HERE ...
+
+                set_task(0.100000, "QS_IsTheReAPIFullyWorking", get_systime(0), "", 0, "", 0);
+            }
+
+            else
+            {
+                g_bReAPIError = true;
+                g_bReAPIUnavailable = true;
+            }
+        }
+
+        else
+        {
+            g_bReAPIError = true;
+            g_bReAPIUnavailable = true;
+        }
+    }
+
+    else
+    {
+        g_bReAPIError = true;
+        g_bReAPIUnavailable = true;
+    }
+
+#endif
+
+    ///
+    /// AMXX GAME DATA FULLY WORKING YES/ NO
+    ///
+
+    if (((g_bHattrick) && (g_fHattrickRoundEndSecExtension > 0.000000)) || ((g_bFlawless) && (g_fFlawlessRoundEndSecExtension > 0.000000)) || (0.000000 < g_fSecDelayDisplayPlayerEvents))
+    {
+        if (!g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail) /// ALL OR NOTHING
+        {
+            if (g_bCSCZ)
+            {
+                g_bGameDataError = true; /// SEE BELOW, THIS HAS TO BE TRUE HERE
+
+                g_bGET_GameRules_Size_Unavail = true; /// SEE BELOW, THIS HAS TO BE TRUE HERE
+
+                g_bSET_GameRules_Float_Unavail = true; /// SEE BELOW, THIS HAS TO BE TRUE HERE
+                g_bGET_GameRules_Float_Unavail = true; /// SEE BELOW, THIS HAS TO BE TRUE HERE
+
+                /** THE VALUE RETURNED BY THE FUNCTION BELOW IS NOT IMPORTANT, SHOULD NEVER RETURN A NEGATIVE VALUE */
+
+                if (get_gamerules_size("CHalfLifeMultiplay", "m_fTeamCount") < 0) /// IF THE GAME RULES SIGNATURE IS OUT OF DATE ( AMX MOD X GAME DATA FILES ), THIS CALL WILL THROW AN ERROR TO THE LOGGING SYSTEM AND THE CODE BELOW WILL NEVER BE EXECUTED
+                { /// ON SIGNATURE ERROR, NO VALUE IS RETURNED AT ALL AS THE ERROR LOG PREVENTS FURTHER CODE EXECUTION
+                    g_bGameDataError = true; /// IF THE RETURNED VALUE IS A NEGATIVE ONE, g_bGameDataError MUST BE TRUE
+
+                    g_bGET_GameRules_Size_Unavail = true;
+
+                    g_bSET_GameRules_Float_Unavail = true;
+                    g_bGET_GameRules_Float_Unavail = true;
+                }
+
+                else
+                {
+                    g_bGameDataError = false; /// IF THE AMX MOD X GAME DATA IS OUT OF DATE, THIS CODE LINE WILL NEVER BE EXECUTED, SO DEFAULT TO TRUE, SEE ABOVE
+
+                    g_bGET_GameRules_Size_Unavail = false; /// FALSE ALL, AMXX GAME RULES WORKING FINE IF THIS LINE IS REACHED/ EXECUTED
+
+                    g_bSET_GameRules_Float_Unavail = false;
+                    g_bGET_GameRules_Float_Unavail = false;
+                }
+            }
+
+            else
+            {
+                g_bGameDataError = true;
+
+                g_bGET_GameRules_Size_Unavail = true;
+
+                g_bGET_GameRules_Float_Unavail = true;
+                g_bSET_GameRules_Float_Unavail = true;
+            }
+        }
+
+        else
+        {
+            g_bGameDataError = true;
+
+            g_bGET_GameRules_Size_Unavail = true;
+
+            g_bGET_GameRules_Float_Unavail = true;
+            g_bSET_GameRules_Float_Unavail = true;
+        }
+    }
+
+    else
+    {
+        g_bGameDataError = true;
+
+        g_bGET_GameRules_Size_Unavail = true;
+
+        g_bGET_GameRules_Float_Unavail = true;
+        g_bSET_GameRules_Float_Unavail = true;
+    }
+
     return PLUGIN_CONTINUE;
 }
+
+///
+/// REAPI FULLY WORKING YES/ NO
+///
+
+#if defined _reapi_included
+
+public QS_IsTheReAPIFullyWorking(nTaskIndex)
+{
+    if (!g_bCSCZ)
+    {
+        g_bReAPIError = true;
+        g_bReAPIUnavailable = true;
+
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bReAPIUnavailable)
+    {
+        g_bReAPIError = true;
+        g_bReAPIUnavailable = true;
+
+        return PLUGIN_CONTINUE;
+    }
+
+    if (((g_bHattrick) && (g_fHattrickRoundEndSecExtension > 0.000000)) || ((g_bFlawless) && (g_fFlawlessRoundEndSecExtension > 0.000000)) || (0.000000 < g_fSecDelayDisplayPlayerEvents))
+    {
+        g_bReAPIError = true; /// DEFAULT = TRUE, SEE BELOW
+        g_bReAPIUnavailable = true; /// DEFAULT = TRUE, SEE BELOW
+
+        if (get_member_game(m_nMaxPlayers) > 0) /// THIS LINE MAY TRIGGER AN ERROR LOG IF RUNNING REAPI ON A NON REGAMEDLL SERVER SO THE CODE BELOW THIS LINE WILL NEVER BE EXECUTED, SEE ABOVE
+        {
+            g_bReAPIError = false; /// REAPI FULLY WORKING
+            g_bReAPIUnavailable = false; /// REAPI FULLY WORKING
+        }
+
+        else
+        {
+            g_bReAPIError = true;
+            g_bReAPIUnavailable = true;
+        }
+    }
+
+    else
+    {
+        g_bReAPIError = true;
+        g_bReAPIUnavailable = true;
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+#endif
 
 ///
 /// client_infochanged ( nPlayer )
@@ -2778,17 +3499,17 @@ public client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen)
 
 #if defined QS_ON_BY_DEFAULT
 
-#if QS_ON_BY_DEFAULT == 1
+#if QS_ON_BY_DEFAULT != 0
 
     g_pbDisabled[nPlayer] = false;
 
-#else
+#else /// QS_ON_BY_DEFAULT != 0
 
     g_pbDisabled[nPlayer] = true;
 
 #endif
 
-#else
+#else /// defined QS_ON_BY_DEFAULT
 
     g_pbDisabled[nPlayer] = false;
 
@@ -2819,6 +3540,15 @@ public client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen)
         g_pfLastKillTimeStamp[nPlayer] = 0.000000;
     }
 
+    ///
+    /// NO MORE DELAYED TASK INDEXES
+    ///
+    g_pnActualDelayedCommand[nPlayer] = 0;
+    g_pnActualDelayedMessage[nPlayer] = 0;
+
+    g_pnFutureDelayedCommand[nPlayer] = 0;
+    g_pnFutureDelayedMessage[nPlayer] = 0;
+
     return PLUGIN_CONTINUE;
 }
 
@@ -2832,7 +3562,7 @@ public client_command(nPlayer)
     ///
     /// DATA
     ///
-    static szArg[16] = { EOS, ... }, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+    static szArg[QS_NUMBER_MAX_LEN] = { EOS, ... }, szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... };
 
     ///
     /// SANITY CHECK
@@ -3012,17 +3742,17 @@ public client_authorized(nPlayer) /// OLDER
 
 #if AMXX_VERSION_NUM > 183
 
-    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0; /// LATEST
+    static szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... }, nLen = 0; /// LATEST
 
 #else /// AMXX_VERSION_NUM > 183
 
-    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
+    static szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
 
 #endif
 
 #else /// defined AMXX_VERSION_NUM
 
-    static szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
+    static szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
 
 #endif
 
@@ -3132,7 +3862,7 @@ public client_authorized(nPlayer) /// OLDER
 ///
 public client_putinserver(nPlayer)
 {
-    static szParam[16] = { EOS, ... }, nSysTime = 0;
+    static szParam[QS_NUMBER_MAX_LEN] = { EOS, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
@@ -3211,6 +3941,15 @@ public client_putinserver(nPlayer)
     g_pfLastDisplayedMsgTimeStamp[nPlayer] = 0.000000;
 
     ///
+    /// ZERO DELAYED TASK INDEXES
+    ///
+    g_pnActualDelayedCommand[nPlayer] = 0;
+    g_pnActualDelayedMessage[nPlayer] = 0;
+
+    g_pnFutureDelayedCommand[nPlayer] = 0;
+    g_pnFutureDelayedMessage[nPlayer] = 0;
+
+    ///
     /// PRINTS INFORMATION FOR VALID PLAYERS ONLY
     ///
     if (!g_pbBOT[nPlayer] && !g_pbHLTV[nPlayer])
@@ -3219,7 +3958,7 @@ public client_putinserver(nPlayer)
         {
             num_to_str((nSysTime = get_systime(0)), szParam, charsmax(szParam));
             {
-                set_task(QS_PLUGIN_INFO_DELAY, "QS_DisplayPlayerInfo", g_pnUserId[nPlayer] + nSysTime, szParam, charsmax(szParam), "", 0);
+                set_task(g_fChatInfoDelaySeconds, "QS_DisplayPlayerInfo", g_pnUserId[nPlayer] + nSysTime, szParam, charsmax(szParam), "", 0);
             }
         }
     }
@@ -3230,10 +3969,17 @@ public client_putinserver(nPlayer)
 ///
 /// PROCESSES A DELAYED PLAYER MESSAGE ( HUD MESSAGE )
 ///
+/// [ 0 ]       =   PLAYER USER INDEX
+/// [ 1 ]       =   HUD MESSAGE SYNC OBJECT
+/// [ 2 ]       =   TASK PARAMETER SIZE
+/// [ 3 ]       =   PLAYER TASK FUTURE INDEX
+///
+/// [ 4 & + ]   =   HUD MESSAGE STRING
+///
 public QS_DelayedPlayerMessage(pnInfo[], nTask)
 {
     static nUserId = QS_INVALID_USER_ID, nTaskParamSize = 0, nHudObj = QS_INVALID_HUD_MSG_SYNC_OBJECT, nPlayer = QS_INVALID_PLAYER,
-        Float: fTheGameTime = 0.000000, bool: bHidden = false, pnColor[4] = { QS_MIN_BYTE, ... };
+        Float: fTheGameTime = 0.000000, bool: bHidden = false, nFutureTaskIndex = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     nUserId = pnInfo[0];
 
@@ -3242,7 +3988,7 @@ public QS_DelayedPlayerMessage(pnInfo[], nTask)
         return PLUGIN_CONTINUE;
     }
 
-    bHidden = (EOS == pnInfo[3]);
+    bHidden = (EOS == pnInfo[4]);
 
     nHudObj = pnInfo[1];
 
@@ -3277,61 +4023,73 @@ public QS_DelayedPlayerMessage(pnInfo[], nTask)
 
     if ((fTheGameTime - g_pfLastDisplayedMsgTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
     {
-        if (!bHidden)
+        nFutureTaskIndex = pnInfo[3];
+
+        if (nFutureTaskIndex == g_pnActualDelayedMessage[nPlayer])
         {
-            if (g_pnHudMsgObj[QS_HUD_EVENT] == nHudObj)
+            if (!bHidden)
             {
-                QS_HudMsgColor(QS_HUD_EVENT);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_EVENT_Y_POS_DOD : QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                if (g_pnHudMsgObj[QS_HUD_EVENT] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_EVENT, QS_INVALID_TEAM);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_EVENT_Y_POS_DOD : QS_EVENT_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                else if (g_pnHudMsgObj[QS_HUD_REVENGE] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_REVENGE, QS_INVALID_TEAM);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_REVENGE_Y_POS_DOD : QS_REVENGE_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                else if (g_pnHudMsgObj[QS_HUD_STANDING] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_STANDING, g_nTLMStandingGuyTeam);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                else if (g_pnHudMsgObj[QS_HUD_STREAK] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_STREAK, QS_INVALID_TEAM);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_STREAK_Y_POS_DOD : QS_STREAK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                else if (g_pnHudMsgObj[QS_HUD_FLAWLESS] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_FLAWLESS, g_nFlawlessTeam);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                else if (g_pnHudMsgObj[QS_HUD_HATTRICK] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_HATTRICK, QS_INVALID_TEAM);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_HATTRICK_Y_POS_DOD : QS_HATTRICK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                else if (g_pnHudMsgObj[QS_HUD_ROUND] == nHudObj)
+                {
+                    QS_HudMsgColor(QS_HUD_ROUND, QS_INVALID_TEAM);
+                    QS_MakeRGBA(pnColor);
+                    QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_ROUND_Y_POS_DOD : QS_ROUND_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+                }
+
+                ShowSyncHudMsg(nPlayer, nHudObj, pnInfo[4]);
             }
 
-            else if (g_pnHudMsgObj[QS_HUD_REVENGE] == nHudObj)
-            {
-                QS_HudMsgColor(QS_HUD_REVENGE);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_REVENGE_Y_POS_DOD : QS_REVENGE_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
-            }
+            g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
 
-            else if (g_pnHudMsgObj[QS_HUD_STANDING] == nHudObj)
-            {
-                QS_HudMsgColor(QS_HUD_STANDING);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_STANDING_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
-            }
-
-            else if (g_pnHudMsgObj[QS_HUD_STREAK] == nHudObj)
-            {
-                QS_HudMsgColor(QS_HUD_STREAK);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_STREAK_Y_POS_DOD : QS_STREAK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
-            }
-
-            else if (g_pnHudMsgObj[QS_HUD_FLAWLESS] == nHudObj)
-            {
-                QS_HudMsgColor(QS_HUD_FLAWLESS);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
-            }
-
-            else if (g_pnHudMsgObj[QS_HUD_HATTRICK] == nHudObj)
-            {
-                QS_HudMsgColor(QS_HUD_HATTRICK);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_HATTRICK_Y_POS_DOD : QS_HATTRICK_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
-            }
-
-            else if (g_pnHudMsgObj[QS_HUD_ROUND] == nHudObj)
-            {
-                QS_HudMsgColor(QS_HUD_ROUND);
-                QS_MakeRGBA(pnColor);
-                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, g_bDOD ? QS_ROUND_Y_POS_DOD : QS_ROUND_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
-            }
-
-            ShowSyncHudMsg(nPlayer, nHudObj, pnInfo[3]);
+            g_pnActualDelayedMessage[nPlayer]++;
         }
 
-        g_pfLastDisplayedMsgTimeStamp[nPlayer] = fTheGameTime;
+        else
+        {
+            set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, nTaskParamSize, "", 0);
+        }
     }
 
     else
@@ -3345,9 +4103,15 @@ public QS_DelayedPlayerMessage(pnInfo[], nTask)
 ///
 /// PROCESSES A DELAYED PLAYER COMMAND ( SPEAK COMMAND )
 ///
+/// [ 0 ]       =   PLAYER USER INDEX
+/// [ 1 ]       =   TASK PARAMETER SIZE
+/// [ 2 ]       =   PLAYER TASK FUTURE INDEX
+///
+/// [ 3 & + ]   =   HUD MESSAGE STRING
+///
 public QS_DelayedPlayerCommand(pnInfo[], nTask)
 {
-    static nUserId = QS_INVALID_USER_ID, nTaskParamSize = 0, nPlayer = QS_INVALID_PLAYER, Float: fTheGameTime = 0.000000, bool: bHidden = false;
+    static nUserId = QS_INVALID_USER_ID, nTaskParamSize = 0, nPlayer = QS_INVALID_PLAYER, Float: fTheGameTime = 0.000000, bool: bHidden = false, nFutureTaskIndex = 0;
 
     nUserId = pnInfo[0];
 
@@ -3379,14 +4143,26 @@ public QS_DelayedPlayerCommand(pnInfo[], nTask)
 
     if ((fTheGameTime - g_pfLastPlayedSoundTimeStamp[nPlayer]) >= g_fSecDelayDisplayPlayerEvents)
     {
-        bHidden = (EOS == pnInfo[2]);
+        nFutureTaskIndex = pnInfo[2];
 
-        if (!bHidden)
+        if (nFutureTaskIndex == g_pnActualDelayedCommand[nPlayer])
         {
-            client_cmd(nPlayer, pnInfo[2]);
+            bHidden = (EOS == pnInfo[3]);
+
+            if (!bHidden)
+            {
+                client_cmd(nPlayer, pnInfo[3]);
+            }
+
+            g_pfLastPlayedSoundTimeStamp[nPlayer] = fTheGameTime;
+
+            g_pnActualDelayedCommand[nPlayer]++;
         }
 
-        g_pfLastPlayedSoundTimeStamp[nPlayer] = fTheGameTime;
+        else
+        {
+            set_task(0.050000, "QS_DelayedPlayerCommand", get_systime(0), pnInfo, nTaskParamSize, "", 0);
+        }
     }
 
     else
@@ -3515,7 +4291,7 @@ public client_death(nKiller, nVictim, nWeapon, nPlace, nTeamKill)
     ///
     if (g_bTLMStanding)
     {
-        set_task(QS_STANDING_TRIGGER_DELAY, "QS_PrepareManStanding", get_systime(0), "", 0, "", 0);
+        set_task(g_fTLMStandingTriggerDelay, "QS_PrepareManStanding", get_systime(0), "", 0, "", 0);
     }
 
     return PLUGIN_CONTINUE;
@@ -3544,13 +4320,15 @@ public QS_PerformManStanding(nTaskId)
     nTEs = QS_GetTeamTotalAlive(QS_CSCZ_TEAM_TE, nTEGuy);
     nCTs = QS_GetTeamTotalAlive(QS_CSCZ_TEAM_CT, nCTGuy);
 
-    if (g_bTLMStandingDone_TE == false && nTEs == 1 && nCTs > 0)
+    if ((g_bTLMStandingDone_TE == false) && (nTEs == 1) && (nCTs > 0))
     {
         g_bTLMStandingDone_TE = true;
 
+        g_nTLMStandingGuyTeam = QS_CSCZ_TEAM_TE;
+
         QS_ClientCmd(nTEGuy, "SPK \"%a\"", ArrayGetStringHandle(g_pTLMStanding, random_num(0, g_nTLMStandingSize - 1)));
 
-        QS_HudMsgColor(QS_HUD_STANDING);
+        QS_HudMsgColor(QS_HUD_STANDING, QS_CSCZ_TEAM_TE);
         {
             QS_MakeRGBA(pnColor);
             {
@@ -3593,13 +4371,15 @@ public QS_PerformManStanding(nTaskId)
         }
     }
 
-    else if (g_bTLMStandingDone_CT == false && nCTs == 1 && nTEs > 0)
+    else if ((g_bTLMStandingDone_CT == false) && (nCTs == 1) && (nTEs > 0))
     {
         g_bTLMStandingDone_CT = true;
 
+        g_nTLMStandingGuyTeam = QS_CSCZ_TEAM_CT;
+
         QS_ClientCmd(nCTGuy, "SPK \"%a\"", ArrayGetStringHandle(g_pTLMStanding, random_num(0, g_nTLMStandingSize - 1)));
 
-        QS_HudMsgColor(QS_HUD_STANDING);
+        QS_HudMsgColor(QS_HUD_STANDING, QS_CSCZ_TEAM_CT);
         {
             QS_MakeRGBA(pnColor);
             {
@@ -3753,6 +4533,40 @@ public QS_OnRoundBegin()
     static nPlayer = QS_INVALID_PLAYER;
 
     ///
+    /// IF THE REAPI STUFF IS IN USE THEN JUST USE IT
+    ///
+
+#if defined _reapi_included
+
+    if (g_bCSCZ)
+    {
+        if (((g_bHattrick) && (g_fHattrickRoundEndSecExtension > 0.000000)) || ((g_bFlawless) && (g_fFlawlessRoundEndSecExtension > 0.000000)) || (0.000000 < g_fSecDelayDisplayPlayerEvents))
+        {
+            if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
+            {
+                g_bGameDataError = true;
+
+                g_bGET_GameRules_Size_Unavail = true;
+
+                g_bGET_GameRules_Float_Unavail = true;
+                g_bSET_GameRules_Float_Unavail = true;
+
+#if defined _orpheu_included
+
+                g_bOrpheuError = true;
+                g_bOrpheuUnavailable = true;
+
+                g_nGameRules = -1;
+
+#endif
+
+            }
+        }
+    }
+
+#endif
+
+    ///
     /// RESETS THE FIRST BLOOD FEATURE
     ///
     if (g_bFBlood)
@@ -3825,10 +4639,402 @@ public QS_OnRoundBegin()
 }
 
 ///
+/// EXTEND THE ROUND END PERIOD IF NEEDED
+///
+public QS_ExtendTheRoundEndPeriod(nTaskIndex)
+{
+    static nMaximumDelayedPlayerEvents = 0, Float: fNew = 0.000000, Float: fExtension = 0.000000, Float: fOriginal = 0.000000;
+
+    if (!g_bCSCZ)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (0.000000 == g_fSecDelayDisplayPlayerEvents)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bGameDataError)
+    {
+
+#if defined _orpheu_included
+
+        if ((g_bOrpheuUnavailable) || (g_bOrpheuError) || (g_nGameRules < 0))
+        {
+
+#if defined _reapi_included
+
+            if (g_bReAPIUnavailable || g_bReAPIError)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+            if (nMaximumDelayedPlayerEvents < 1)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+            fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+            fNew = (fExtension + fOriginal);
+
+            set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+
+#else /// defined _orpheu_included
+
+#if defined _reapi_included
+
+        if (g_bReAPIUnavailable || g_bReAPIError)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+#endif
+
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bGET_GameRules_Size_Unavail)
+    {
+
+#if defined _orpheu_included
+
+        if ((g_bOrpheuUnavailable) || (g_bOrpheuError) || (g_nGameRules < 0))
+        {
+
+#if defined _reapi_included
+
+            if (g_bReAPIUnavailable || g_bReAPIError)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+            if (nMaximumDelayedPlayerEvents < 1)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+            fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+            fNew = (fExtension + fOriginal);
+
+            set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+
+#else /// defined _orpheu_included
+
+#if defined _reapi_included
+
+        if (g_bReAPIUnavailable || g_bReAPIError)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+#endif
+
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bGET_GameRules_Float_Unavail)
+    {
+
+#if defined _orpheu_included
+
+        if ((g_bOrpheuUnavailable) || (g_bOrpheuError) || (g_nGameRules < 0))
+        {
+
+#if defined _reapi_included
+
+            if (g_bReAPIUnavailable || g_bReAPIError)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+            if (nMaximumDelayedPlayerEvents < 1)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+            fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+            fNew = (fExtension + fOriginal);
+
+            set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+
+#else /// defined _orpheu_included
+
+#if defined _reapi_included
+
+        if (g_bReAPIUnavailable || g_bReAPIError)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+#endif
+
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bSET_GameRules_Float_Unavail)
+    {
+
+#if defined _orpheu_included
+
+        if ((g_bOrpheuUnavailable) || (g_bOrpheuError) || (g_nGameRules < 0))
+        {
+
+#if defined _reapi_included
+
+            if (g_bReAPIUnavailable || g_bReAPIError)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+            if (nMaximumDelayedPlayerEvents < 1)
+            {
+                return PLUGIN_CONTINUE;
+            }
+
+            fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+            fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+            fNew = (fExtension + fOriginal);
+
+            set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+
+#else /// defined _orpheu_included
+
+#if defined _reapi_included
+
+        if (g_bReAPIUnavailable || g_bReAPIError)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+        if (nMaximumDelayedPlayerEvents < 1)
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+        fOriginal = Float: get_member_game(m_flRestartRoundTime);
+
+        fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+        fNew = (fExtension + fOriginal);
+
+        set_member_game(m_flRestartRoundTime, fNew);
+
+#endif
+
+#endif
+
+        return PLUGIN_CONTINUE;
+    }
+
+    nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+
+    if (nMaximumDelayedPlayerEvents < 1)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    fOriginal = get_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", 0);
+
+    fExtension = (float(nMaximumDelayedPlayerEvents) * (g_fSecDelayDisplayPlayerEvents + 0.050025));
+
+    fNew = (fExtension + fOriginal);
+
+    set_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", fNew, 0);
+
+    return PLUGIN_CONTINUE;
+}
+
+///
 /// WHEN THE ROUND ENDS
 ///
 public QS_OnRoundEnd()
 {
+    ///
+    /// EXTEND THE ROUND END PERIOD IF NEEDED
+    ///
+    if (g_bCSCZ)
+    {
+        if (g_fSecDelayDisplayPlayerEvents > 0.000000)
+        {
+            if (!g_bGameDataError && !g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail)
+            {
+                set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
+            }
+
+#if defined _orpheu_included
+
+            else if ((g_nGameRules > -1) && !(g_bOrpheuUnavailable) && !(g_bOrpheuError))
+            {
+                set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
+            }
+
+#endif
+
+#if defined _reapi_included
+
+            else if (!(g_bReAPIUnavailable) && !(g_bReAPIError))
+            {
+                set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
+            }
+
+#endif
+
+        }
+    }
+
     ///
     /// GETS HATTRICK READY
     ///
@@ -3838,12 +5044,12 @@ public QS_OnRoundEnd()
         {
             if (g_bDOD)
             {
-                set_task(QS_HATTRICK_ROUND_END_DELAY_DOD, "QS_Hattrick", get_systime(0), "", 0, "", 0);
+                set_task(g_fHattrickRoundEndDelayDOD, "QS_Hattrick", get_systime(0), "", 0, "", 0);
             }
 
             else
             {
-                set_task(QS_HATTRICK_ROUND_END_DELAY, "QS_Hattrick", get_systime(0), "", 0, "", 0);
+                set_task(g_fHattrickRoundEndDelayCSCZ, "QS_Hattrick", get_systime(0), "", 0, "", 0);
             }
         }
     }
@@ -3855,7 +5061,13 @@ public QS_OnRoundEnd()
     {
         if (g_nKillsThisRound)
         {
-            set_task(QS_FLAWLESS_ROUND_END_DELAY, "QS_Flawless", get_systime(0), "", 0, "", 0);
+            g_nFlawlessAliveTESize = QS_ActivePlayersNum(true /** true = ALIVE PLAYERS */, QS_CSCZ_TEAM_TE);
+            g_nFlawlessAliveCTSize = QS_ActivePlayersNum(true /** true = ALIVE PLAYERS */, QS_CSCZ_TEAM_CT);
+
+            g_nFlawlessTESize = g_nFlawlessAliveTESize + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_TE);
+            g_nFlawlessCTSize = g_nFlawlessAliveCTSize + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_CT);
+
+            set_task(g_fFlawlessRoundEndDelay, "QS_Flawless", get_systime(0), "", 0, "", 0);
         }
     }
 
@@ -3887,7 +5099,7 @@ public QS_RoundStart(nTaskId)
     {
         if (g_bRStartMsg)
         {
-            QS_HudMsgColor(QS_HUD_ROUND);
+            QS_HudMsgColor(QS_HUD_ROUND, QS_INVALID_TEAM);
             {
                 QS_MakeRGBA(pnColor);
                 {
@@ -3901,7 +5113,7 @@ public QS_RoundStart(nTaskId)
 
         else
         {
-            QS_HudMsgColor(QS_HUD_ROUND);
+            QS_HudMsgColor(QS_HUD_ROUND, QS_INVALID_TEAM);
             {
                 QS_MakeRGBA(pnColor);
                 {
@@ -3930,6 +5142,16 @@ public QS_Hattrick(nTaskId)
     static nLeader = QS_INVALID_PLAYER, nTeam = QS_INVALID_TEAM, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nPlayer = QS_INVALID_PLAYER, nIter = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
+    /// ORPHEU
+    ///
+
+#if defined _orpheu_included
+
+    static Float: fOriginal = 0.000000, Float: fNew = 0.000000;
+
+#endif
+
+    ///
     /// SANITY CHECK
     ///
     if (!g_nKillsThisRound)
@@ -3949,9 +5171,47 @@ public QS_Hattrick(nTaskId)
     {
         if (g_pnKillsThisRound[nLeader] >= g_nMinKillsForHattrick)
         {
+            if (g_fHattrickRoundEndSecExtension > 0.000000)
+            {
+                if (g_bCSCZ)
+                {
+                    if (!g_bGameDataError && !g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail)
+                    {
+                        set_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", g_fHattrickRoundEndSecExtension + get_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", 0), 0);
+                    }
+
+#if defined _orpheu_included
+
+                    else if ((g_nGameRules > -1) && !(g_bOrpheuUnavailable) && !(g_bOrpheuError))
+                    {
+                        fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+                        fNew = g_fHattrickRoundEndSecExtension + fOriginal;
+
+                        OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+                    }
+
+#endif
+
+#if defined _reapi_included
+
+                    else if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
+                    {
+                        fOriginal = get_member_game(m_flRestartRoundTime);
+
+                        fNew = g_fHattrickRoundEndSecExtension + fOriginal;
+
+                        set_member_game(m_flRestartRoundTime, fNew);
+                    }
+
+#endif
+
+                }
+            }
+
             if (g_bHattrickMsg)
             {
-                QS_HudMsgColor(QS_HUD_HATTRICK);
+                QS_HudMsgColor(QS_HUD_HATTRICK, QS_INVALID_TEAM);
                 {
                     QS_MakeRGBA(pnColor);
                     {
@@ -3972,7 +5232,7 @@ public QS_Hattrick(nTaskId)
 
             else
             {
-                QS_HudMsgColor(QS_HUD_HATTRICK);
+                QS_HudMsgColor(QS_HUD_HATTRICK, QS_INVALID_TEAM);
                 {
                     QS_MakeRGBA(pnColor);
                     {
@@ -4099,7 +5359,17 @@ public QS_Hattrick(nTaskId)
 ///
 public QS_Flawless(nTaskId)
 {
-    static nAliveTeam_TE = 0, nAliveTeam_CT = 0, nAllTeam_TE = 0, nAllTeam_CT = 0, pnColor[4] = { QS_MIN_BYTE, ... };
+    static pnColor[4] = { QS_MIN_BYTE, ... };
+
+    ///
+    /// ORPHEU
+    ///
+
+#if defined _orpheu_included
+
+    static Float: fOriginal = 0.000000, Float: fNew = 0.000000;
+
+#endif
 
     ///
     /// SANITY CHECK
@@ -4109,22 +5379,18 @@ public QS_Flawless(nTaskId)
         return PLUGIN_CONTINUE;
     }
 
-    nAliveTeam_TE = QS_ActivePlayersNum(true /** true = ALIVE PLAYERS */, QS_CSCZ_TEAM_TE);
-    nAliveTeam_CT = QS_ActivePlayersNum(true /** true = ALIVE PLAYERS */, QS_CSCZ_TEAM_CT);
-
-    nAllTeam_TE = nAliveTeam_TE + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_TE);
-    nAllTeam_CT = nAliveTeam_CT + QS_ActivePlayersNum(false /** false = DEAD PLAYERS */, QS_CSCZ_TEAM_CT);
-
-    QS_HudMsgColor(QS_HUD_FLAWLESS);
+    if ((g_nFlawlessTESize >= g_nFlawlessMinimumReqPlayers) && (g_nFlawlessTESize == g_nFlawlessAliveTESize) && (g_nFlawlessCTSize))
     {
-        QS_MakeRGBA(pnColor);
+        g_nFlawlessTeam = QS_CSCZ_TEAM_TE;
+
+        QS_HudMsgColor(QS_HUD_FLAWLESS, QS_CSCZ_TEAM_TE);
         {
-            QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            QS_MakeRGBA(pnColor);
+            {
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
         }
-    }
 
-    if ((nAllTeam_TE >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM) && (nAllTeam_TE == nAliveTeam_TE) && nAllTeam_CT)
-    {
         if (g_bFlawlessMsg)
         {
             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_TE);
@@ -4135,11 +5401,59 @@ public QS_Flawless(nTaskId)
             QS_ShowHiddenHudMsg(QS_EVERYONE);
         }
 
+        if (g_fFlawlessRoundEndSecExtension > 0.000000)
+        {
+            if (g_bCSCZ)
+            {
+                if (!g_bGameDataError && !g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail)
+                {
+                    set_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", g_fFlawlessRoundEndSecExtension + get_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", 0), 0);
+                }
+
+#if defined _orpheu_included
+
+                else if ((g_nGameRules > -1) && !(g_bOrpheuError) && !(g_bOrpheuUnavailable))
+                {
+                    fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+                    fNew = g_fFlawlessRoundEndSecExtension + fOriginal;
+
+                    OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+                }
+
+#endif
+
+#if defined _reapi_included
+
+                else if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
+                {
+                    fOriginal = get_member_game(m_flRestartRoundTime);
+
+                    fNew = g_fFlawlessRoundEndSecExtension + fOriginal;
+
+                    set_member_game(m_flRestartRoundTime, fNew);
+                }
+
+#endif
+
+            }
+        }
+
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_nFlawlessSize - 1)));
     }
 
-    else if ((nAllTeam_CT >= QS_FLAWLESS_MIN_PLAYERS_IN_TEAM) && (nAllTeam_CT == nAliveTeam_CT) && nAllTeam_TE)
+    else if ((g_nFlawlessCTSize >= g_nFlawlessMinimumReqPlayers) && (g_nFlawlessCTSize == g_nFlawlessAliveCTSize) && (g_nFlawlessTESize))
     {
+        g_nFlawlessTeam = QS_CSCZ_TEAM_CT;
+
+        QS_HudMsgColor(QS_HUD_FLAWLESS, QS_CSCZ_TEAM_CT);
+        {
+            QS_MakeRGBA(pnColor);
+            {
+                QS_SetHudMsg(g_nRed, g_nGreen, g_nBlue, QS_HUD_MSG_X_POS, QS_FLAWLESS_Y_POS, QS_HUD_MSG_EFFECTS, QS_HUD_MSG_EFFECTS_TIME, QS_HUD_MSG_HOLD_TIME, QS_HUD_MSG_FADE_IN_TIME, QS_HUD_MSG_FADE_OUT_TIME, -1, QS_HUD_MSG_ALPHA_AMOUNT, pnColor);
+            }
+        }
+
         if (g_bFlawlessMsg)
         {
             QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_FLAWLESS], g_szFlawlessMsg, g_szFlawlessTeamName_CT);
@@ -4148,6 +5462,44 @@ public QS_Flawless(nTaskId)
         else
         {
             QS_ShowHiddenHudMsg(QS_EVERYONE);
+        }
+
+        if (g_fFlawlessRoundEndSecExtension > 0.000000)
+        {
+            if (g_bCSCZ)
+            {
+                if (!g_bGameDataError && !g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail)
+                {
+                    set_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", g_fFlawlessRoundEndSecExtension + get_gamerules_float("CHalfLifeMultiplay", "m_fTeamCount", 0), 0);
+                }
+
+#if defined _orpheu_included
+
+                else if ((g_nGameRules > -1) && !(g_bOrpheuError) && !(g_bOrpheuUnavailable))
+                {
+                    fOriginal = Float: OrpheuMemoryGetAtAddress(g_nGameRules, "m_fTeamCount");
+
+                    fNew = g_fFlawlessRoundEndSecExtension + fOriginal;
+
+                    OrpheuMemorySetAtAddress(g_nGameRules, "m_fTeamCount", 1, fNew);
+                }
+
+#endif
+
+#if defined _reapi_included
+
+                else if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
+                {
+                    fOriginal = get_member_game(m_flRestartRoundTime);
+
+                    fNew = g_fFlawlessRoundEndSecExtension + fOriginal;
+
+                    set_member_game(m_flRestartRoundTime, fNew);
+                }
+
+#endif
+
+            }
         }
 
         QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pFlawless, random_num(0, g_nFlawlessSize - 1)));
@@ -4351,7 +5703,7 @@ public QS_AddThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErrorC
     ///
     /// DATA
     ///
-    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szParam[16] = { EOS, ... }, nSysTime = 0, Float: fErrorStamp = 0.000000, Float: fGameTime = 0.000000;
+    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szParam[QS_NUMBER_MAX_LEN] = { EOS, ... }, nSysTime = 0, Float: fErrorStamp = 0.000000, Float: fGameTime = 0.000000;
 
     ///
     /// EXCEPTION
@@ -4500,7 +5852,7 @@ public QS_StoreThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nErro
     ///
     /// DATA
     ///
-    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szParam[16] = { EOS, ... }, nSysTime = 0, Float: fErrorStamp = 0.000000, Float: fGameTime = 0.000000;
+    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szParam[QS_NUMBER_MAX_LEN] = { EOS, ... }, nSysTime = 0, Float: fErrorStamp = 0.000000, Float: fGameTime = 0.000000;
 
     ///
     /// EXCEPTION
@@ -4654,7 +6006,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
     ///
     /// DATA
     ///
-    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szQuery[128] = { EOS, ... }, bWasDisabled = false, nSysTime = 0, szParam[16] = { EOS, ... }, Float: fErrorStamp = 0.000000, Float: fGameTime = 0.000000;
+    static nUserId = QS_INVALID_USER_ID, nPlayer = QS_INVALID_PLAYER, szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, bWasDisabled = false, nSysTime = 0, szParam[QS_NUMBER_MAX_LEN] = { EOS, ... }, Float: fErrorStamp = 0.000000, Float: fGameTime = 0.000000;
 
     ///
     /// EXCEPTION
@@ -4704,7 +6056,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
 
 #if defined QS_ON_BY_DEFAULT
 
-#if QS_ON_BY_DEFAULT == 1
+#if QS_ON_BY_DEFAULT != 0
 
                                 if (bWasDisabled)
                                 {
@@ -4722,7 +6074,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                     }
                                 }
 
-#else
+#else /// QS_ON_BY_DEFAULT != 0
 
                                 if (!bWasDisabled)
                                 {
@@ -4742,7 +6094,7 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
 
 #endif
 
-#else
+#else /// defined QS_ON_BY_DEFAULT
 
                                 if (bWasDisabled)
                                 {
@@ -5002,7 +6354,7 @@ public QS_DisableSql(nTaskId)
 ///
 public QS_RetryPick(szParam[], nTaskId)
 {
-    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID, szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... };
 
     ///
     /// EXCEPTION
@@ -5067,7 +6419,7 @@ public QS_RetryPick(szParam[], nTaskId)
 ///
 public QS_RetryStore(szParam[], nTaskId)
 {
-    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID, szQuery[128] = { EOS, ... }, szUserId[16] = { EOS, ... };
+    static nPlayer = QS_INVALID_PLAYER, nUserId = QS_INVALID_USER_ID, szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... };
 
     ///
     /// EXCEPTION
@@ -5163,7 +6515,7 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskId)
     {
         if (g_bDeathMsgOnly) /// IF NO XSTATS MODULE "client_death ( )" FORWARD AVAILABLE
         {
-            set_task(QS_STANDING_TRIGGER_DELAY, "QS_PrepareManStanding", get_systime(0), "", 0, "", 0);
+            set_task(g_fTLMStandingTriggerDelay, "QS_PrepareManStanding", get_systime(0), "", 0, "", 0);
         } /** XSTATS MODULE'S "client_death ( )" FORWARD SETS THIS TASK OTHERWISE */
     }
 
@@ -5486,7 +6838,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE COLOR
                     ///
-                    QS_HudMsgColor(QS_HUD_EVENT);
+                    QS_HudMsgColor(QS_HUD_EVENT, QS_INVALID_TEAM);
 
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE RGBA ARRAY
@@ -5509,7 +6861,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE COLOR
                     ///
-                    QS_HudMsgColor(QS_HUD_EVENT);
+                    QS_HudMsgColor(QS_HUD_EVENT, QS_INVALID_TEAM);
 
                     ///
                     /// PREPARES THE FIRST BLOOD HUD MESSAGE RGBA ARRAY
@@ -5540,7 +6892,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
     ///
     /// PREPARES THE HUD MESSAGE COLOR
     ///
-    QS_HudMsgColor(QS_HUD_EVENT);
+    QS_HudMsgColor(QS_HUD_EVENT, QS_INVALID_TEAM);
 
     ///
     /// PREPARES THE RGBA ARRAY
@@ -5711,7 +7063,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             ///
             /// PREPARES THE REVENGE HUD MESSAGE COLOR
             ///
-            QS_HudMsgColor(QS_HUD_REVENGE);
+            QS_HudMsgColor(QS_HUD_REVENGE, QS_INVALID_TEAM);
 
             ///
             /// PREPARES THE REVENGE HUD MESSAGE RGBA ARRAY
@@ -5753,7 +7105,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             ///
             /// PREPARES THE HUD MESSAGE COLOR
             ///
-            QS_HudMsgColor(QS_HUD_EVENT);
+            QS_HudMsgColor(QS_HUD_EVENT, QS_INVALID_TEAM);
 
             ///
             /// PREPARES THE RGBA ARRAY
@@ -5822,11 +7174,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             }
         }
 
-        if (g_bGrenade && (!bExecutedTeamKill || g_bGrenadeIfTeamKill) && g_nGrenadeNames > 0)
+        if ((g_bGrenade) && (!(bExecutedTeamKill) || (g_bGrenadeIfTeamKill)) && (g_nGrenadeNames > 0))
         {
             for (nIter = 0; nIter < g_nGrenadeNames; nIter++)
             {
-                if (ArrayGetString(g_pGrenadeNames, nIter, szWord, charsmax(szWord)) > 0 || !QS_EmptyString(szWord))
+                if ((ArrayGetString(g_pGrenadeNames, nIter, szWord, charsmax(szWord)) > 0) || !(QS_EmptyString(szWord)))
                 {
                     if (containi(szWeapon, szWord) > -1)
                     {
@@ -5848,11 +7200,11 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
             }
         }
 
-        if (g_bKnife && (!bExecutedTeamKill || g_bKnifeIfTeamKill) && g_nKnifeNames > 0)
+        if ((g_bKnife) && (!(bExecutedTeamKill) || (g_bKnifeIfTeamKill)) && (g_nKnifeNames > 0))
         {
             for (nIter = 0; nIter < g_nKnifeNames; nIter++)
             {
-                if (ArrayGetString(g_pKnifeNames, nIter, szWord, charsmax(szWord)) > 0 || !QS_EmptyString(szWord))
+                if ((ArrayGetString(g_pKnifeNames, nIter, szWord, charsmax(szWord)) > 0) || !(QS_EmptyString(szWord)))
                 {
                     if (containi(szWeapon, szWord) > -1)
                     {
@@ -5898,7 +7250,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                     QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pDKill, random_num(0, g_nDKillSize - 1)));
                 }
 
-                g_pfLastKillTimeStamp[nKiller] = fGameTime + QS_DOUBLE_KILL_DELAY;
+                g_pfLastKillTimeStamp[nKiller] = fGameTime + g_fDKillDelay;
             }
         }
 
@@ -6056,6 +7408,11 @@ static bool: QS_LoadSettings()
             g_bChatInfo = bool: str_to_num(szVal);
         }
 
+        else if (equali(szKey, "JOIN DELAY SECONDS"))
+        {
+            g_fChatInfoDelaySeconds = floatabs(str_to_float(szVal));
+        }
+
         else if (equali(szKey, "SKIP EXISTING INFO") || equali(szKey, "SKIP EXISTING INFORMATION")) /** COMPATIBILITY */
         {
             g_bSkipExisting = bool: str_to_num(szVal);
@@ -6086,7 +7443,7 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "ROUNDSTART DELAY SECONDS") || equali(szKey, "ROUNDSTART SECONDS DELAY")) /** COMPATIBILITY */
         {
-            if (QS_DODRunning() /** USE THIS CALL DURING QS_LoadSettings ( ) @ plugin_precache ( ) */)
+            if (QS_DODRunning() /** USE THIS CALL DURING QS_LoadSettings ( ) @ plugin_precache ( ) */) /// NOT USING g_bDOD HERE
             {
                 g_fRStartDelay = floatmax(floatabs(str_to_float(szVal)), QS_ROUND_START_MIN_DOD_DELAY);
             }
@@ -6110,6 +7467,46 @@ static bool: QS_LoadSettings()
         else if (equali(szKey, "REVENGE ONLY FOR KILLER"))
         {
             g_bRevengeOnlyKiller = bool: str_to_num(szVal);
+        }
+
+        else if (equali(szKey, "QS HATTRICK EXTEND ROUND END TIME SECONDS"))
+        {
+            g_fHattrickRoundEndSecExtension = floatabs(str_to_float(szVal));
+        }
+
+        else if (equali(szKey, "QS FLAWLESS EXTEND ROUND END TIME SECONDS"))
+        {
+            g_fFlawlessRoundEndSecExtension = floatabs(str_to_float(szVal));
+        }
+
+        else if (equali(szKey, "QS HATTRICK SECONDS DELAY AFTER ROUND END"))
+        {
+            g_fHattrickRoundEndDelayCSCZ = floatabs(str_to_float(szVal));
+        }
+
+        else if (equali(szKey, "QS HATTRICK SECONDS DELAY AFTER ROUND END DOD"))
+        {
+            g_fHattrickRoundEndDelayDOD = floatabs(str_to_float(szVal));
+        }
+
+        else if (equali(szKey, "DKILL TIME FRAME"))
+        {
+            g_fDKillDelay = floatabs(str_to_float(szVal));
+        }
+
+        else if (equali(szKey, "QS FLAWLESS SECONDS DELAY AFTER ROUND END"))
+        {
+            g_fFlawlessRoundEndDelay = floatabs(str_to_float(szVal));
+        }
+
+        else if (equali(szKey, "FLAWLESS MIN PLAYERS"))
+        {
+            g_nFlawlessMinimumReqPlayers = max(abs(str_to_num(szVal)), 1);
+        }
+
+        else if (equali(szKey, "TLMSTANDING DELAY"))
+        {
+            g_fTLMStandingTriggerDelay = floatabs(str_to_float(szVal));
         }
 
         else if (equali(szKey, "HATTRICK CHAT"))
@@ -6404,36 +7801,70 @@ static bool: QS_LoadSettings()
             }
         }
 
-        else if (equali(szKey, "HUD RGB FLAWLESS"))
+        else if (equali(szKey, "HUD RGB FLAWLESS TE"))
         {
             switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
             {
                 case 2:
                 {
-                    g_nRedFlawless = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nGreenFlawless = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nBlueFlawless = -1;
+                    g_nRedFlawlessTE = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawlessTE = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueFlawlessTE = -1;
                 }
 
                 case 1:
                 {
-                    g_nRedFlawless = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nGreenFlawless = -1;
-                    g_nBlueFlawless = -1;
+                    g_nRedFlawlessTE = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawlessTE = -1;
+                    g_nBlueFlawlessTE = -1;
                 }
 
                 case 0:
                 {
-                    g_nRedFlawless = -1;
-                    g_nGreenFlawless = -1;
-                    g_nBlueFlawless = -1;
+                    g_nRedFlawlessTE = -1;
+                    g_nGreenFlawlessTE = -1;
+                    g_nBlueFlawlessTE = -1;
                 }
 
                 default:
                 {
-                    g_nRedFlawless = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nGreenFlawless = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nBlueFlawless = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nRedFlawlessTE = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawlessTE = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueFlawlessTE = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB FLAWLESS CT"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedFlawlessCT = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawlessCT = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueFlawlessCT = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedFlawlessCT = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawlessCT = -1;
+                    g_nBlueFlawlessCT = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedFlawlessCT = -1;
+                    g_nGreenFlawlessCT = -1;
+                    g_nBlueFlawlessCT = -1;
+                }
+
+                default:
+                {
+                    g_nRedFlawlessCT = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenFlawlessCT = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueFlawlessCT = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
                 }
             }
         }
@@ -6472,36 +7903,70 @@ static bool: QS_LoadSettings()
             }
         }
 
-        else if (equali(szKey, "HUD RGB STANDING"))
+        else if (equali(szKey, "HUD RGB STANDING TE"))
         {
             switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
             {
                 case 2:
                 {
-                    g_nRedStanding = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nGreenStanding = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nBlueStanding = -1;
+                    g_nRedStandingTE = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStandingTE = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStandingTE = -1;
                 }
 
                 case 1:
                 {
-                    g_nRedStanding = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nGreenStanding = -1;
-                    g_nBlueStanding = -1;
+                    g_nRedStandingTE = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStandingTE = -1;
+                    g_nBlueStandingTE = -1;
                 }
 
                 case 0:
                 {
-                    g_nRedStanding = -1;
-                    g_nGreenStanding = -1;
-                    g_nBlueStanding = -1;
+                    g_nRedStandingTE = -1;
+                    g_nGreenStandingTE = -1;
+                    g_nBlueStandingTE = -1;
                 }
 
                 default:
                 {
-                    g_nRedStanding = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nGreenStanding = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
-                    g_nBlueStanding = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nRedStandingTE = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStandingTE = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStandingTE = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                }
+            }
+        }
+
+        else if (equali(szKey, "HUD RGB STANDING CT"))
+        {
+            switch (parse(szVal, szRed, charsmax(szRed), szGreen, charsmax(szGreen), szBlue, charsmax(szBlue)))
+            {
+                case 2:
+                {
+                    g_nRedStandingCT = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStandingCT = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStandingCT = -1;
+                }
+
+                case 1:
+                {
+                    g_nRedStandingCT = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStandingCT = -1;
+                    g_nBlueStandingCT = -1;
+                }
+
+                case 0:
+                {
+                    g_nRedStandingCT = -1;
+                    g_nGreenStandingCT = -1;
+                    g_nBlueStandingCT = -1;
+                }
+
+                default:
+                {
+                    g_nRedStandingCT = (('_' == szRed[0]) ? (-1) : (clamp(abs(str_to_num(szRed)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nGreenStandingCT = (('_' == szGreen[0]) ? (-1) : (clamp(abs(str_to_num(szGreen)), QS_MIN_BYTE, QS_MAX_BYTE)));
+                    g_nBlueStandingCT = (('_' == szBlue[0]) ? (-1) : (clamp(abs(str_to_num(szBlue)), QS_MIN_BYTE, QS_MAX_BYTE)));
                 }
             }
         }
@@ -6516,7 +7981,7 @@ static bool: QS_LoadSettings()
             ///
             QS_ClearString(szType);
             {
-                if (parse(szVal, szDummy, charsmax(szDummy), szType, charsmax(szType)) > 1 || !QS_EmptyString(szType))
+                if ((parse(szVal, szDummy, charsmax(szDummy), szType, charsmax(szType)) > 1) || !(QS_EmptyString(szType)))
                 {
                     trim(szType);
                     {
@@ -6534,7 +7999,7 @@ static bool: QS_LoadSettings()
                                 trim(szSnd);
                             }
 
-                            if (!QS_EmptyString(szReqKills) && (nVal = abs(str_to_num(szReqKills))) > 0)
+                            if (!(QS_EmptyString(szReqKills)) && ((nVal = abs(str_to_num(szReqKills))) > 0))
                             {
                                 ArrayPushCell(g_pKStreakReqKills, nVal);
                             }
@@ -6646,12 +8111,12 @@ static bool: QS_LoadSettings()
         ///
         else if (equali(szKey, "HEADSHOT SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pHShot))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pHShot)))
             {
                 ArrayPushString(g_pHShot, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6665,12 +8130,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "REVENGE SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pRevenge))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pRevenge)))
             {
                 ArrayPushString(g_pRevenge, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6684,12 +8149,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "SUICIDE SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pSuicide))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pSuicide)))
             {
                 ArrayPushString(g_pSuicide, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6703,12 +8168,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "NADE SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pGrenade))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pGrenade)))
             {
                 ArrayPushString(g_pGrenade, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6722,12 +8187,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "TEAMKILL SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pTKill))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pTKill)))
             {
                 ArrayPushString(g_pTKill, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6741,12 +8206,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "KNIFE SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pKnife))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pKnife)))
             {
                 ArrayPushString(g_pKnife, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6760,12 +8225,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "FIRSTBLOOD SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pFBlood))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pFBlood)))
             {
                 ArrayPushString(g_pFBlood, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6779,12 +8244,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "ROUNDSTART SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pRStart))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pRStart)))
             {
                 ArrayPushString(g_pRStart, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6798,12 +8263,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "DOUBLEKILL SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pDKill))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pDKill)))
             {
                 ArrayPushString(g_pDKill, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6817,12 +8282,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "HATTRICK SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pHattrick))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pHattrick)))
             {
                 ArrayPushString(g_pHattrick, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6836,12 +8301,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "TLMSTANDING SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pTLMStanding))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pTLMStanding)))
             {
                 ArrayPushString(g_pTLMStanding, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6855,12 +8320,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "FLAWLESS SOUNDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pFlawless))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pFlawless)))
             {
                 ArrayPushString(g_pFlawless, szVal);
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6877,12 +8342,12 @@ static bool: QS_LoadSettings()
         ///
         else if (equali(szKey, "TLMSTANDING WORDS"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pTLMStandingWords))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pTLMStandingWords)))
             {
                 ArrayPushString(g_pTLMStandingWords, QS_TLMSTANDING_WORD); /// .........
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6896,12 +8361,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "NADE NADES"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pGrenadeNames))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pGrenadeNames)))
             {
                 ArrayPushString(g_pGrenadeNames, QS_DEF_GRENADE_NAME); /// .........
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -6915,12 +8380,12 @@ static bool: QS_LoadSettings()
 
         else if (equali(szKey, "KNIFE KNIVES"))
         {
-            if (QS_EmptyString(szVal) && 0 == ArraySize(g_pKnifeNames))
+            if ((QS_EmptyString(szVal)) && (0 == ArraySize(g_pKnifeNames)))
             {
                 ArrayPushString(g_pKnifeNames, QS_DEF_KNIFE_NAME); /// .........
             }
 
-            while (!QS_EmptyString(szVal) && strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1)
+            while (!(QS_EmptyString(szVal)) && (strtok2(szVal, szKey, charsmax(szKey), szVal, charsmax(szVal), ',', 1) >= -1))
             {
                 trim(szKey);
                 trim(szVal);
@@ -7216,7 +8681,7 @@ static bool: QS_DisplayKStreak(&nKiller, szMsg[], szSnd[])
 
     if (!QS_EmptyString(szMsg))
     {
-        QS_HudMsgColor(QS_HUD_STREAK);
+        QS_HudMsgColor(QS_HUD_STREAK, QS_INVALID_TEAM);
         {
             QS_MakeRGBA(pnColor);
             {
@@ -7230,7 +8695,7 @@ static bool: QS_DisplayKStreak(&nKiller, szMsg[], szSnd[])
 
     else
     {
-        QS_HudMsgColor(QS_HUD_STREAK);
+        QS_HudMsgColor(QS_HUD_STREAK, QS_INVALID_TEAM);
         {
             QS_MakeRGBA(pnColor);
             {
@@ -7338,12 +8803,12 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[3 + QS_HUD_MSG_MAX_LEN] = { 0, ... }, nSysTime = 0;
+    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[4 + QS_HUD_MSG_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
     ///
-    if (QS_EmptyString(szRules) || !QS_ValidHudMsgSyncObj(nObj) || vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1)
+    if (QS_EmptyString(szRules) || !(QS_ValidHudMsgSyncObj(nObj)) || (vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1))
     {
         return false;
     }
@@ -7369,8 +8834,9 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
             pnInfo[0] = g_pnUserId[nTo];
             pnInfo[1] = nObj;
             pnInfo[2] = charsmax(pnInfo);
+            pnInfo[3] = g_pnFutureDelayedMessage[nTo]++;
 
-            copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+            copy(pnInfo[4], charsmax(pnInfo) - 4, szBuffer);
 
             set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
         }
@@ -7388,7 +8854,7 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
         pnInfo[1] = nObj;
         pnInfo[2] = charsmax(pnInfo);
 
-        copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+        copy(pnInfo[4], charsmax(pnInfo) - 4, szBuffer);
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -7404,6 +8870,7 @@ static bool: QS_ShowHudMsg(nTo, &nObj, szRules[], any: ...)
                 else
                 {
                     pnInfo[0] = g_pnUserId[nPlayer];
+                    pnInfo[3] = g_pnFutureDelayedMessage[nPlayer]++;
 
                     set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -7422,7 +8889,7 @@ static bool: QS_ShowHiddenHudMsg(nTo)
     ///
     /// DATA
     ///
-    static nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[4] = { 0, ... }, nSysTime = 0;
+    static nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[5] = { 0, ... }, nSysTime = 0;
 
     bIsPlayer = QS_IsPlayer(nTo);
 
@@ -7443,7 +8910,8 @@ static bool: QS_ShowHiddenHudMsg(nTo)
             pnInfo[0] = g_pnUserId[nTo];
             pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
             pnInfo[2] = charsmax(pnInfo);
-            pnInfo[3] = EOS;
+            pnInfo[3] = g_pnFutureDelayedMessage[nTo]++;
+            pnInfo[4] = EOS;
 
             set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
         }
@@ -7460,7 +8928,7 @@ static bool: QS_ShowHiddenHudMsg(nTo)
 
         pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
         pnInfo[2] = charsmax(pnInfo);
-        pnInfo[3] = EOS;
+        pnInfo[4] = EOS;
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -7474,6 +8942,7 @@ static bool: QS_ShowHiddenHudMsg(nTo)
                 else
                 {
                     pnInfo[0] = g_pnUserId[nPlayer];
+                    pnInfo[3] = g_pnFutureDelayedMessage[nPlayer]++;
 
                     set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -7492,12 +8961,12 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[3 + QS_HUD_MSG_MAX_LEN] = { 0, ... }, nSysTime = 0;
+    static szBuffer[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[4 + QS_HUD_MSG_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
     ///
-    if (QS_EmptyString(szRules) || !QS_ValidHudMsgSyncObj(nObj) || vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1)
+    if (QS_EmptyString(szRules) || !(QS_ValidHudMsgSyncObj(nObj)) || (vformat(szBuffer, charsmax(szBuffer), szRules, 4) < 1))
     {
         return false;
     }
@@ -7523,8 +8992,9 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
             pnInfo[0] = g_pnUserId[nTo];
             pnInfo[1] = nObj;
             pnInfo[2] = charsmax(pnInfo);
+            pnInfo[3] = g_pnFutureDelayedMessage[nTo]++;
 
-            copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+            copy(pnInfo[4], charsmax(pnInfo) - 4, szBuffer);
 
             set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
         }
@@ -7542,7 +9012,7 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
         pnInfo[1] = nObj;
         pnInfo[2] = charsmax(pnInfo);
 
-        copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
+        copy(pnInfo[4], charsmax(pnInfo) - 4, szBuffer);
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -7558,6 +9028,7 @@ static bool: QS_ShowHudMsgAll(nTo, &nObj, szRules[], any: ...)
                 else
                 {
                     pnInfo[0] = g_pnUserId[nPlayer];
+                    pnInfo[3] = g_pnFutureDelayedMessage[nPlayer]++;
 
                     set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -7576,7 +9047,7 @@ static bool: QS_ShowHiddenHudMsgAll(nTo)
     ///
     /// DATA
     ///
-    static nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[4] = { 0, ... }, nSysTime = 0;
+    static nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[5] = { 0, ... }, nSysTime = 0;
 
     bIsPlayer = QS_IsPlayer(nTo);
 
@@ -7597,7 +9068,8 @@ static bool: QS_ShowHiddenHudMsgAll(nTo)
             pnInfo[0] = g_pnUserId[nTo];
             pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
             pnInfo[2] = charsmax(pnInfo);
-            pnInfo[3] = EOS;
+            pnInfo[3] = g_pnFutureDelayedMessage[nTo]++;
+            pnInfo[4] = EOS;
 
             set_task(0.050000, "QS_DelayedPlayerMessage", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
         }
@@ -7614,7 +9086,7 @@ static bool: QS_ShowHiddenHudMsgAll(nTo)
 
         pnInfo[1] = QS_INVALID_HUD_MSG_SYNC_OBJECT;
         pnInfo[2] = charsmax(pnInfo);
-        pnInfo[3] = EOS;
+        pnInfo[4] = EOS;
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -7628,6 +9100,7 @@ static bool: QS_ShowHiddenHudMsgAll(nTo)
                 else
                 {
                     pnInfo[0] = g_pnUserId[nPlayer];
+                    pnInfo[3] = g_pnFutureDelayedMessage[nPlayer]++;
 
                     set_task(0.050000, "QS_DelayedPlayerMessage", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -7646,12 +9119,12 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[2 + QS_SND_MAX_LEN] = { 0, ... }, nSysTime = 0;
+    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[3 + QS_SND_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
     ///
-    if (QS_EmptyString(szRules) || vformat(szBuffer, charsmax(szBuffer), szRules, 3) < 1 || equali(szBuffer, "SPK \"\""))
+    if (QS_EmptyString(szRules) || (vformat(szBuffer, charsmax(szBuffer), szRules, 3) < 1) || equali(szBuffer, "SPK \"\""))
     {
         return false;
     }
@@ -7676,8 +9149,9 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
         {
             pnInfo[0] = g_pnUserId[nTo];
             pnInfo[1] = charsmax(pnInfo);
+            pnInfo[2] = g_pnFutureDelayedCommand[nTo]++;
 
-            copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+            copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
 
             set_task(0.050000, "QS_DelayedPlayerCommand", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
         }
@@ -7694,7 +9168,7 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
 
         pnInfo[1] = charsmax(pnInfo);
 
-        copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+        copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -7710,6 +9184,7 @@ static bool: QS_ClientCmd(nTo, szRules[], any: ...)
                 else
                 {
                     pnInfo[0] = g_pnUserId[nPlayer];
+                    pnInfo[2] = g_pnFutureDelayedCommand[nPlayer]++;
 
                     set_task(0.050000, "QS_DelayedPlayerCommand", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -7728,12 +9203,12 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
     ///
     /// ARGUMENT FORMAT
     ///
-    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[2 + QS_SND_MAX_LEN] = { 0, ... }, nSysTime = 0;
+    static szBuffer[QS_SND_MAX_LEN] = { EOS, ... }, nPlayer = QS_INVALID_PLAYER, bool: bIsPlayer = false, Float: fTheGameTime = 0.000000, pnInfo[3 + QS_SND_MAX_LEN] = { 0, ... }, nSysTime = 0;
 
     ///
     /// SANITY CHECK
     ///
-    if (QS_EmptyString(szRules) || vformat(szBuffer, charsmax(szBuffer), szRules, 3) < 1 || equali(szBuffer, "SPK \"\""))
+    if (QS_EmptyString(szRules) || (vformat(szBuffer, charsmax(szBuffer), szRules, 3) < 1) || equali(szBuffer, "SPK \"\""))
     {
         return false;
     }
@@ -7758,8 +9233,9 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
         {
             pnInfo[0] = g_pnUserId[nTo];
             pnInfo[1] = charsmax(pnInfo);
+            pnInfo[2] = g_pnFutureDelayedCommand[nTo]++;
 
-            copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+            copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
 
             set_task(0.050000, "QS_DelayedPlayerCommand", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
         }
@@ -7776,7 +9252,7 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
 
         pnInfo[1] = charsmax(pnInfo);
 
-        copy(pnInfo[2], charsmax(pnInfo) - 2, szBuffer);
+        copy(pnInfo[3], charsmax(pnInfo) - 3, szBuffer);
 
         for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
         {
@@ -7792,6 +9268,7 @@ static bool: QS_ClientCmdAll(nTo, szRules[], any: ...)
                 else
                 {
                     pnInfo[0] = g_pnUserId[nPlayer];
+                    pnInfo[2] = g_pnFutureDelayedCommand[nPlayer]++;
 
                     set_task(0.050000, "QS_DelayedPlayerCommand", nSysTime, pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -7896,7 +9373,7 @@ static QS_GetTeamTotalAlive(nTeam, &nPlayer = QS_INVALID_PLAYER) /// CSTRIKE AND
 ///
 /// UPDATES THE HUD MESSAGE'S COLOR
 ///
-static bool: QS_HudMsgColor(nHudObj)
+static bool: QS_HudMsgColor(nHudObj, nTeam)
 {
     if (g_bRandomRed)
     {
@@ -7988,19 +9465,46 @@ static bool: QS_HudMsgColor(nHudObj)
 
         case QS_HUD_FLAWLESS:
         {
-            if (g_nRedFlawless > -1)
+            if (QS_ValidTeam(nTeam))
             {
-                g_nRed = g_nRedFlawless;
-            }
+                switch (nTeam)
+                {
+                    case QS_CSCZ_TEAM_TE:
+                    {
+                        if (g_nRedFlawlessTE > -1)
+                        {
+                            g_nRed = g_nRedFlawlessTE;
+                        }
 
-            if (g_nGreenFlawless > -1)
-            {
-                g_nGreen = g_nGreenFlawless;
-            }
+                        if (g_nGreenFlawlessTE > -1)
+                        {
+                            g_nGreen = g_nGreenFlawlessTE;
+                        }
 
-            if (g_nBlueFlawless > -1)
-            {
-                g_nBlue = g_nBlueFlawless;
+                        if (g_nBlueFlawlessTE > -1)
+                        {
+                            g_nBlue = g_nBlueFlawlessTE;
+                        }
+                    }
+
+                    case QS_CSCZ_TEAM_CT:
+                    {
+                        if (g_nRedFlawlessCT > -1)
+                        {
+                            g_nRed = g_nRedFlawlessCT;
+                        }
+
+                        if (g_nGreenFlawlessCT > -1)
+                        {
+                            g_nGreen = g_nGreenFlawlessCT;
+                        }
+
+                        if (g_nBlueFlawlessCT > -1)
+                        {
+                            g_nBlue = g_nBlueFlawlessCT;
+                        }
+                    }
+                }
             }
         }
 
@@ -8060,19 +9564,46 @@ static bool: QS_HudMsgColor(nHudObj)
 
         case QS_HUD_STANDING:
         {
-            if (g_nRedStanding > -1)
+            if (QS_ValidTeam(nTeam))
             {
-                g_nRed = g_nRedStanding;
-            }
+                switch (nTeam)
+                {
+                    case QS_CSCZ_TEAM_TE:
+                    {
+                        if (g_nRedStandingTE > -1)
+                        {
+                            g_nRed = g_nRedStandingTE;
+                        }
 
-            if (g_nGreenStanding > -1)
-            {
-                g_nGreen = g_nGreenStanding;
-            }
+                        if (g_nGreenStandingTE > -1)
+                        {
+                            g_nGreen = g_nGreenStandingTE;
+                        }
 
-            if (g_nBlueStanding > -1)
-            {
-                g_nBlue = g_nBlueStanding;
+                        if (g_nBlueStandingTE > -1)
+                        {
+                            g_nBlue = g_nBlueStandingTE;
+                        }
+                    }
+
+                    case QS_CSCZ_TEAM_CT:
+                    {
+                        if (g_nRedStandingCT > -1)
+                        {
+                            g_nRed = g_nRedStandingCT;
+                        }
+
+                        if (g_nGreenStandingCT > -1)
+                        {
+                            g_nGreen = g_nGreenStandingCT;
+                        }
+
+                        if (g_nBlueStandingCT > -1)
+                        {
+                            g_nBlue = g_nBlueStandingCT;
+                        }
+                    }
+                }
             }
         }
 
@@ -8103,7 +9634,7 @@ static bool: QS_HudMsgColor(nHudObj)
 ///
 static bool: QS_IsPlayer(&nId)
 {
-    return (nId < QS_MIN_PLAYER || nId > g_nMaxPlayers) ? false : true;
+    return ((nId < QS_MIN_PLAYER) || (nId > g_nMaxPlayers)) ? false : true;
 }
 
 ///
@@ -8113,7 +9644,7 @@ static bool: QS_IsPlayer(&nId)
 ///
 static bool: QS_IsPlayerOrWorld(&nId)
 {
-    return (nId < QS_WORLDSPAWN || nId > g_nMaxPlayers) ? false : true;
+    return ((nId < QS_WORLDSPAWN) || (nId > g_nMaxPlayers)) ? false : true;
 }
 
 ///
@@ -8121,7 +9652,7 @@ static bool: QS_IsPlayerOrWorld(&nId)
 ///
 static bool: QS_ValidMsg(&nMsg)
 {
-    return nMsg > QS_INVALID_MSG;
+    return (nMsg > QS_INVALID_MSG);
 }
 
 ///
@@ -8129,7 +9660,7 @@ static bool: QS_ValidMsg(&nMsg)
 ///
 static bool: QS_ValidWeapon(&nWpn)
 {
-    return nWpn > QS_INVALID_WEAPON;
+    return (nWpn > QS_INVALID_WEAPON);
 }
 
 ///
@@ -8137,7 +9668,7 @@ static bool: QS_ValidWeapon(&nWpn)
 ///
 static bool: QS_ValidPlace(&nPlace)
 {
-    return nPlace > QS_INVALID_PLACE;
+    return (nPlace > QS_INVALID_PLACE);
 }
 
 ///
@@ -8145,7 +9676,7 @@ static bool: QS_ValidPlace(&nPlace)
 ///
 static bool: QS_ValidUserId(&nUserId)
 {
-    return nUserId > QS_INVALID_USER_ID;
+    return (nUserId > QS_INVALID_USER_ID);
 }
 
 ///
@@ -8198,7 +9729,7 @@ static bool: QS_ShrinkSteam(szSteam[QS_STEAM_MAX_LEN])
 ///
 static bool: QS_CSCZColored(nPlayer, nIndex, szIn[], any: ...)
 {
-    static szMsg[256] = { EOS, ... }, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nIter = 0, nOther = QS_INVALID_PLAYER, bool: bSuccess = false;
+    static szMsg[QS_SND_MAX_LEN] = { EOS, ... }, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nIter = 0, nOther = QS_INVALID_PLAYER, bool: bSuccess = false;
 
     if (g_bColors)
     {
@@ -8290,7 +9821,7 @@ static bool: QS_CSCZColored(nPlayer, nIndex, szIn[], any: ...)
 ///
 static bool: QS_CSCZColoredFiltered(nPlayer, nIndex, szIn[], any: ...)
 {
-    static szMsg[256] = { EOS, ... }, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nIter = 0, nOther = QS_INVALID_PLAYER, bool: bSuccess = false;
+    static szMsg[QS_SND_MAX_LEN] = { EOS, ... }, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nIter = 0, nOther = QS_INVALID_PLAYER, bool: bSuccess = false;
 
     if (g_bColors)
     {
@@ -8387,8 +9918,7 @@ static bool: QS_MakeRGBA(pnColor[4])
 ///
 /// SETS A HUD MESSAGE
 ///
-static bool: QS_SetHudMsg(nRed = 200, nGreen = 100, nBlue = 0, Float: fX = -1.000000, Float: fY = 0.350000, nEffects = 0, Float: fEffectsTime = 6.000000,
-    Float: fHoldTime = 12.000000, Float: fFadeInTime = 0.100000, Float: fFadeOutTime = 0.200000, nChannel = -1, nAlpha = 0, pnColor[4] = { 255, 255, 250, 0 })
+static bool: QS_SetHudMsg(nRed, nGreen, nBlue, Float: fX, Float: fY, nEffects, Float: fEffectsTime, Float: fHoldTime, Float: fFadeInTime, Float: fFadeOutTime, nChannel, nAlpha, pnColor[4])
 {
 
 #if defined AMXX_VERSION_LOCAL_REV_NUM
@@ -8521,4 +10051,46 @@ static bool: QS_IsThereAnyAlivePlayer()
 static bool: QS_IsTeamKill(&nTeamKill)
 {
     return (nTeamKill > QS_TEAM_KILL_NO);
+}
+
+///
+/// IS THE TEAM VALID
+///
+static bool: QS_ValidTeam(&nTeam)
+{
+    return ((nTeam != QS_INVALID_TEAM) && (nTeam >= QS_CSCZ_TEAM_NO) && (nTeam <= QS_CSCZ_TEAM_SP));
+}
+
+///
+/// RETRIEVE THE MAXIMUM POSSIBLE DELAYED PLAYER EVENTS WHICH ARE ACTUALLY QUEUED, IF ANY
+///
+static retrieveMaximumDelayedEvents()
+{
+    static nPlayer = QS_INVALID_PLAYER, nMaximum = 0, nActual = 0;
+
+    nMaximum = 0;
+
+    for (nPlayer = QS_MIN_PLAYER; nPlayer <= g_nMaxPlayers; nPlayer++)
+    {
+        if (!g_pbInGame[nPlayer])
+        {
+            continue;
+        }
+
+        nActual = (g_pnFutureDelayedMessage[nPlayer] - g_pnActualDelayedMessage[nPlayer]);
+
+        if (nActual > nMaximum)
+        {
+            nMaximum = nActual;
+        }
+
+        nActual = (g_pnFutureDelayedCommand[nPlayer] - g_pnActualDelayedCommand[nPlayer]);
+
+        if (nActual > nMaximum)
+        {
+            nMaximum = nActual;
+        }
+    }
+
+    return nMaximum;
 }

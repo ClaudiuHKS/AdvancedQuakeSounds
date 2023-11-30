@@ -1,0 +1,8 @@
+{
+    "name"          : "dod",
+    "pev"           :
+    {
+        "windows"   : 4,
+        "linux"     : 4
+    }
+}

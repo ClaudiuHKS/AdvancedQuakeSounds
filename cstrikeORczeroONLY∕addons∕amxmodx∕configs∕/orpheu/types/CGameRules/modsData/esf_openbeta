@@ -1,0 +1,7 @@
+{
+    "name"          : "esf_openbeta",
+    "vtableOffsets" :
+    {
+        "linux"     : 0x0
+    }
+}

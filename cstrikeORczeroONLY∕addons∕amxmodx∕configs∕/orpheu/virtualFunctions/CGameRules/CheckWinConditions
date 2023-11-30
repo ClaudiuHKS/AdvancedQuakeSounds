@@ -1,0 +1,18 @@
+{
+    "name"          : "CheckWinConditions",
+    "class"         : "CGameRules",
+    "library"       : "mod",
+    "indexes"       :
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : 65
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "cstrike",
+            "value" : 65
+        }
+    ]
+}

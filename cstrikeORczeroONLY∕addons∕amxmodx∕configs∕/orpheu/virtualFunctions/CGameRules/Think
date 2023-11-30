@@ -1,0 +1,73 @@
+{
+    "name"          : "Think",
+    "class"         : "CGameRules",
+    "library"       : "mod",
+    "indexes"       :
+    [
+        {
+            "os"    : "windows",
+            "mod"   : "SvenCoop",
+            "value" : 1
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "cstrike",
+            "value" : 1
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "cstrike",
+            "value" : 3
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "dod",
+            "value" : 2
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "dod",
+            "value" : 4
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "valve",
+            "value" : 1
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "valve",
+            "value" : 3
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "ns",
+            "value" : 1
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "ns",
+            "value" : 3
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "ts",
+            "value" : 1
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "ts",
+            "value" : 3
+        },
+        {
+            "os"    : "windows",
+            "mod"   : "tfc",
+            "value" : 1
+        },
+        {
+            "os"    : "linux",
+            "mod"   : "tfc",
+            "value" : 3
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+{
+    "name"          : "esf_openbeta",
+    "pev"           :
+    {
+        "windows"   : 4,
+        "linux"     : 4
+    }
+}
