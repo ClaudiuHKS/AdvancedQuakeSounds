@@ -2684,11 +2684,11 @@ public plugin_init()
 
 #if defined QS_INCLUDE_VERSION_CVAR_IN_LOGS
 
-#if QS_INCLUDE_VERSION_CVAR_IN_LOGS == 1
+#if QS_INCLUDE_VERSION_CVAR_IN_LOGS != 0
 
     new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL);
 
-#else /// QS_INCLUDE_VERSION_CVAR_IN_LOGS == 1
+#else /// QS_INCLUDE_VERSION_CVAR_IN_LOGS != 0
 
     new pConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
 
