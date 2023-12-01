@@ -94,7 +94,7 @@
 
 #if !defined SQL_SetCharset
 
-native bool: SQL_SetCharset(Handle: pSqlDbOrSqlTuple, const szCharSet[]);
+native bool: SQL_SetCharset(Handle: pSqlDbOrSqlTuple, szCharSet[]);
 
 #endif
 
@@ -106,7 +106,7 @@ static bool: g_bSQL_SetCharset_Unavail = false;
 
 #if !defined get_gamerules_float
 
-native Float: get_gamerules_float(const szClass[], const szMember[], nIndex = 0);
+native Float: get_gamerules_float(szClass[], szMember[], nIndex);
 
 #endif
 
@@ -118,7 +118,7 @@ static bool: g_bGET_GameRules_Float_Unavail = false;
 
 #if !defined set_gamerules_float
 
-native set_gamerules_float(const szClass[], const szMember[], Float: fValue, nIndex = 0);
+native set_gamerules_float(szClass[], szMember[], Float: fValue, nIndex);
 
 #endif
 
@@ -130,7 +130,7 @@ static bool: g_bSET_GameRules_Float_Unavail = false;
 
 #if !defined get_gamerules_size
 
-native get_gamerules_size(const szClass[], const szMember[]);
+native get_gamerules_size(szClass[], szMember[]);
 
 #endif
 
@@ -3174,19 +3174,11 @@ public plugin_cfg()
             if (g_bDeathMsgOnly)
             {
 
-#if defined AMXX_VERSION_NUM
-
-#if AMXX_VERSION_NUM > 183
+#if defined amxclient_cmd && defined RegisterHamPlayer /// "1.8.3-DEV-GIT3805-BASE.ZIP" & + HAVE `amxclient_cmd` & `RegisterHamPlayer`
 
                 RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */, true /** IF TRUE THEN IT WILL PROVIDE SOME KIND OF SUPPORT FOR SPECIAL BOTS WITHOUT "player" CLASS NAME */); /// LATEST
 
-#else /// AMXX_VERSION_NUM > 183
-
-                RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */); /// OLDER
-
-#endif
-
-#else /// defined AMXX_VERSION_NUM
+#else /// defined amxclient_cmd && defined RegisterHamPlayer
 
                 RegisterHam(Ham_Killed, "player", "QS_HAM_On_Player_Killed", 0 /** PRE = 0 */); /// OLDER
 
@@ -3715,19 +3707,11 @@ public client_command(nPlayer)
 /// EXECUTES WHEN CLIENT TELLS THEIR STEAM ID
 ///
 
-#if defined AMXX_VERSION_NUM
-
-#if AMXX_VERSION_NUM > 183
+#if defined client_connectex /// "1.8.3-DEV-GIT4970-BASE.ZIP" & + HAVE `client_authorized` WITH > 1 PARAMETER & `client_connectex`
 
 public client_authorized(nPlayer, const szSteam[]) /// LATEST
 
-#else /// AMXX_VERSION_NUM > 183
-
-public client_authorized(nPlayer) /// OLDER
-
-#endif
-
-#else /// defined AMXX_VERSION_NUM
+#else /// defined client_connectex
 
 public client_authorized(nPlayer) /// OLDER
 
@@ -3738,19 +3722,11 @@ public client_authorized(nPlayer) /// OLDER
     /// DATA
     ///
 
-#if defined AMXX_VERSION_NUM
-
-#if AMXX_VERSION_NUM > 183
+#if defined client_connectex /// "1.8.3-DEV-GIT4970-BASE.ZIP" & + HAVE `client_authorized` WITH > 1 PARAMETER & `client_connectex`
 
     static szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... }, nLen = 0; /// LATEST
 
-#else /// AMXX_VERSION_NUM > 183
-
-    static szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
-
-#endif
-
-#else /// defined AMXX_VERSION_NUM
+#else /// defined client_connectex
 
     static szQuery[QS_SQL_QUERY_MAX_LEN] = { EOS, ... }, szUserId[QS_NUMBER_MAX_LEN] = { EOS, ... }, nLen = 0, szSteam[QS_STEAM_MAX_LEN] = { EOS, ... }; /// OLDER
 
