@@ -5142,10 +5142,10 @@ public QS_Hattrick(nTaskId)
     static nLeader = QS_INVALID_PLAYER, nTeam = QS_INVALID_TEAM, pnPlayers[QS_MAX_PLAYERS] = { QS_INVALID_PLAYER, ... }, nTotal = 0, nPlayer = QS_INVALID_PLAYER, nIter = 0, pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
-    /// ORPHEU
+    /// ORPHEU/ REAPI DATA
     ///
 
-#if defined _orpheu_included
+#if defined _orpheu_included || defined _reapi_included
 
     static Float: fOriginal = 0.000000, Float: fNew = 0.000000;
 
@@ -5362,10 +5362,10 @@ public QS_Flawless(nTaskId)
     static pnColor[4] = { QS_MIN_BYTE, ... };
 
     ///
-    /// ORPHEU
+    /// ORPHEU/ REAPI DATA
     ///
 
-#if defined _orpheu_included
+#if defined _orpheu_included || defined _reapi_included
 
     static Float: fOriginal = 0.000000, Float: fNew = 0.000000;
 
