@@ -689,6 +689,24 @@ static bool: g_bGET_GameRules_Size_Unavail = false;
 /// ###################################################################################################
 ///
 
+#if !defined client_disconnected
+
+#define QS_ON_PLAYER_DISCONNECTED client_disconnect(nPlayer) /** OLD AMX MOD X */
+
+#define QS_ON_PLAYER_DISCONNECTED_OLD /** OLD AMX MOD X */
+
+#else /// !defined client_disconnected
+
+#define QS_ON_PLAYER_DISCONNECTED client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen) /** NEW AMX MOD X */
+
+#define QS_ON_PLAYER_DISCONNECTED_NEW /** NEW AMX MOD X */
+
+#endif
+
+///
+/// ###################################################################################################
+///
+
 ///
 /// DEATHMSG USER MESSAGE'S 'BYTE' STATUSES
 ///
@@ -2695,7 +2713,17 @@ public plugin_end()
     {
         if (g_pbInGame[nPlayer])
         {
+
+#if defined QS_ON_PLAYER_DISCONNECTED_NEW
+
             client_disconnected(nPlayer, true, "", 0);
+
+#else /// defined QS_ON_PLAYER_DISCONNECTED_NEW
+
+            client_disconnect(nPlayer);
+
+#endif
+
         }
     }
 
@@ -3535,26 +3563,18 @@ public QS_FM_OnClientDisconnect_PP(nPlayer)
     ///
     /// REDIRECT THE CALL
     ///
+
+#if defined QS_ON_PLAYER_DISCONNECTED_NEW
+
     return client_disconnected(nPlayer, true, "", 0);
-}
 
-///
-/// client_disconnect ( nPlayer )
-///
-/// EXECUTES AFTER THE CLIENT DISCONNECTS ( ONLY OLD AMXX EDITIONS )
-///
+#else /// defined QS_ON_PLAYER_DISCONNECTED_NEW
 
-#if !defined client_disconnected
-
-public client_disconnect(nPlayer)
-{
-    ///
-    /// REDIRECT THE CALL
-    ///
-    return client_disconnected(nPlayer, true, "", 0);
-}
+    return client_disconnect(nPlayer);
 
 #endif
+
+}
 
 ///
 /// client_remove ( nPlayer, bool: bDrop, const szMsg [ ] )
@@ -3566,15 +3586,27 @@ public client_remove(nPlayer, bool: bDrop, const szMsg[])
     ///
     /// REDIRECT THE CALL
     ///
+
+#if defined QS_ON_PLAYER_DISCONNECTED_NEW
+
     return client_disconnected(nPlayer, bDrop, "", 0);
+
+#else /// defined QS_ON_PLAYER_DISCONNECTED_NEW
+
+    return client_disconnect(nPlayer);
+
+#endif
+
 }
 
 ///
-/// client_disconnected ( nPlayer, bool: bDrop, szMsg [ ], nMsgMaxLen )
+/// client_disconnect ( nPlayer ) [ OLD AMXX EDITIONS ]
+///
+/// client_disconnected ( nPlayer, bool: bDrop, szMsg [ ], nMsgMaxLen ) [ NEW AMXX EDITIONS ]
 ///
 /// EXECUTES AFTER THE CLIENT DISCONNECTS
 ///
-public client_disconnected(nPlayer, bool: bDrop, szMsg[], nMsgMaxLen)
+public QS_ON_PLAYER_DISCONNECTED
 {
     ///
     /// SANITY CHECK
