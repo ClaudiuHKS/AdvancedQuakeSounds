@@ -1,18 +1,18 @@
 {
-    "name"          : "CheckWinConditions",
-    "class"         : "CGameRules",
+    "name"          : "IdleThink",
+    "class"         : "CHostage",
     "library"       : "mod",
-    "indexes"       :
+    "identifiers"   :
     [
         {
             "os"    : "windows",
             "mod"   : "cstrike",
-            "value" : 65
+            "value" : "?IdleThink@CHostage@@QAEXXZ"
         },
         {
             "os"    : "linux",
             "mod"   : "cstrike",
-            "value" : 65
+            "value" : "_ZN8CHostage9IdleThinkEv"
         }
     ]
 }

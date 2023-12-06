@@ -1,5 +1,41 @@
 [
     {
+        "name"          : "m_bFreezePeriod",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 12
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 4
+            }
+        ]
+    },
+    {
+        "name"          : "m_bBombDropped",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 16
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 8
+            }
+        ]
+    },
+    {
         "name"          : "m_fTeamCount",
         "type"          : "float",
         "memoryType"    : "data",
@@ -14,6 +50,24 @@
                 "os"    : "linux",
                 "mod"   : "cstrike",
                 "value" : 40
+            }
+        ]
+    },
+    {
+        "name"          : "m_flCheckWinConditions",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 52
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 44
             }
         ]
     },
@@ -36,6 +90,24 @@
         ]
     },
     {
+        "name"          : "m_iRoundTime",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 60
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 52
+            }
+        ]
+    },
+    {
         "name"          : "m_iRoundTimeSecs",
         "type"          : "int",
         "memoryType"    : "data",
@@ -50,6 +122,42 @@
                 "os"    : "linux",
                 "mod"   : "cstrike",
                 "value" : 56
+            }
+        ]
+    },
+    {
+        "name"          : "m_iIntroRoundTime",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 68
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 60
+            }
+        ]
+    },
+    {
+        "name"          : "m_iIntroRoundCount",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 72
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 64
             }
         ]
     },
@@ -162,7 +270,7 @@
         ]
     },
     {
-        "name"          : "m_iNumSpawnableTerrorist",
+        "name"          : "m_iSpawnPointCount_Terrorist",
         "type"          : "int",
         "memoryType"    : "data",
         "identifiers"   :
@@ -170,17 +278,17 @@
             {
                 "os"    : "windows",
                 "mod"   : "cstrike",
-                "value" : 92
+                "value" : 100
             },
             {
                 "os"    : "linux",
                 "mod"   : "cstrike",
-                "value" : 84
+                "value" : 92
             }
         ]
     },
     {
-        "name"          : "m_iNumSpawnableCT",
+        "name"          : "m_iSpawnPointCount_CT",
         "type"          : "int",
         "memoryType"    : "data",
         "identifiers"   :
@@ -188,12 +296,12 @@
             {
                 "os"    : "windows",
                 "mod"   : "cstrike",
-                "value" : 96
+                "value" : 104
             },
             {
                 "os"    : "linux",
                 "mod"   : "cstrike",
-                "value" : 88
+                "value" : 96
             }
         ]
     },
@@ -212,6 +320,24 @@
                 "os"    : "linux",
                 "mod"   : "cstrike",
                 "value" : 100
+            }
+        ]
+    },
+    {
+        "name"          : "m_iHostagesTouched",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 112
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 104
             }
         ]
     },
@@ -342,6 +468,24 @@
         ]
     },
     {
+        "name"          : "m_bMapHasBuyZone",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 128
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 120
+            }
+        ]
+    },
+    {
         "name"          : "m_bMapHasRescueZone",
         "type"          : "byte",
         "memoryType"    : "data",
@@ -379,7 +523,7 @@
     },
     {
         "name"          : "m_iMapHasVIPSafetyZone",
-        "type"          : "byte",
+        "type"          : "int",
         "memoryType"    : "data",
         "identifiers"   :
         [
@@ -396,7 +540,151 @@
         ]
     },
     {
-        "name"          : "m_bCompleteReset",
+        "name"          : "m_bMapHasCameras",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 136
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 128
+            }
+        ]
+    },
+    {
+        "name"          : "m_iC4Timer",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 140
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 132
+            }
+        ]
+    },
+    {
+        "name"          : "m_iC4Guy",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 144
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 136
+            }
+        ]
+    },
+    {
+        "name"          : "m_iLoserBonus",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 148
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 140
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumConsecutiveCTLoses",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 152
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 144
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumConsecutiveTerroristLoses",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 156
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 148
+            }
+        ]
+    },
+    {
+        "name"          : "m_fMaxIdlePeriod",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 160
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 152
+            }
+        ]
+    },
+    {
+        "name"          : "m_iLimitTeams",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 164
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 156
+            }
+        ]
+    },
+    {
+        "name"          : "m_bLevelInitialized",
         "type"          : "byte",
         "memoryType"    : "data",
         "identifiers"   :
@@ -404,12 +692,12 @@
             {
                 "os"    : "windows",
                 "mod"   : "cstrike",
-                "value" : 170
+                "value" : 168
             },
             {
                 "os"    : "linux",
                 "mod"   : "cstrike",
-                "value" : 162
+                "value" : 160
             }
         ]
     },
@@ -428,6 +716,24 @@
                 "os"    : "linux",
                 "mod"   : "cstrike",
                 "value" : 161
+            }
+        ]
+    },
+    {
+        "name"          : "m_bCompleteReset",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 170
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 162
             }
         ]
     },
@@ -463,7 +769,7 @@
             {
                 "os"    : "linux",
                 "mod"   : "cstrike",
-                "value" : 166
+                "value" : 168
             }
         ]
     },
@@ -486,8 +792,332 @@
         ]
     },
     {
+        "name"          : "m_bCTCantBuy",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 184
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 176
+            }
+        ]
+    },
+    {
+        "name"          : "m_bTCantBuy",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 185
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 177
+            }
+        ]
+    },
+    {
+        "name"          : "m_flBombRadius",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 188
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 180
+            }
+        ]
+    },
+    {
+        "name"          : "m_iConsecutiveVIP",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 192
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 184
+            }
+        ]
+    },
+    {
+        "name"          : "m_iTotalGunCount",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 196
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 188
+            }
+        ]
+    },
+    {
+        "name"          : "m_iTotalGrenadeCount",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 200
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 192
+            }
+        ]
+    },
+    {
+        "name"          : "m_iTotalArmourCount",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 204
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 196
+            }
+        ]
+    },
+    {
+        "name"          : "m_iUnBalancedRounds",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 208
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 200
+            }
+        ]
+    },
+    {
+        "name"          : "m_iNumEscapeRounds",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 212
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 204
+            }
+        ]
+    },
+    {
+        "name"          : "m_iLastPick",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 616
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 608
+            }
+        ]
+    },
+    {
+        "name"          : "m_iMaxMapTime",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 620
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 612
+            }
+        ]
+    },
+    {
+        "name"          : "m_iMaxRounds",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 624
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 616
+            }
+        ]
+    },
+    {
+        "name"          : "m_iTotalRoundsPlayed",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 628
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 620
+            }
+        ]
+    },
+    {
+        "name"          : "m_iMaxRoundsWon",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 632
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 624
+            }
+        ]
+    },
+    {
+        "name"          : "m_iStoredSpectValue",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 636
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 628
+            }
+        ]
+    },
+    {
+        "name"          : "m_flForceCameraValue",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 640
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 632
+            }
+        ]
+    },
+    {
+        "name"          : "m_flForceChaseCamValue",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 644
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 636
+            }
+        ]
+    },
+    {
+        "name"          : "m_flFadeToBlackValue",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 648
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 640
+            }
+        ]
+    },
+    {
         "name"          : "m_pVIP",
-        "type"          : "CBaseEntity *",
+        "type"          : "CBasePlayer *",
         "memoryType"    : "data",
         "identifiers"   :
         [
@@ -504,8 +1134,170 @@
         ]
     },
     {
-        "name"          : "m_bFirstConnected",
+        "name"          : "VIPQueue_0",
+        "type"          : "CBasePlayer *",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 656
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 648
+            }
+        ]
+    },
+    {
+        "name"          : "VIPQueue_1",
+        "type"          : "CBasePlayer *",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 660
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 652
+            }
+        ]
+    },
+    {
+        "name"          : "VIPQueue_2",
+        "type"          : "CBasePlayer *",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 664
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 656
+            }
+        ]
+    },
+    {
+        "name"          : "VIPQueue_3",
+        "type"          : "CBasePlayer *",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 668
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 660
+            }
+        ]
+    },
+    {
+        "name"          : "VIPQueue_4",
+        "type"          : "CBasePlayer *",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 672
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 664
+            }
+        ]
+    },
+    {
+        "name"          : "m_flIntermissionEndTime",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 676
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 668
+            }
+        ]
+    },
+    {
+        "name"          : "m_flIntermissionStartTime",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 680
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 672
+            }
+        ]
+    },
+    {
+        "name"          : "m_iEndIntermissionButtonHit",
         "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 684
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 676
+            }
+        ]
+    },
+    {
+        "name"          : "m_tmNextPeriodicThink",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 688
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 680
+            }
+        ]
+    },
+    {
+        "name"          : "m_bFirstConnected",
+        "type"          : "byte",
         "memoryType"    : "data",
         "identifiers"   :
         [
@@ -522,8 +1314,62 @@
         ]
     },
     {
-        "name"          : "m_bSkipSpawn",
+        "name"          : "m_bInCareerGame",
         "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 693
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 685
+            }
+        ]
+    },
+    {
+        "name"          : "m_fCareerRoundMenuTime",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 696
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 688
+            }
+        ]
+    },
+    {
+        "name"          : "m_iCareerMatchWins",
+        "type"          : "int",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 700
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 692
+            }
+        ]
+    },
+    {
+        "name"          : "m_iRoundWinDifference",
+        "type"          : "int",
         "memoryType"    : "data",
         "identifiers"   :
         [
@@ -535,7 +1381,43 @@
             {
                 "os"    : "linux",
                 "mod"   : "cstrike",
-                "value" : 703
+                "value" : 696
+            }
+        ]
+    },
+    {
+        "name"          : "m_fCareerMatchMenuTime",
+        "type"          : "float",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 708
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 700
+            }
+        ]
+    },
+    {
+        "name"          : "m_bSkipSpawn",
+        "type"          : "byte",
+        "memoryType"    : "data",
+        "identifiers"   :
+        [
+            {
+                "os"    : "windows",
+                "mod"   : "cstrike",
+                "value" : 712
+            },
+            {
+                "os"    : "linux",
+                "mod"   : "cstrike",
+                "value" : 704
             }
         ]
     }

@@ -3110,7 +3110,7 @@ public plugin_init()
 ///
 /// GAMES WITHOUT "client_death ( )" ( XSTATS MODULE ) AND WITHOUT "DeathMsg"
 ///
-public QS_HAM_On_Player_Killed_PRE(nVictim)
+public QS_HAM_On_Player_Killed_PRE(nVictim, nAttacker, nShouldGib)
 {
     ///
     /// DATA
@@ -3151,6 +3151,20 @@ public QS_HAM_On_Player_Killed_PRE(nVictim)
         g_nKiller = get_user_attacker(nVictim, g_nWeapon, g_nPlace);
         {
             g_nVictim = nVictim;
+        }
+    }
+
+    ///
+    /// POSSIBLE ATTACKER PLAYER INDEX FIX
+    ///
+    if (g_nKiller != nAttacker)
+    {
+        if (QS_IsPlayer(nAttacker))
+        {
+            if (g_pbInGame[nAttacker])
+            {
+                g_nKiller = nAttacker;
+            }
         }
     }
 
