@@ -34,7 +34,7 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
 
 ## Windows CS/ CZ AMX Mod X Game Data `g_pGameRules` Signatures ( *OLD* & *NEW* ) ##
 
-- `/addons/amxmodx/data/gamedata/common.games/globalvars.engine.txt`
+- `/addons/amxmodx/data/gamedata/common.games/globalvars.engine.txt` (ONLY if your game server HAS this file)
 
 ```C++
 /**
