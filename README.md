@@ -16,9 +16,9 @@ Upload **`AQS`** folder to **`/sound/`**
 
 If **`CSTRIKE`** or **`CZERO`**, upload **`orpheu`** folder to **`/addons/amxmodx/configs/`**
 
-If already running **`ReAPI`**, ignore **`Orpheu`** installation.
+If already running **`ReAPI`**, ignore **`Orpheu`** installation
 
-Download [Orpheu](https://github.com/Arkshine/Orpheu/releases).
+Download [Orpheu](https://github.com/Arkshine/Orpheu/releases)
 
 Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
 
