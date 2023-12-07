@@ -54,7 +54,7 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
     {
         "Offsets"
         {
-            "svs"                   /// Used with   pfnGetCurrentPlayer     base address
+            "svs"                   /// Used With   pfnGetCurrentPlayer     Base Address
             {
                 "windows"           "8"
             }
@@ -113,9 +113,9 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
                 ///
                 "library"           "engine"
                 ///
-                /// "windows"       "\x8B\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A\x2A\x2A\x2A\x53\x33\x2A\x89"          /// SVC_PlayerInfo()                        [ 2020 HLDS ]   CS/ CZ
+                /// "windows"       "\x8B\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A\x2A\x2A\x2A\x53\x33\x2A\x89"                                                                                                                      /// SVC_PlayerInfo()                [ 2020 HLDS ]   CS/ CZ
                 ///
-                "windows"           "\x55\x8B\x2A\x53\x8B\x2A\x2A\x56\x8B\x2A\x2A\x8B\x2A\x2A\x8B\x2A\x2A\x8D"  /// SVC_PlayerInfo()    ( sub_101BB5C0() )  [ 2023 HLDS ]   CS/ CZ
+                "windows"           "\x8B\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x2A\x2A\x76\x2A\xA1\x2A\x2A\x2A\x2A\x85\x2A\x0F\x2A\x2A\x83\x2A\x2A\x74\x2A\x83\x2A\x2A\x2A\x2A\x2A\x2A\x74"                                  /// dword_10971F40 @ sub_101D1EF0() [ 2023 HLDS ]   CS/ CZ
                 ///
                 "linux"             "@sv"
                 "mac"               "@sv"
@@ -125,7 +125,11 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
             "realtime"              /// double              realtime
             {
                 "library"           "engine"
-                "windows"           "\xDC\x2A\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x56"                          /// SV_CheckTimeouts()
+                ///
+                /// "windows"       "\xDC\x2A\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x56"                                                                                                                                      /// SV_CheckTimeouts()              [ 2020 HLDS ]   CS/ CZ
+                ///
+                "windows"           "\xF2\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x66\x2A\x2A\x2A\x72\x2A\x3B\x2A\x7D\x2A\x8B\x2A\x8D\x2A\x2A\x2B\x2A\x8B\x2A\xC1\x2A\x2A\x81\x2A\x2A\x2A\x2A\x2A\xF3\x2A\x8B\x2A\x2A\x2A\x2A\x2A\x8B"  /// qword_10B6A158 @ sub_10208750() [ 2023 HLDS ]   CS/ CZ
+                ///
                 "linux"             "@realtime"
                 "mac"               "@realtime"
             }
@@ -135,9 +139,9 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
                 ///
                 "library"           "server"
                 ///
-                /// "windows"       "\x8B\x2A\x2A\x2A\x2A\x2A\x85\x2A\x74\x2A\x8B\x2A\xFF\x2A\x2A\xA1"          /// StartFrame()                    [ 2020 HLDS ]   CS/ CZ
+                /// "windows"       "\x8B\x2A\x2A\x2A\x2A\x2A\x85\x2A\x74\x2A\x8B\x2A\xFF\x2A\x2A\xA1"                                                                                                                      /// StartFrame()                    [ 2020 HLDS ]   CS/ CZ
                 ///
-                "windows"           "\xA3\x2A\x2A\x2A\x2A\xFF\x2A\x2A\x2A\x2A\x2A\x85\x2A\x75\x2A\x33\x2A\xEB"  /// dword_10130BA0 @ sub_100C2440() [ 2023 HLDS ]   CS/ CZ
+                "windows"           "\xA3\x2A\x2A\x2A\x2A\xFF\x2A\x2A\x2A\x2A\x2A\x85\x2A\x75\x2A\x33\x2A\xEB"                                                                                                              /// dword_10130BA0 @ sub_100C2440() [ 2023 HLDS ]   CS/ CZ
                 ///
                 "linux"             "@g_pGameRules"
                 "mac"               "@g_pGameRules"
