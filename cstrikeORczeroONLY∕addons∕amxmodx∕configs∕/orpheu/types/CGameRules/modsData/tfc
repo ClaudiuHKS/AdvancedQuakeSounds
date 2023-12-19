@@ -2,7 +2,7 @@
     "name"          : "tfc",
     "vtableOffsets" :
     {
-        "windows"   : 0x0,
-        "linux"     : 0x0
+        "windows"   : 0,
+        "linux"     : 0
     }
 }

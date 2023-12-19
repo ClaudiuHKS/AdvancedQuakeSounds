@@ -2,7 +2,7 @@
     "name"          : "ts",
     "vtableOffsets" :
     {
-        "windows"   : 0x0,
-        "linux"     : 0x60
+        "windows"   : 0,
+        "linux"     : 96
     }
 }

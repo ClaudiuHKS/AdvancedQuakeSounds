@@ -2,6 +2,6 @@
     "name"          : "SvenCoop",
     "vtableOffsets" :
     {
-        "windows"   : 0x0
+        "windows"   : 0
     }
 }
