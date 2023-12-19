@@ -18,6 +18,8 @@ If **`CSTRIKE`** or **`CZERO`**, upload **`orpheu`** folder to **`/addons/amxmod
 
 If already running **`ReAPI`**, ignore **`Orpheu`** installation
 
+If your **`AMXX`** has **`get_gamerules_float`** inside **`fakemeta.inc`**, ignore **`Orpheu`**
+
 Download [Orpheu](https://github.com/Arkshine/Orpheu/releases)
 
 Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
