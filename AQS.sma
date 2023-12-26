@@ -2036,19 +2036,19 @@ static g_szPhrWaitDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> WAIT.
 static g_szPhrStatus[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS %c%s\x01.
 static g_szPhrStatusDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s.
 
-static g_szPhrStatusType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS %c%s\x01. TYPE '%c%s\x01' TO %c%s\x01.
-static g_szPhrStatusTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s. TYPE 'sounds' TO %s.
+static g_szPhrStatusType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS %c%s\x01. TYPE '%c/sounds\x01' TO %c%s\x01.
+static g_szPhrStatusTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s. TYPE '/sounds' TO %s.
 
 static g_szPhrHattrickVictims[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x03%s \x01HAD \x04%d VICTIM%s\x01.
 static g_szPhrHattrickVictimsDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS %s HAD %d VICTIM%s.
 
 static g_szPhrHattrickVictimsPluralSuf[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// S
 
-static g_szPhrStatusEnabledType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03sounds\x01' TO \x03DISABLE\x01.
-static g_szPhrStatusEnabledTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS ENABLED. TYPE 'sounds' TO DISABLE.
+static g_szPhrStatusEnabledType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x04ENABLED\x01. TYPE '\x03/sounds\x01' TO \x03DISABLE\x01.
+static g_szPhrStatusEnabledTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS ENABLED. TYPE '/sounds' TO DISABLE.
 
-static g_szPhrStatusDisabledType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x03DISABLED\x01. TYPE '\x04sounds\x01' TO \x04ENABLE\x01.
-static g_szPhrStatusDisabledTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS DISABLED. TYPE 'sounds' TO ENABLE.
+static g_szPhrStatusDisabledType[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// \x01>> QUAKE SOUNDS \x03DISABLED\x01. TYPE '\x04/sounds\x01' TO \x04ENABLE\x01.
+static g_szPhrStatusDisabledTypeDef[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// >> QUAKE SOUNDS DISABLED. TYPE '/sounds' TO ENABLE.
 
 static g_szPhrEnable[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// ENABLE
 static g_szPhrDisable[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// DISABLE
@@ -4605,7 +4605,7 @@ public QS_DisplayPlayerInfo(szParam[], nTaskIndex)
         {
             QS_CSCZColored(nPlayer, QS_CC_ST_X03_RED, g_szPhrStatusType,
                 g_pbDisabled[nPlayer] ? 3 : 4, g_pbDisabled[nPlayer] ? g_szPhrDisabled : g_szPhrEnabled,
-                g_pbDisabled[nPlayer] ? 4 : 3, "sounds", g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? g_szPhrEnable : g_szPhrDisable);
+                g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? 4 : 3, g_pbDisabled[nPlayer] ? g_szPhrEnable : g_szPhrDisable);
         }
     }
 
@@ -5841,7 +5841,7 @@ public QS_Flawless(nTaskIndex)
 ///
 /// FIRED WHEN A MESSAGE BEGINS
 ///
-public QS_FM_OnMsgBegin_POST(nDestination, nType)
+public QS_FM_OnMsgBegin_POST(nDestination, nType, Float: pfOrigin[3], nEntity)
 {
     ///
     /// IF GLOBALLY SENT
