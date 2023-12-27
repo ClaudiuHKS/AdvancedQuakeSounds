@@ -156,6 +156,23 @@ static bool: g_bGET_GameRules_Size_Unavail = false;
 
 #endif
 
+///
+/// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'Invalid_Array' ]]]
+///
+
+#if !defined Array
+
+#if !defined Invalid_Array
+
+enum Array
+{
+    Invalid_Array = 0,
+};
+
+#endif
+
+#endif
+
 /*************************************************************************************
 ******* DEFINE ***********************************************************************
 *************************************************************************************/
@@ -871,6 +888,21 @@ static bool: g_bSkipExisting = false;
 /// WHEN TRUE, DO NOT SHOW THAT THE USER HAS TYPED '/sounds' INTO THE CHAT AREA
 ///
 static bool: g_bHideCmd = false;
+
+#if defined amxclient_cmd && defined RegisterHamPlayer
+
+///
+/// NOTHING TO DO ON THE NEWER AMXX EDITIONS
+///
+
+#else
+
+///
+/// WHETHER OR NOT THE HAMSANDWICH FORWARDS ARE REGISTERED FOR THE BOTS ( FAKE PLAYERS ) IN OLDER AMXX EDITIONS
+///
+static bool: g_bAreTheFakePlayersRegistered = false;
+
+#endif
 
 ///
 /// SECONDS DELAY BETWEEN DISPLAYING MULTIPLE PLAYER EVENTS ( SOUNDS & MESSAGES )
@@ -2957,7 +2989,7 @@ public plugin_init()
         ///
         /// ROUND END
         ///
-        register_logevent("QS_OnRoundEnd", 2, "1=Round_End");
+        register_logevent("QS_OnRoundEnd_CSCZ", 2, "1=Round_End");
     }
 
     ///
@@ -2973,7 +3005,7 @@ public plugin_init()
         ///
         /// ROUND END
         ///
-        register_event("RoundState", "QS_OnRoundEnd", "a", "1=3", "1=4");
+        register_event("RoundState", "QS_OnRoundEnd_DOD", "a", "1=3", "1=4");
 
         ///
         /// DISABLES THE FLAWLESS VICTORY FEATURE
@@ -3251,7 +3283,7 @@ public QS_HAM_On_Player_Killed_PRE(nVictim, nAttacker, nShouldGib)
     ///
     if (!QS_IsPlayer(nVictim) || !g_pbInGame[nVictim])
     {
-        return PLUGIN_CONTINUE;
+        return HAM_IGNORED;
     }
 
     fGameTime = get_gametime();
@@ -3261,7 +3293,7 @@ public QS_HAM_On_Player_Killed_PRE(nVictim, nAttacker, nShouldGib)
     ///
     if ((fGameTimeStamp == fGameTime) && (nVictim == nVictimStamp))
     {
-        return PLUGIN_CONTINUE;
+        return HAM_IGNORED;
     }
 
     ///
@@ -3329,7 +3361,7 @@ public QS_HAM_On_Player_Killed_PRE(nVictim, nAttacker, nShouldGib)
         }
     }
 
-    return PLUGIN_CONTINUE;
+    return HAM_IGNORED;
 }
 
 ///
@@ -3344,27 +3376,27 @@ public QS_HAM_On_Player_Spawn_POST(nPlayer)
     ///
     if (!QS_IsPlayer(nPlayer))
     {
-        return PLUGIN_CONTINUE;
+        return HAM_IGNORED;
     }
 
     if (!g_pbInGame[nPlayer])
     {
-        return PLUGIN_CONTINUE;
+        return HAM_IGNORED;
     }
 
     if (g_pbEverBeenAlive[nPlayer])
     {
-        return PLUGIN_CONTINUE;
+        return HAM_IGNORED;
     }
 
     if (!is_user_alive(nPlayer))
     {
-        return PLUGIN_CONTINUE;
+        return HAM_IGNORED;
     }
 
     g_pbEverBeenAlive[nPlayer] = true;
 
-    return PLUGIN_CONTINUE;
+    return HAM_IGNORED;
 }
 
 ///
@@ -3444,8 +3476,8 @@ public plugin_cfg()
     ///
     /// ENSURE THE AQS WORKS ON OLDER AMXX VERSIONS AS WELL
     ///
-    register_forward(FM_ClientDisconnect, "QS_FM_OnClientDisconnect_PP", 1 /** POST = 1 */);
-    register_forward(FM_ClientDisconnect, "QS_FM_OnClientDisconnect_PP", 0 /** PRE = 0 */);
+    register_forward(FM_ClientDisconnect, "QS_FM_OnClientDisconnect_PRE", 0 /** PRE = 0 */);
+    register_forward(FM_ClientDisconnect, "QS_FM_OnClientDisconnect_POST", 1 /** POST = 1 */);
 
     ///
     /// TO FILL g_pbEverBeenAlive [ ... ]
@@ -3696,11 +3728,11 @@ public client_infochanged(nPlayer)
 }
 
 ///
-/// CALLED WHEN A CLIENT DISCONNECTS
+/// CALLED WHEN A CLIENT DISCONNECTS ( PRE )
 ///
 /// DEPRECATED NOW BUT STILL NEEDED FOR OLDER AMXX EDITIONS
 ///
-public QS_FM_OnClientDisconnect_PP(nPlayer)
+public QS_FM_OnClientDisconnect_PRE(nPlayer)
 {
     ///
     /// REDIRECT THE CALL
@@ -3708,14 +3740,39 @@ public QS_FM_OnClientDisconnect_PP(nPlayer)
 
 #if defined QS_ON_PLAYER_DISCONNECTED_NEW
 
-    return client_disconnected(nPlayer, true, "", 0);
+    client_disconnected(nPlayer, true, "", 0);
 
 #else /// defined QS_ON_PLAYER_DISCONNECTED_NEW
 
-    return client_disconnect(nPlayer);
+    client_disconnect(nPlayer);
 
 #endif
 
+    return FMRES_IGNORED;
+}
+
+///
+/// CALLED WHEN A CLIENT DISCONNECTS ( POST )
+///
+/// DEPRECATED NOW BUT STILL NEEDED FOR OLDER AMXX EDITIONS
+///
+public QS_FM_OnClientDisconnect_POST(nPlayer)
+{
+    ///
+    /// REDIRECT THE CALL
+    ///
+
+#if defined QS_ON_PLAYER_DISCONNECTED_NEW
+
+    client_disconnected(nPlayer, true, "", 0);
+
+#else /// defined QS_ON_PLAYER_DISCONNECTED_NEW
+
+    client_disconnect(nPlayer);
+
+#endif
+
+    return FMRES_IGNORED;
 }
 
 ///
@@ -4042,6 +4099,136 @@ public client_command(nPlayer)
 
     return PLUGIN_CONTINUE;
 }
+
+#if defined amxclient_cmd && defined RegisterHamPlayer
+
+///
+/// NOTHING TO DO ON THE NEWER AMXX EDITIONS
+///
+
+#else
+
+///
+/// client_connect ( nPlayer )
+///
+/// EXECUTES WHEN THE CLIENT CONNECTS AND THEIR LOADING WINDOW IS BEING DISPLAYED
+///
+public client_connect(nPlayer)
+{
+    static nThePlayerUserIndex = QS_INVALID_USER_ID, szTheParam[QS_NUMBER_MAX_LEN] = { EOS, ... }, nTheSysTime = 0;
+
+    if (!g_bEnabled)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bAreTheFakePlayersRegistered)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (!QS_IsPlayer(nPlayer))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (is_user_hltv(nPlayer)) /// NOT USING `g_pbHLTV` HERE, IT'S TOO SOON
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (!is_user_bot(nPlayer)) /// NOT USING `g_pbBOT` HERE, IT'S TOO SOON
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    nThePlayerUserIndex = get_user_userid(nPlayer); /// NOT USING `g_pnUserId` HERE
+
+    if (!QS_ValidUserId(nThePlayerUserIndex))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    num_to_str((nTheSysTime = get_systime(0)), szTheParam, charsmax(szTheParam));
+    {
+        set_task(QS_TASK_DELAY_NEXT_FRAME, "QS_RegisterHamForTheFakePlayer", nTheSysTime + nThePlayerUserIndex, szTheParam, charsmax(szTheParam), "", 0);
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+public QS_RegisterHamForTheFakePlayer(szTheParam[], nTheTaskIndex)
+{
+    static nTheFakePlayer = QS_INVALID_PLAYER, nThePlayerUserIndex = QS_INVALID_USER_ID;
+
+    if (!g_bEnabled)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (g_bAreTheFakePlayersRegistered)
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    nThePlayerUserIndex = (nTheTaskIndex - str_to_num(szTheParam));
+
+    if (!QS_ValidUserId(nThePlayerUserIndex))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    nTheFakePlayer = QS_PlayerIdByPlayerUserId(nThePlayerUserIndex);
+
+    if (!QS_IsPlayer(nTheFakePlayer))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (!is_user_connected(nTheFakePlayer))
+    { /// CAN'T USE `g_pbInGame` HERE, IT'S TOO SOON
+
+#if defined is_user_connecting
+
+        if (!is_user_connecting(nTheFakePlayer))
+        {
+            return PLUGIN_CONTINUE;
+        }
+
+#else
+
+        return PLUGIN_CONTINUE;
+
+#endif
+
+    }
+
+    if (is_user_hltv(nTheFakePlayer))
+    { /// CAN'T USE `g_pbHLTV` HERE, IT'S TOO SOON
+        return PLUGIN_CONTINUE;
+    }
+
+    if (!is_user_bot(nTheFakePlayer))
+    { /// CAN'T USE `g_pbBOT` HERE, IT'S TOO SOON
+        return PLUGIN_CONTINUE;
+    }
+
+    RegisterHamFromEntity(Ham_Spawn, nTheFakePlayer, "QS_HAM_On_Player_Spawn_POST", 1 /** POST = 1 */);
+
+    if (!QS_ValidMsg(g_nDeathMsg))
+    {
+        if (g_bDeathMsgOnly)
+        {
+            RegisterHamFromEntity(Ham_Killed, nTheFakePlayer, "QS_HAM_On_Player_Killed_PRE", 0 /** PRE = 0 */);
+        }
+    }
+
+    g_bAreTheFakePlayersRegistered = true;
+
+    return PLUGIN_CONTINUE;
+}
+
+#endif
 
 ///
 /// client_authorized ( nPlayer ) FOR THE OLDER AMXX EDITIONS
@@ -4816,7 +5003,7 @@ public QS_PerformManStanding(nTaskIndex)
 ///
 /// WHEN THE ROUND RESTARTS
 ///
-public QS_OnRoundRefresh()
+public QS_OnRoundRefresh(nValue)
 {
     ///
     /// RESETS ALL THE ROUND STATS DURING THE BEGINNING OF THE NEXT ROUND ( IF ANY )
@@ -4829,7 +5016,7 @@ public QS_OnRoundRefresh()
 ///
 /// WHEN THE ROUND LAUNCHES
 ///
-public QS_OnRoundLaunch()
+public QS_OnRoundLaunch(nValue)
 {
     ///
     /// DATA
@@ -5311,41 +5498,57 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
 }
 
 ///
-/// WHEN THE ROUND ENDS
+/// WHEN THE ROUND ENDS [ DAY OF DEFEAT ]
 ///
-public QS_OnRoundEnd()
+public QS_OnRoundEnd_DOD(nValue)
+{
+    ///
+    /// GETS HATTRICK READY
+    ///
+    if (g_bHattrick)
+    {
+        if (g_nKillsThisRound)
+        {
+            set_task(g_fHattrickRoundEndDelayDOD, "QS_Hattrick", get_systime(0), "", 0, "", 0);
+        }
+    }
+
+    return PLUGIN_CONTINUE;
+}
+
+///
+/// WHEN THE ROUND ENDS [ CS/ CZ ]
+///
+public QS_OnRoundEnd_CSCZ()
 {
     ///
     /// EXTEND THE ROUND END PERIOD IF NEEDED
     ///
-    if (g_bCSCZ)
+    if (g_fSecDelayDisplayPlayerEvents > 0.000000)
     {
-        if (g_fSecDelayDisplayPlayerEvents > 0.000000)
+        if (!g_bGameDataError && !g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail)
         {
-            if (!g_bGameDataError && !g_bGET_GameRules_Size_Unavail && !g_bGET_GameRules_Float_Unavail && !g_bSET_GameRules_Float_Unavail)
-            {
-                set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
-            }
+            set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
+        }
 
 #if defined _orpheu_included
 
-            else if ((QS_ValidEntity(g_nGameRules)) && !(g_bOrpheuUnavailable) && !(g_bOrpheuError))
-            {
-                set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
-            }
+        else if ((QS_ValidEntity(g_nGameRules)) && !(g_bOrpheuUnavailable) && !(g_bOrpheuError))
+        {
+            set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
+        }
 
 #endif
 
 #if defined _reapi_included
 
-            else if (!(g_bReAPIUnavailable) && !(g_bReAPIError))
-            {
-                set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
-            }
+        else if (!(g_bReAPIUnavailable) && !(g_bReAPIError))
+        {
+            set_task(0.100000, "QS_ExtendTheRoundEndPeriod", get_systime(0), "", 0, "", 0);
+        }
 
 #endif
 
-        }
     }
 
     ///
@@ -5355,15 +5558,7 @@ public QS_OnRoundEnd()
     {
         if (g_nKillsThisRound)
         {
-            if (g_bDOD)
-            {
-                set_task(g_fHattrickRoundEndDelayDOD, "QS_Hattrick", get_systime(0), "", 0, "", 0);
-            }
-
-            else
-            {
-                set_task(g_fHattrickRoundEndDelayCSCZ, "QS_Hattrick", get_systime(0), "", 0, "", 0);
-            }
+            set_task(g_fHattrickRoundEndDelayCSCZ, "QS_Hattrick", get_systime(0), "", 0, "", 0);
         }
     }
 
@@ -5513,7 +5708,7 @@ public QS_Hattrick(nTaskIndex)
 
                     else if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
                     {
-                        fOriginal = get_member_game(m_flRestartRoundTime);
+                        fOriginal = Float: get_member_game(m_flRestartRoundTime);
 
                         fNew = g_fHattrickRoundEndSecExtension + fOriginal;
 
@@ -5754,7 +5949,7 @@ public QS_Flawless(nTaskIndex)
 
                 else if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
                 {
-                    fOriginal = get_member_game(m_flRestartRoundTime);
+                    fOriginal = Float: get_member_game(m_flRestartRoundTime);
 
                     fNew = g_fFlawlessRoundEndSecExtension + fOriginal;
 
@@ -5818,7 +6013,7 @@ public QS_Flawless(nTaskIndex)
 
                 else if (!(g_bReAPIError) && !(g_bReAPIUnavailable))
                 {
-                    fOriginal = get_member_game(m_flRestartRoundTime);
+                    fOriginal = Float: get_member_game(m_flRestartRoundTime);
 
                     fNew = g_fFlawlessRoundEndSecExtension + fOriginal;
 
@@ -5857,7 +6052,7 @@ public QS_FM_OnMsgBegin_POST(nDestination, nType, Float: pfOrigin[3], nEntity)
         }
     }
 
-    return PLUGIN_CONTINUE;
+    return FMRES_IGNORED;
 }
 
 ///
@@ -5889,7 +6084,7 @@ public QS_FM_OnWriteByte_POST(nByte)
         }
     }
 
-    return PLUGIN_CONTINUE;
+    return FMRES_IGNORED;
 }
 
 ///
@@ -5912,7 +6107,7 @@ public QS_FM_OnWriteString_POST(szBuffer[])
         g_bDeathMsgWeapon = QS_ValidWeapon(g_nWeapon);
     }
 
-    return PLUGIN_CONTINUE;
+    return FMRES_IGNORED;
 }
 
 ///
@@ -6101,7 +6296,7 @@ public QS_FM_OnMsgEnd_POST()
         }
     }
 
-    return PLUGIN_CONTINUE;
+    return FMRES_IGNORED;
 }
 
 ///
@@ -7215,7 +7410,7 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
     ///
     /// VARIABLES
     ///
-    static nIter = 0, Float: fGameTime = 0.000000, szWeapon[QS_WORD_MAX_LEN] = { EOS, ... }, szSnd[QS_SND_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... },
+    static nIter = 0, Float: fGameTime = 0.000000, szWeapon[QS_WORD_MAX_LEN] = { EOS, ... }, szSnd[QS_SND_MAX_LEN] = { EOS, ... }, szMsg[QS_HUD_MSG_MAX_LEN] = { EOS, ... }, nCell = 0,
         bool: bExecutedTeamKill = false, bool: bDiedByWorldDmg = false /** OR BY THE 'KILL' COMMAND */, pnColor[4] = { QS_MIN_BYTE, ... }, szWord[QS_WORD_MAX_LEN] = { EOS, ... };
 
     ///
@@ -7709,7 +7904,9 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
 
             for (nIter = 0; nIter < g_nKStreakSize; nIter++)
             {
-                if (g_pnKills[nKiller] == ArrayGetCell(g_pKStreakReqKills, nIter))
+                nCell = ArrayGetCell(g_pKStreakReqKills, nIter); /// OLDER AMXX COMPATIBILITY
+
+                if (g_pnKills[nKiller] == nCell)
                 {
                     ArrayGetString(g_pKStreakMsgs, nIter, szMsg, charsmax(szMsg));
                     ArrayGetString(g_pKStreakSnds, nIter, szSnd, charsmax(szSnd));
