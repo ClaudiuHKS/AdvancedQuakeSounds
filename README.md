@@ -18,7 +18,9 @@ If **`CSTRIKE`** or **`CZERO`**, upload **`orpheu`** folder to **`/addons/amxmod
 
 If already running **`ReAPI`**, ignore **`Orpheu`** installation
 
-If your **`AMXX`** version has **`get_gamerules_float`** into **`fakemeta.inc`**, ignore **`Orpheu`**
+If your **`AMXX`** version has **`get_gamerules_float`** into **`fakemeta.inc`**, ignore **`Orpheu`**/ **`ReAPI`**
+
+Ignore **`Orpheu`**/ **`ReAPI`** if your **`CSTRIKE`** or **`CZERO`** game server is respawning players
 
 Download [Orpheu](https://github.com/Arkshine/Orpheu/releases)
 
