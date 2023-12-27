@@ -895,7 +895,7 @@ static bool: g_bHideCmd = false;
 /// NOTHING TO DO ON THE NEWER AMXX EDITIONS
 ///
 
-#else
+#else /// defined amxclient_cmd && defined RegisterHamPlayer
 
 ///
 /// WHETHER OR NOT THE HAMSANDWICH FORWARDS ARE REGISTERED FOR THE BOTS ( FAKE PLAYERS ) IN OLDER AMXX EDITIONS
@@ -4106,7 +4106,7 @@ public client_command(nPlayer)
 /// NOTHING TO DO ON THE NEWER AMXX EDITIONS
 ///
 
-#else
+#else /// defined amxclient_cmd && defined RegisterHamPlayer
 
 ///
 /// client_connect ( nPlayer )
@@ -4195,7 +4195,7 @@ public QS_RegisterHamForTheFakePlayer(szTheParam[], nTheTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-#else
+#else /// defined is_user_connecting
 
         return PLUGIN_CONTINUE;
 
@@ -10740,7 +10740,7 @@ static bool: QS_SetHudMsg(&nRed, &nGreen, &nBlue, Float: fX, Float: fY, nEffects
 
 #define QS_PlayerIdByPlayerUserId(%0) find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, %0)
 
-#else
+#else /// defined FindPlayer_IncludeConnecting
 
 ///
 /// PLAYER ID BY PLAYER USER ID
