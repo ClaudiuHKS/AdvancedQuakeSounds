@@ -180,7 +180,7 @@ enum Array
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "7.9" ) /// "7.9"
+#define QS_PLUGIN_VERSION ( "8.0" ) /// "8.0"
 
 ///
 /// ###################################################################################################
@@ -428,6 +428,11 @@ enum Array
 /// INVALID PLAYER USER ID
 ///
 #define QS_INVALID_USER_ID ( -1 ) /// -1
+
+///
+/// INVALID CONSOLE VARIABLE INDEX
+///
+#define QS_INVALID_CON_VAR ( 0 ) /// 0
 
 ///
 /// INVALID USER MESSAGE ID
@@ -842,7 +847,8 @@ enum /** CUSTOM COLORED CHAT SAY TEXT COLOR */
 ///
 enum /** THE TEAM RETRIEVAL METHOD */
 {
-    QS_TEAM_RETRIEVAL_AMX_MOD_X = 0, QS_TEAM_RETRIEVAL_DEFAULT = QS_TEAM_RETRIEVAL_AMX_MOD_X, QS_TEAM_RETRIEVAL_FAKE_META = 1, QS_TEAM_RETRIEVAL_LAST_ENTRY = QS_TEAM_RETRIEVAL_FAKE_META,
+    QS_TEAM_RETRIEVAL_AMX_MOD_X = 0, QS_TEAM_RETRIEVAL_DEFAULT = QS_TEAM_RETRIEVAL_AMX_MOD_X, QS_TEAM_RETRIEVAL_FAKE_META = 1, QS_TEAM_RETRIEVAL_PRIVATE_DATA = 2,
+    QS_TEAM_RETRIEVAL_LAST_ENTRY = QS_TEAM_RETRIEVAL_PRIVATE_DATA,
 };
 
 /*************************************************************************************
@@ -902,6 +908,11 @@ static bool: g_bHideCmd = false;
 ///
 static bool: g_bAreTheFakePlayersRegistered = false;
 
+///
+/// "bot_quota" CONVAR INDEX
+///
+static g_nQuotaConVar = QS_INVALID_CON_VAR;
+
 #endif
 
 ///
@@ -918,6 +929,16 @@ static Float: g_fRoundEndExtensionStep = QS_ROUND_END_EXTENSION_STEP;
 /// THE TEAM RETRIEVAL METHOD
 ///
 static g_nTeamRetrieval = QS_TEAM_RETRIEVAL_DEFAULT;
+
+///
+/// THE CUSTOM TEAM MEMBER OFFSET
+///
+static g_nTeamMemberOffs = 0;
+
+///
+/// THE CUSTOM TEAM MEMBER OFFSET LINUX DIFFERENCE
+///
+static g_nTeamMemberOffsLinuxDiff = 0;
 
 ///
 /// AMX MOD X GAME DATA OUTDATED YES/ NO
@@ -1293,6 +1314,11 @@ static g_nTKillSize = 0;
 ///
 static Array: g_pTKill = Invalid_Array;
 
+///
+/// WHETHER OR NOT TO HARD ENABLE THE TEAM KILL EVENT FOR OTHER MODS BUT CS/ CZ/ DOD
+///
+static bool: g_bTKillHardEnable = false;
+
 /**
  * KNIFE
  */
@@ -1444,6 +1470,11 @@ static Array: g_pKStreakMsgs = Invalid_Array;
 /// K. STREAK REQUIRED KILLS CONTAINER
 ///
 static Array: g_pKStreakReqKills = Invalid_Array;
+
+///
+/// K. STREAK ERASE THE KILLS NUMBER ON EVERY NEW ROUND
+///
+static bool: g_bKStreakClearEveryNewRound = false;
 
 /**
  * ROUND START
@@ -2911,24 +2942,48 @@ public plugin_init()
 
 #if QS_INCLUDE_VERSION_CVAR_IN_LOGS != 0
 
-    new nConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL);
+#if !defined create_cvar
+
+    new nConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL, 0.000000);
+
+#else /// !defined create_cvar
+
+    new nConVar = create_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL, "Shows the Advanced Quake Sounds version.", true, 1.000000, false, 0.000000);
+
+#endif
 
 #else /// QS_INCLUDE_VERSION_CVAR_IN_LOGS != 0
 
-    new nConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
+#if !defined create_cvar
+
+    new nConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED, 0.000000);
+
+#else /// !defined create_cvar
+
+    new nConVar = create_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED, "Shows the Advanced Quake Sounds version.", true, 1.000000, false, 0.000000);
+
+#endif
 
 #endif
 
 #else /// defined QS_INCLUDE_VERSION_CVAR_IN_LOGS
 
-    new nConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED);
+#if !defined create_cvar
+
+    new nConVar = register_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED, 0.000000);
+
+#else /// !defined create_cvar
+
+    new nConVar = create_cvar("advanced_quake_sounds", QS_PLUGIN_VERSION, FCVAR_SERVER | FCVAR_EXTDLL | FCVAR_UNLOGGED, "Shows the Advanced Quake Sounds version.", true, 1.000000, false, 0.000000);
+
+#endif
 
 #endif
 
     ///
     /// SETS THE CONSOLE VARIABLE STRING
     ///
-    if (nConVar)
+    if (nConVar > 0)
     {
         set_pcvar_string(nConVar, QS_PLUGIN_VERSION);
     }
@@ -3038,10 +3093,13 @@ public plugin_init()
         ///
         g_bHattrick = false;
 
-        ///
-        /// DISABLES THE TEAM KILL FEATURE
-        ///
-        g_bTKill = false;
+        if (!g_bTKillHardEnable)
+        {
+            ///
+            /// DISABLES THE TEAM KILL FEATURE
+            ///
+            g_bTKill = false;
+        }
 
         ///
         /// DISABLES THE ROUND START FEATURE
@@ -3491,6 +3549,8 @@ public plugin_cfg()
 #else /// defined amxclient_cmd && defined RegisterHamPlayer
 
     RegisterHam(Ham_Spawn, "player", "QS_HAM_On_Player_Spawn_POST", 1 /** POST = 1 */); /// OLDER
+
+    g_nQuotaConVar = get_cvar_pointer("bot_quota"); /// CS/ CZ ORIGINAL BOTS NEED EXTRA SUPPORT
 
 #endif
 
@@ -4127,7 +4187,17 @@ public client_connect(nPlayer)
         return PLUGIN_CONTINUE;
     }
 
+    if (!QS_IsConVarValid(g_nQuotaConVar))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
     if (!QS_IsPlayer(nPlayer))
+    {
+        return PLUGIN_CONTINUE;
+    }
+
+    if (1 > get_pcvar_num(g_nQuotaConVar))
     {
         return PLUGIN_CONTINUE;
     }
@@ -5135,6 +5205,17 @@ public QS_OnRoundLaunch(nValue)
         set_task(g_fRStartDelay, "QS_RoundStart", get_systime(0), "", 0, "", 0);
     }
 
+    ///
+    /// ERASE THE KILLS NEEDED FOR THE K. STREAK SOUNDS IF NEEDED ( CS/ CZ/ DOD )
+    ///
+    if (g_bKStreakClearEveryNewRound)
+    {
+        if (g_bKStreak)
+        {
+            arrayset(g_pnKills, 0, sizeof(g_pnKills));
+        }
+    }
+
     return PLUGIN_CONTINUE;
 }
 
@@ -5170,7 +5251,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
                 return PLUGIN_CONTINUE;
             }
 
-            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+            nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
             if (nMaximumDelayedPlayerEvents < 1)
             {
@@ -5190,7 +5271,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5214,7 +5295,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5251,7 +5332,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
                 return PLUGIN_CONTINUE;
             }
 
-            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+            nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
             if (nMaximumDelayedPlayerEvents < 1)
             {
@@ -5271,7 +5352,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5295,7 +5376,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5332,7 +5413,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
                 return PLUGIN_CONTINUE;
             }
 
-            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+            nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
             if (nMaximumDelayedPlayerEvents < 1)
             {
@@ -5352,7 +5433,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5376,7 +5457,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5413,7 +5494,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
                 return PLUGIN_CONTINUE;
             }
 
-            nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+            nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
             if (nMaximumDelayedPlayerEvents < 1)
             {
@@ -5433,7 +5514,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5457,7 +5538,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
             return PLUGIN_CONTINUE;
         }
 
-        nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+        nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
         if (nMaximumDelayedPlayerEvents < 1)
         {
@@ -5479,7 +5560,7 @@ public QS_ExtendTheRoundEndPeriod(nTaskIndex)
         return PLUGIN_CONTINUE;
     }
 
-    nMaximumDelayedPlayerEvents = retrieveMaximumDelayedEvents();
+    nMaximumDelayedPlayerEvents = QS_RetrieveMaximumDelayedEvents();
 
     if (nMaximumDelayedPlayerEvents < 1)
     {
@@ -8075,6 +8156,16 @@ static bool: QS_LoadSettings()
             g_fChatInfoDelaySeconds = floatabs(str_to_float(szVal));
         }
 
+        else if (equali(szKey, "TEAM MEMBER OFFS"))
+        {
+            g_nTeamMemberOffs = str_to_num(szVal);
+        }
+
+        else if (equali(szKey, "TEAM OFFS LINUX DIFF"))
+        {
+            g_nTeamMemberOffsLinuxDiff = str_to_num(szVal);
+        }
+
         else if (equali(szKey, "QS ROUND END EXTENSION STEP") || equali(szKey, "ROUND END EXTENSION STEP")) /** COMPATIBILITY */
         {
             g_fRoundEndExtensionStep = floatabs(str_to_float(szVal));
@@ -8145,6 +8236,16 @@ static bool: QS_LoadSettings()
         else if (equali(szKey, "REVENGE ONLY FOR KILLER"))
         {
             g_bRevengeOnlyKiller = bool: str_to_num(szVal);
+        }
+
+        else if (equali(szKey, "TEAMKILL HARD"))
+        {
+            g_bTKillHardEnable = bool: str_to_num(szVal);
+        }
+
+        else if (equali(szKey, "KSTREAK ERASE EVERY NEW ROUND"))
+        {
+            g_bKStreakClearEveryNewRound = bool: str_to_num(szVal);
         }
 
         else if (equali(szKey, "QS HATTRICK EXTEND ROUND END TIME SECONDS"))
@@ -10814,7 +10915,7 @@ static bool: QS_ValidTeam(&nTeam)
 ///
 /// RETRIEVE THE MAXIMUM POSSIBLE DELAYED PLAYER EVENTS WHICH ARE ACTUALLY QUEUED, IF ANY
 ///
-static retrieveMaximumDelayedEvents()
+static QS_RetrieveMaximumDelayedEvents()
 {
     static nPlayer = QS_INVALID_PLAYER, nMaximum = 0, nActual = 0;
 
@@ -10897,6 +10998,11 @@ static QS_GetPlayerTeam(&nPlayer)
                 return pev(nPlayer, pev_team);
             }
 
+            case QS_TEAM_RETRIEVAL_PRIVATE_DATA:
+            {
+                return get_pdata_int(nPlayer, g_nTeamMemberOffs, g_nTeamMemberOffsLinuxDiff);
+            }
+
             default:
             {
                 return get_user_team(nPlayer, szTheTeamName, charsmax(szTheTeamName));
@@ -10906,3 +11012,21 @@ static QS_GetPlayerTeam(&nPlayer)
 
     return QS_INVALID_TEAM;
 }
+
+#if defined amxclient_cmd && defined RegisterHamPlayer
+
+///
+/// NOTHING TO DO ON THE NEWER AMXX EDITIONS
+///
+
+#else /// defined amxclient_cmd && defined RegisterHamPlayer
+
+///
+/// WHETHER OR NOT A CON VAR INDEX IS VALID
+///
+static bool: QS_IsConVarValid(&nConVar)
+{
+    return (nConVar > QS_INVALID_CON_VAR);
+}
+
+#endif
