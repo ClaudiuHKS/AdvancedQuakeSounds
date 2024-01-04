@@ -60,7 +60,7 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
         {
             "svs"                   /// Used With   pfnGetCurrentPlayer     Base Address
             {
-                "windows"           "8"
+                "windows"           "13"
             }
         }
 
@@ -95,7 +95,7 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
                     ///
                     /// "read"      "2"     /// [ HLDS 2020 ]   CS/ CZ
                     ///
-                    "read"          "1"     /// [ HLDS 2023 ]   CS/ CZ
+                    "read"          "1"     /// [ HLDS 2023 ]   CS/ CZ, DOD, HL, ...
                     ///
                 }
 
@@ -148,6 +148,8 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
                 /// "windows"       "\x8B\x2A\x2A\x2A\x2A\x2A\x85\x2A\x74\x2A\x8B\x2A\xFF\x2A\x2A\xA1"                                                                                                                      /// StartFrame()                    [ 2020 HLDS ]   CS/ CZ
                 ///
                 "windows"           "\xA3\x2A\x2A\x2A\x2A\xFF\x2A\x2A\x2A\x2A\x2A\x85\x2A\x75\x2A\x33\x2A\xEB"                                                                                                              /// dword_10130BA0 @ sub_100C2440() [ 2023 HLDS ]   CS/ CZ
+                /// "windows"       "\xA3\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x8B\x2A\x8B\x2A\x2A\x2A\x2A\x2A\xFF\x2A\x6A\x2A\xE8\x2A\x2A\x2A\x2A\x83\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xA1"                                      /// dword_1013B31C @ sub_100BB790() [ 2023 HLDS ]   DOD
+                /// "windows"       "\xA3\x2A\x2A\x2A\x2A\xFF\x2A\x2A\x2A\x2A\x2A\x85\x2A\x75\x2A\x33\x2A\xEB\x2A\x8D\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x2A\x2A\x89\x2A\x2A\x85\x2A\x74\x2A\x8B\x2A\x2A\x85\x2A\x75"      /// dword_100D74A4 @ sub_100985B0() [ 2023 HLDS ]   HL
                 ///
                 "linux"             "@g_pGameRules"
                 "mac"               "@g_pGameRules"
