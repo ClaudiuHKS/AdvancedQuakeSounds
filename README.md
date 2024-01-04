@@ -60,7 +60,11 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
         {
             "svs"                   /// Used With   pfnGetCurrentPlayer     Base Address
             {
-                "windows"           "13"
+                ///
+                /// "windows"       "8"     /// 2020 HLDS (CS/ CZ, DOD, HL, ...)
+                ///
+                "windows"           "13"    /// 2023 HLDS (CS/ CZ, DOD, HL, ...)
+                ///
             }
         }
 
