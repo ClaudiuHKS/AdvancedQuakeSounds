@@ -89,6 +89,70 @@
 *************************************************************************************/
 
 ///
+/// CSX/ TSX/ TFCX/ DODX ( XSTATS )
+///
+
+#if !defined xmod_get_wpnname
+
+native xmod_get_wpnname(nWeapon, szName[], nSize);
+
+#endif
+
+static bool: g_bXMod_GET_WpnName_Unavail = false;
+
+#if 0 /// TEMPORARY DISABLED
+
+#if !defined xmod_get_wpnlogname
+
+native xmod_get_wpnlogname(nWeapon, szName[], nSize);
+
+#endif
+
+static bool: g_bXMod_GET_WpnLogName_Unavail = false;
+
+#endif /// TEMPORARY DISABLED
+
+#if 0 /// TEMPORARY DISABLED
+
+#if !defined get_user_vstats
+
+native get_user_vstats(nPlayer, nVictim, pnStats[], pnBody[], szWeapon[], nSize);
+
+#endif
+
+static bool: g_bGET_User_VStats_Unavail = false;
+
+#endif /// TEMPORARY DISABLED
+
+#if !defined get_user_astats
+
+native get_user_astats(nPlayer, nAttacker, pnStats[], pnBody[], szWeapon[], nSize);
+
+#endif
+
+static bool: g_bGET_User_AStats_Unavail = false;
+
+///
+/// DODX ( DAY OF DEFEAT :: XSTATS )
+///
+
+#if !defined dod_get_user_weapon
+
+native dod_get_user_weapon(nPlayer, &nClip = 0, &nAmmo = 0);
+
+#endif
+
+static bool: g_bDOD_GET_UserWeapon_Unavail = false;
+
+#if !defined dod_wpnlog_to_id
+
+native dod_wpnlog_to_id(szWeaponLogName[]);
+
+#endif
+
+static bool: g_bDOD_WpnLog_To_Id_Unavail = false;
+
+///
 /// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'SQL_SetCharset ( )' ]]]
 ///
 
@@ -147,16 +211,6 @@ static bool: g_bGET_GameRules_Size_Unavail = false;
 #endif
 
 ///
-/// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'ByteCountToCells ( )' ]]]
-///
-
-#if !defined ByteCountToCells
-
-#define ByteCountToCells(%0) abs(%0) /** 'abs ( )' SHOULD WORK JUST FINE */
-
-#endif
-
-///
 /// OLDER AMXX EDITIONS DON'T HAVE THIS [[[ 'Invalid_Array' ]]]
 ///
 
@@ -180,7 +234,7 @@ enum Array
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "8.0" ) /// "8.0"
+#define QS_PLUGIN_VERSION ( "8.1" ) /// "8.1"
 
 ///
 /// ###################################################################################################
@@ -447,7 +501,15 @@ enum Array
 ///
 /// INVALID HIT PLACE ID
 ///
+#if defined HIT_GENERIC
+
+#define QS_INVALID_PLACE ( HIT_GENERIC ) /// HIT_GENERIC
+
+#else /// defined HIT_GENERIC
+
 #define QS_INVALID_PLACE ( 0 ) /// 0
+
+#endif
 
 ///
 /// INVALID HUD MSG SYNC OBJECT
@@ -782,7 +844,7 @@ enum Array
 ///
 /// [ PREPARE TO FIGHT, .. ] HUD MESSAGE'S "Y" ( VERTICAL ) POSITION <<<--- DAY OF DEFEAT --->>>
 ///
-#define QS_ROUND_Y_POS_DOD ( 0.320000 ) /// .32
+#define QS_ROUND_Y_POS_DOD ( 0.360000 ) /// .36
 
 ///
 /// ###################################################################################################
@@ -807,11 +869,24 @@ enum Array
 ///
 
 ///
+/// OLDER AMXX EDITIONS COME WITH NO 'find_player_ex()' FUNCTION
+///
+#if defined FindPlayerFlags
+
+#define QS_PlayerIdByPlayerUserId(%0) find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, %0)
+
+#endif
+
+///
+/// ###################################################################################################
+///
+
+///
 /// DEATHMSG USER MESSAGE'S 'BYTE' STATUSES
 ///
 enum /** DEATHMSG USER MESSAGE'S 'BYTE' STATUS */
 {
-    QS_DEATHMSG_NONE = 0, QS_DEATHMSG_KILLER = 1, QS_DEATHMSG_VICTIM = 2, QS_DEATHMSG_MAX = 3,
+    QS_DEATHMSG_NONE = 0, QS_DEATHMSG_KILLER = 1, QS_DEATHMSG_VICTIM = 2, QS_DEATHMSG_HS_CSCZ = 3, QS_DEATHMSG_MAX = 4,
 };
 
 ///
@@ -1368,6 +1443,20 @@ static Array: g_pKnife = Invalid_Array;
 ///
 static g_nKnifeMaxDistanceUnits = QS_KNIFE_MAX_DISTANCE_UNITS;
 
+///
+/// KNIFE MAXIMUM DISTANCE IN UNITS BETWEEN THE TWO PLAYERS IN ORDER TO TRIGGER THE "KNIFE KILL" EVENT
+///
+/// ( DAY OF DEFEAT GAME )
+///
+static g_nKnifeMaxDistanceUnitsDoD = QS_KNIFE_MAX_DISTANCE_UNITS;
+
+///
+/// KNIFE MAXIMUM DISTANCE IN UNITS BETWEEN THE TWO PLAYERS IN ORDER TO TRIGGER THE "KNIFE KILL" EVENT
+///
+/// ( COUNTER-STRIKE/ CONDITION ZERO GAME )
+///
+static g_nKnifeMaxDistanceUnitsCSCZ = QS_KNIFE_MAX_DISTANCE_UNITS;
+
 /**
  * FIRST BLOOD
  */
@@ -1831,6 +1920,11 @@ static g_nKiller = QS_INVALID_PLAYER;
 static g_nVictim = QS_INVALID_PLAYER;
 
 ///
+/// CACHED HEADSHOT BOOLEAN (CS/ CZ ONLY)
+///
+static bool: g_bHead = false;
+
+///
 /// CACHED WEAPON ID
 ///
 static g_nWeapon = QS_INVALID_WEAPON;
@@ -2119,6 +2213,102 @@ static g_szPhrDisable[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// DISABLE
 static g_szPhrEnabled[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// ENABLED
 static g_szPhrDisabled[QS_CHAT_PHRASE_MAX_LEN] = { EOS, ... }; /// DISABLED
 
+/**
+* DAY OF DEFEAT ( DOD ) STUFF
+*/
+
+static g_pszDoDWeaponNames[][] =
+{
+    "mortar",
+    "knife",
+    "knife",
+    "colt",
+    "luger",
+    "garand",
+    "scoped k98",
+    "thompson",
+    "stg44",
+    "springfield",
+    "k98",
+    "bar",
+    "mp40",
+    "handgrenade",
+    "stickgrenade",
+    "stickgrenade_ex",
+    "handgrenade_ex",
+    "mg42",
+    ".30 cal",
+    "spade",
+    "m1 carbine",
+    "mg34",
+    "greasegun",
+    "fg42",
+    "k43",
+    "enfield",
+    "sten",
+    "bren",
+    "webley",
+    "bazooka",
+    "panzerschrek",
+    "piat",
+    "scoped fg42",
+    "folding carbine",
+    "k98 bayonet",
+    "scoped enfield",
+    "mills bomb",
+    "knife",
+    "garand butt",
+    "enfield bayonet",
+    "mortar",
+    "k43 butt"
+};
+
+static g_pszDoDWeaponLogNames[][] =
+{
+    "mortar",
+    "amerknife",
+    "gerknife",
+    "colt",
+    "luger",
+    "garand",
+    "scopedkar",
+    "thompson",
+    "mp44",
+    "spring",
+    "kar",
+    "bar",
+    "mp40",
+    "grenade",
+    "grenade2",
+    "stickgrenade_ex",
+    "handgrenade_ex",
+    "mg42",
+    "30cal",
+    "spade",
+    "m1carbine",
+    "mg34",
+    "greasegun",
+    "fg42",
+    "k43",
+    "enfield",
+    "sten",
+    "bren",
+    "webley",
+    "bazooka",
+    "pschreck",
+    "piat",
+    "scoped_fg42",
+    "fcarbine",
+    "bayonet",
+    "scoped_enfield",
+    "mills_bomb",
+    "brit_knife",
+    "garandbutt",
+    "enf_bayonet",
+    "mortar",
+    "k43butt"
+};
+
 /*************************************************************************************
 ******* FORWARDS *********************************************************************
 *************************************************************************************/
@@ -2225,8 +2415,76 @@ public QS_NativeFilter(szNative[], nNative, bool: bFound)
         ****************/
 
         if (strcmp(szNative, "SQL_SetCharset", true) == 0)
-        {
+        { /// SQLITE/ MYSQL
             g_bSQL_SetCharset_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        ///
+        /// USEFUL FOR DOD "GARAND BUTT", "K43 BUTT" AND "KAR BAYONET"
+        ///
+        else if (strcmp(szNative, "xmod_get_wpnname", true) == 0)
+        { /// CSX/ TSX/ TFCX/ DODX ( XSTATS )
+            g_bXMod_GET_WpnName_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+#if 0 /// TEMPORARY DISABLED
+
+        else if (strcmp(szNative, "xmod_get_wpnlogname", true) == 0)
+        { /// CSX/ TSX/ TFCX/ DODX ( XSTATS )
+            g_bXMod_GET_WpnLogName_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+#endif /// TEMPORARY DISABLED
+
+        ///
+        /// USEFUL FOR DOD "GARAND BUTT", "K43 BUTT" AND "KAR BAYONET"
+        ///
+        else if (strcmp(szNative, "get_user_astats", true) == 0)
+        { /// CSX/ TSX/ TFCX/ DODX ( XSTATS )
+            g_bGET_User_AStats_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+#if 0 /// TEMPORARY DISABLED
+
+        else if (strcmp(szNative, "get_user_vstats", true) == 0)
+        { /// CSX/ TSX/ TFCX/ DODX ( XSTATS )
+            g_bGET_User_VStats_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+#endif /// TEMPORARY DISABLED
+
+        ///
+        /// USEFUL FOR DOD "GARAND BUTT", "K43 BUTT" AND "KAR BAYONET"
+        ///
+        else if (strcmp(szNative, "dod_get_user_weapon", true) == 0)
+        { /// DODX ( XSTATS )
+            g_bDOD_GET_UserWeapon_Unavail = true;
+            {
+                return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
+            }
+        }
+
+        ///
+        /// USEFUL FOR DOD "GARAND BUTT", "K43 BUTT" AND "KAR BAYONET"
+        ///
+        else if (strcmp(szNative, "dod_wpnlog_to_id", true) == 0)
+        { /// DODX ( XSTATS )
+            g_bDOD_WpnLog_To_Id_Unavail = true;
             {
                 return PLUGIN_HANDLED; /** I UNDERSTAND THAT FOR SOME REASON THIS NATIVE DOES NOT EXIST ON THE GAME SERVER SO DON'T THROW ANY ERROR TO THE LOGGING SYSTEM */
             }
@@ -2409,41 +2667,41 @@ public plugin_precache()
     ///
     /// CREATES THE ARRAYS FIRST
     ///
-    g_pChatCmds = ArrayCreate(ByteCountToCells(QS_COMMAND_MAX_LEN));
+    g_pChatCmds = ArrayCreate(QS_COMMAND_MAX_LEN);
 
-    g_pHShot = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
-    g_pSuicide = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pHShot = ArrayCreate(QS_SND_MAX_LEN);
+    g_pSuicide = ArrayCreate(QS_SND_MAX_LEN);
 
-    g_pGrenade = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pGrenade = ArrayCreate(QS_SND_MAX_LEN);
     {
-        g_pGrenadeNames = ArrayCreate(ByteCountToCells(QS_WORD_MAX_LEN));
+        g_pGrenadeNames = ArrayCreate(QS_WORD_MAX_LEN);
     }
 
-    g_pTKill = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pTKill = ArrayCreate(QS_SND_MAX_LEN);
 
-    g_pKnife = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pKnife = ArrayCreate(QS_SND_MAX_LEN);
     {
-        g_pKnifeNames = ArrayCreate(ByteCountToCells(QS_WORD_MAX_LEN));
+        g_pKnifeNames = ArrayCreate(QS_WORD_MAX_LEN);
     }
 
-    g_pFBlood = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
-    g_pRStart = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
-    g_pDKill = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
-    g_pHattrick = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pFBlood = ArrayCreate(QS_SND_MAX_LEN);
+    g_pRStart = ArrayCreate(QS_SND_MAX_LEN);
+    g_pDKill = ArrayCreate(QS_SND_MAX_LEN);
+    g_pHattrick = ArrayCreate(QS_SND_MAX_LEN);
 
-    g_pTLMStanding = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pTLMStanding = ArrayCreate(QS_SND_MAX_LEN);
     {
-        g_pTLMStandingWords = ArrayCreate(ByteCountToCells(QS_WORD_MAX_LEN));
+        g_pTLMStandingWords = ArrayCreate(QS_WORD_MAX_LEN);
     }
 
-    g_pFlawless = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
-    g_pRevenge = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pFlawless = ArrayCreate(QS_SND_MAX_LEN);
+    g_pRevenge = ArrayCreate(QS_SND_MAX_LEN);
 
-    g_pKStreakSnds = ArrayCreate(ByteCountToCells(QS_SND_MAX_LEN));
+    g_pKStreakSnds = ArrayCreate(QS_SND_MAX_LEN);
     {
-        g_pKStreakMsgs = ArrayCreate(ByteCountToCells(QS_HUD_MSG_MAX_LEN));
+        g_pKStreakMsgs = ArrayCreate(QS_HUD_MSG_MAX_LEN);
         {
-            g_pKStreakReqKills = ArrayCreate(ByteCountToCells(QS_NUMBER_MAX_LEN));
+            g_pKStreakReqKills = ArrayCreate(QS_NUMBER_MAX_LEN);
         }
     }
 
@@ -3190,6 +3448,7 @@ public plugin_init()
             log_to_file(QS_LOG_FILE_NAME, "Sql Database Connection Failed.");
             log_to_file(QS_LOG_FILE_NAME, "The Following Call Failed [ SQL_SetAffinity ( '%s' ) ].", !QS_EmptyString(g_szSqlExtension) ? g_szSqlExtension : "N/ A");
             log_to_file(QS_LOG_FILE_NAME, "Per Steam Player Preferences Will Not Be Stored In Any Database.");
+            log_to_file(QS_LOG_FILE_NAME, "'../amxmodx/configs/modules.ini' - Did You Enable At Least One SQL Module (\"mysql\" Or \"sqlite\")?");
 
             return PLUGIN_CONTINUE;
         }
@@ -3238,15 +3497,15 @@ public plugin_init()
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_fast (aqs_steam, aqs_option)");
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_520_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_520_ci;",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam CHAR (32) NOT NULL COLLATE utf8mb4_unicode_520_ci, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_520_ci;",
                         szBuffer, charsmax(szBuffer));
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam CHAR (32) NOT NULL COLLATE utf8mb4_unicode_ci, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) COLLATE utf8_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam CHAR (32) NOT NULL COLLATE utf8_unicode_ci, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
 
                     g_nSqlTablesToCreate = 3;
@@ -3257,15 +3516,15 @@ public plugin_init()
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_full (aqs_steam, aqs_option)");
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_520_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_520_ci;",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam CHAR (32) NOT NULL COLLATE utf8mb4_unicode_520_ci, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_520_ci;",
                         szBuffer, charsmax(szBuffer));
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8mb4_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam CHAR (32) NOT NULL COLLATE utf8mb4_unicode_ci, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) COLLATE utf8_unicode_ci NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam CHAR (32) NOT NULL COLLATE utf8_unicode_ci, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam)) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_unicode_ci;",
                         szBuffer, charsmax(szBuffer));
 
                     g_nSqlTablesToCreate = 3;
@@ -3279,11 +3538,11 @@ public plugin_init()
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_fast (aqs_steam, aqs_option)");
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam CHARACTER (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
                         szBuffer, charsmax(szBuffer));
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam VARCHAR (32) NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_fast (aqs_steam CHARACTER (32) NOT NULL UNIQUE, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
                         szBuffer, charsmax(szBuffer));
 
                     g_nSqlTablesToCreate = 2;
@@ -3294,11 +3553,11 @@ public plugin_init()
                     copy(szBuffer, charsmax(szBuffer), "aqs_enabled_full (aqs_steam, aqs_option)");
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam CHARACTER (32) NOT NULL UNIQUE COLLATE NOCASE, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
                         szBuffer, charsmax(szBuffer));
 
                     SQL_ThreadQuery(g_pSqlDb, "QS_CreateThreadedQueryHandler",
-                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam VARCHAR (32) NOT NULL UNIQUE, aqs_option INT (4) NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
+                        "CREATE TABLE IF NOT EXISTS aqs_enabled_full (aqs_steam CHARACTER (32) NOT NULL UNIQUE, aqs_option TINYINT NOT NULL DEFAULT 1, PRIMARY KEY (aqs_steam), UNIQUE (aqs_steam));",
                         szBuffer, charsmax(szBuffer));
 
                     g_nSqlTablesToCreate = 2;
@@ -3366,7 +3625,7 @@ public QS_HAM_On_Player_Killed_PRE(nVictim, nAttacker, nShouldGib)
     g_nPlace = QS_INVALID_PLACE;
     g_nTeamKill = QS_TEAM_KILL_NO;
     {
-        g_nKiller = get_user_attacker(nVictim, g_nWeapon, g_nPlace);
+        g_nKiller = QS_GetUserAttacker(nVictim, g_nWeapon, g_nPlace);
         {
             g_nVictim = nVictim;
         }
@@ -3393,7 +3652,7 @@ public QS_HAM_On_Player_Killed_PRE(nVictim, nAttacker, nShouldGib)
     {
         if (!QS_ValidWeapon(g_nWeapon))
         {
-            nWeapon = get_user_weapon(g_nKiller);
+            nWeapon = QS_GetUserWeapon(g_nKiller);
             {
                 if (QS_ValidWeapon(nWeapon))
                 {
@@ -4100,13 +4359,13 @@ public client_command(nPlayer)
                                 {
                                     if (!g_bSqlFullSteam)
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';",
                                             g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
 
                                     else
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;",
+                                        formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';",
                                             g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
                                     }
                                 }
@@ -6129,6 +6388,9 @@ public QS_FM_OnMsgBegin_POST(nDestination, nType, Float: pfOrigin[3], nEntity)
             g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
             {
                 g_bDeathMsgWeapon = false;
+                {
+                    g_bHead = false; /// CS/ CZ ONLY
+                }
             }
         }
     }
@@ -6162,6 +6424,14 @@ public QS_FM_OnWriteByte_POST(nByte)
             {
                 g_nVictim = nByte;
             }
+
+            case QS_DEATHMSG_HS_CSCZ: /// HEADSHOT BOOLEAN (CS/ CZ ONLY)
+            {
+                if (g_bCSCZ)
+                { /// CS/ CZ ( HEADSHOT BOOLEAN )
+                    g_bHead = bool: nByte;
+                }
+            }
         }
     }
 
@@ -6175,6 +6445,8 @@ public QS_FM_OnWriteByte_POST(nByte)
 ///
 public QS_FM_OnWriteString_POST(szBuffer[])
 {
+    static szWeapon[QS_WORD_MAX_LEN];
+
     ///
     /// OUR DEATHMSG
     ///
@@ -6183,9 +6455,26 @@ public QS_FM_OnWriteString_POST(szBuffer[])
         ///
         /// GETS DATA
         ///
-        g_nWeapon = (!(QS_EmptyString(szBuffer)) ? (get_weaponid(szBuffer)) : (QS_INVALID_WEAPON));
+        switch (QS_EmptyString(szBuffer))
+        {
+            case false:
+            { /// GOOD DATA
+                copy(szWeapon, charsmax(szWeapon), "weapon_");
 
-        g_bDeathMsgWeapon = QS_ValidWeapon(g_nWeapon);
+                add(szWeapon, charsmax(szWeapon), szBuffer);
+
+                g_nWeapon = get_weaponid(szWeapon);
+
+                g_bDeathMsgWeapon = (QS_ValidWeapon(g_nWeapon) ? true : false);
+            }
+
+            default:
+            { /// BAD DATA
+                g_nWeapon = QS_INVALID_WEAPON;
+
+                g_bDeathMsgWeapon = false;
+            }
+        }
     }
 
     return FMRES_IGNORED;
@@ -6215,7 +6504,7 @@ public QS_FM_OnMsgEnd_POST()
         {
             g_nDeathMsgByteStatus = QS_DEATHMSG_NONE;
             {
-                bDeathMsgWeapon = g_bDeathMsgWeapon;
+                bDeathMsgWeapon = (g_bDeathMsgWeapon ? true : false);
                 {
                     g_bDeathMsgWeapon = false;
                 }
@@ -6244,7 +6533,7 @@ public QS_FM_OnMsgEnd_POST()
                     g_nPlace = QS_INVALID_PLACE;
                     g_nTeamKill = QS_TEAM_KILL_NO;
 
-                    get_user_attacker(g_nVictim, nWeapon, g_nPlace);
+                    QS_GetUserAttacker(g_nVictim, nWeapon, g_nPlace);
 
                     if (!bDeathMsgWeapon)
                     {
@@ -6259,7 +6548,7 @@ public QS_FM_OnMsgEnd_POST()
                         {
                             if (!QS_ValidWeapon(nWeapon))
                             {
-                                nWeapon = get_user_weapon(g_nKiller);
+                                nWeapon = QS_GetUserWeapon(g_nKiller);
                                 {
                                     if (QS_ValidWeapon(nWeapon))
                                     {
@@ -6281,7 +6570,7 @@ public QS_FM_OnMsgEnd_POST()
                     }
 
                     pnInfo[2] = g_nWeapon;
-                    pnInfo[3] = g_nPlace;
+                    pnInfo[3] = !g_bCSCZ ? g_nPlace : (g_bHead ? HIT_HEAD : HIT_STOMACH); /// AQS ONLY CARES ABOUT HS (ESPECIALLY IN CS/ CZ)
                     pnInfo[4] = g_nTeamKill;
                 }
 
@@ -6291,6 +6580,8 @@ public QS_FM_OnMsgEnd_POST()
                     pnInfo[3] = QS_INVALID_PLACE;
                     pnInfo[4] = QS_TEAM_KILL_NO;
                 }
+
+                pnInfo[5] = bDeathMsgWeapon ? 1 : 0;
 
                 set_task(QS_TASK_DELAY_NEXT_FRAME, "QS_ProcessDeathMsg", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
             }
@@ -6317,7 +6608,7 @@ public QS_FM_OnMsgEnd_POST()
                         g_nPlace = QS_INVALID_PLACE;
                         g_nTeamKill = QS_TEAM_KILL_NO;
 
-                        get_user_attacker(g_nVictim, nWeapon, g_nPlace);
+                        QS_GetUserAttacker(g_nVictim, nWeapon, g_nPlace);
 
                         if (!bDeathMsgWeapon)
                         {
@@ -6332,7 +6623,7 @@ public QS_FM_OnMsgEnd_POST()
                             {
                                 if (!QS_ValidWeapon(nWeapon))
                                 {
-                                    nWeapon = get_user_weapon(g_nKiller);
+                                    nWeapon = QS_GetUserWeapon(g_nKiller);
                                     {
                                         if (QS_ValidWeapon(nWeapon))
                                         {
@@ -6354,7 +6645,7 @@ public QS_FM_OnMsgEnd_POST()
                         }
 
                         pnInfo[2] = g_nWeapon;
-                        pnInfo[3] = g_nPlace;
+                        pnInfo[3] = !g_bCSCZ ? g_nPlace : (g_bHead ? HIT_HEAD : HIT_STOMACH); /// AQS ONLY CARES ABOUT HS (ESPECIALLY IN CS/ CZ)
                         pnInfo[4] = g_nTeamKill;
                     }
 
@@ -6364,6 +6655,8 @@ public QS_FM_OnMsgEnd_POST()
                         pnInfo[3] = QS_INVALID_PLACE;
                         pnInfo[4] = QS_TEAM_KILL_NO;
                     }
+
+                    pnInfo[5] = bDeathMsgWeapon ? 1 : 0;
 
                     set_task(QS_TASK_DELAY_NEXT_FRAME, "QS_ProcessDeathMsg", get_systime(0), pnInfo, charsmax(pnInfo), "", 0);
                 }
@@ -6811,13 +7104,13 @@ public QS_PickThreadedQueryHandler(nFailState, Handle: pQuery, szError[], nError
                                 {
                                     if (!g_bSqlFullSteam)
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', %d) LIMIT 1;",
+                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_fast (aqs_steam, aqs_option) VALUES ('%s', %d);",
                                             g_pszSteam[nPlayer], g_pbDisabled[nPlayer] ? 0 : 1);
                                     }
 
                                     else
                                     {
-                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_full (aqs_steam, aqs_option) VALUES ('%s', %d) LIMIT 1;",
+                                        formatex(szQuery, charsmax(szQuery), "INSERT IGNORE INTO aqs_enabled_full (aqs_steam, aqs_option) VALUES ('%s', %d);",
                                             g_pszSteam[nPlayer], g_pbDisabled[nPlayer] ? 0 : 1);
                                     }
                                 }
@@ -7167,12 +7460,12 @@ public QS_RetryStore(szParam[], nTaskIndex)
         {
             if (!g_bSqlFullSteam)
             {
-                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_fast SET aqs_option = %d WHERE aqs_steam = '%s';", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
             }
 
             else
             {
-                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s' LIMIT 1;", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
+                formatex(szQuery, charsmax(szQuery), "UPDATE aqs_enabled_full SET aqs_option = %d WHERE aqs_steam = '%s';", g_pbDisabled[nPlayer] ? 0 : 1, g_pszSteam[nPlayer]);
             }
         }
 
@@ -7196,7 +7489,7 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     /// DECLARES THE HIT PLACE ID AND THE WEAPON ID
     ///
     static nPlace = QS_INVALID_PLACE, nWeapon = QS_INVALID_WEAPON, nKiller = QS_INVALID_PLAYER, nVictim = QS_INVALID_PLAYER, Float: fGameTime = 0.000000,
-        bool: bReExec = false, nOrigWeapon = QS_INVALID_WEAPON, nOrigPlace = QS_INVALID_PLACE, nOrigTeamKill = QS_TEAM_KILL_NO;
+        bool: bReExec = false, nOrigWeapon = QS_INVALID_WEAPON, nOrigPlace = QS_INVALID_PLACE, nOrigTeamKill = QS_TEAM_KILL_NO, bool: bDeathMsgWpn = false;
 
     ///
     /// THE LAST MAN STANDING PREPARATION
@@ -7230,6 +7523,8 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     nOrigPlace = pnInfo[3];
     nOrigTeamKill = pnInfo[4];
 
+    bDeathMsgWpn = (pnInfo[5] != 0 ? true : false);
+
     ///
     /// SETS THE DECLARED VARIABLES TO ZERO IN ORDER TO PROPERLY UPDATE THEM AGAIN
     ///
@@ -7239,7 +7534,7 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     ///
     /// PREPARES THE ACTUAL WEAPON ID AND THE ACTUAL HIT PLACE ID
     ///
-    get_user_attacker(nVictim, nWeapon, nPlace);
+    QS_GetUserAttacker(nVictim, nWeapon, nPlace);
 
     ///
     /// GAME TIME
@@ -7262,6 +7557,7 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
         if ((fGameTime - g_pfXStatsTimeStamp[nVictim]) > 0.250000)
         {
             /** EXECUTED TOO LONG AGO */
+
             g_pnWeapon[nVictim] = QS_INVALID_WEAPON;
             g_pnPlace[nVictim] = QS_INVALID_PLACE;
             g_pnTeamKill[nVictim] = QS_TEAM_KILL_NO;
@@ -7295,7 +7591,7 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
             {
                 if (g_pbInGame[nKiller])
                 {
-                    nWeapon = get_user_weapon(nKiller);
+                    nWeapon = QS_GetUserWeapon(nKiller);
                     {
                         if (QS_ValidWeapon(nWeapon))
                         {
@@ -7330,22 +7626,33 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     ///
     /// POSSIBLE HIT PLACE ID FIX
     ///
-    if (g_bDeathMsgOnly || bReExec || !QS_ValidPlace(g_pnPlace[nVictim]))
+    switch (g_bCSCZ)
     {
-        if (!QS_ValidPlace(nOrigPlace))
+        case false:
         {
-            if (QS_ValidPlace(nPlace))
+            if (g_bDeathMsgOnly || bReExec || !QS_ValidPlace(g_pnPlace[nVictim]))
             {
-                g_pnPlace[nVictim] = nPlace;
-            }
+                if (!QS_ValidPlace(nOrigPlace))
+                {
+                    if (QS_ValidPlace(nPlace))
+                    {
+                        g_pnPlace[nVictim] = nPlace;
+                    }
 
-            else
-            {
-                g_pnPlace[nVictim] = QS_INVALID_PLACE;
+                    else
+                    {
+                        g_pnPlace[nVictim] = QS_INVALID_PLACE;
+                    }
+                }
+
+                else
+                {
+                    g_pnPlace[nVictim] = nOrigPlace;
+                }
             }
         }
 
-        else
+        default:
         {
             g_pnPlace[nVictim] = nOrigPlace;
         }
@@ -7362,20 +7669,11 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     ///
     /// `client_death ( ... )` GIVES WRONG WEAPON INDEX SOME TIMES ( CS/ CZ :: USING AWP TO KILL THEN FAST SWITCHING TO KNIFE )
     ///
-    if (!g_bDeathMsgOnly)
-    {
-        if (!bReExec)
+    if (bDeathMsgWpn)
+    { /// ONLY IF "DEATH MSG" CAME WITH A WEAPON INDEX
+        if (QS_ValidWeapon(nOrigWeapon))
         {
-            if (g_pnWeapon[nVictim] != nOrigWeapon)
-            {
-                if (QS_ValidWeapon(nOrigWeapon))
-                {
-                    if (QS_ValidWeapon(g_pnWeapon[nVictim]))
-                    {
-                        g_pnWeapon[nVictim] = nOrigWeapon; /// USE THE "DeathMsg" SPECIFIED WEAPON
-                    }
-                }
-            }
+            g_pnWeapon[nVictim] = nOrigWeapon; /// USE THE "DeathMsg" SPECIFIED WEAPON
         }
     }
 
@@ -7426,7 +7724,7 @@ public QS_ProcessDeathHook(pnInfo[], nTaskIndex)
     ///
     /// PREPARES THE ACTUAL WEAPON ID AND THE ACTUAL HIT PLACE ID
     ///
-    get_user_attacker(nVictim, nWeapon, nPlace);
+    QS_GetUserAttacker(nVictim, nWeapon, nPlace);
 
     ///
     /// POSSIBLE WEAPON ID FIX
@@ -7435,7 +7733,7 @@ public QS_ProcessDeathHook(pnInfo[], nTaskIndex)
     {
         if (!QS_ValidWeapon(nWeapon))
         {
-            nWeapon = get_user_weapon(nKiller);
+            nWeapon = QS_GetUserWeapon(nKiller);
             {
                 if (QS_ValidWeapon(nWeapon))
                 {
@@ -7752,7 +8050,21 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
         ///
         if (QS_ValidWeapon(nWeapon))
         {
-            get_weaponname(nWeapon, szWeapon, charsmax(szWeapon));
+            switch (g_bXMod_GET_WpnName_Unavail)
+            {
+                case true:
+                { /// AMXX
+                    get_weaponname(nWeapon, szWeapon, charsmax(szWeapon));
+                }
+
+                default:
+                { /// CSX/ TSX/ TFCX/ DODX ( XSTATS )
+                    if (xmod_get_wpnname(nWeapon, szWeapon, charsmax(szWeapon)) < 1)
+                    { /// AMXX
+                        get_weaponname(nWeapon, szWeapon, charsmax(szWeapon));
+                    }
+                }
+            }
         }
 
         ///
@@ -7924,19 +8236,58 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                 {
                     if (containi(szWeapon, szWord) > -1)
                     {
-                        if (QS_TheDistanceBetweenTwoPlayers(nVictim, nKiller) <= g_nKnifeMaxDistanceUnits)
+                        if (g_bCSCZ)
                         {
-                            if (g_bKnifeMsg)
+                            if (QS_TheDistanceBetweenTwoPlayers(nVictim, nKiller) <= g_nKnifeMaxDistanceUnitsCSCZ)
                             {
-                                QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szKnifeMsg, g_pszName[nKiller], g_pszName[nVictim]);
-                            }
+                                if (g_bKnifeMsg)
+                                {
+                                    QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szKnifeMsg, g_pszName[nKiller], g_pszName[nVictim]);
+                                }
 
-                            else
+                                else
+                                {
+                                    QS_ShowHiddenHudMsg(QS_EVERYONE);
+                                }
+
+                                QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pKnife, random_num(0, g_nKnifeSize - 1)));
+                            }
+                        }
+
+                        else if (g_bDOD)
+                        {
+                            if (QS_TheDistanceBetweenTwoPlayers(nVictim, nKiller) <= g_nKnifeMaxDistanceUnitsDoD)
                             {
-                                QS_ShowHiddenHudMsg(QS_EVERYONE);
-                            }
+                                if (g_bKnifeMsg)
+                                {
+                                    QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szKnifeMsg, g_pszName[nKiller], g_pszName[nVictim]);
+                                }
 
-                            QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pKnife, random_num(0, g_nKnifeSize - 1)));
+                                else
+                                {
+                                    QS_ShowHiddenHudMsg(QS_EVERYONE);
+                                }
+
+                                QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pKnife, random_num(0, g_nKnifeSize - 1)));
+                            }
+                        }
+
+                        else
+                        {
+                            if (QS_TheDistanceBetweenTwoPlayers(nVictim, nKiller) <= g_nKnifeMaxDistanceUnits)
+                            {
+                                if (g_bKnifeMsg)
+                                {
+                                    QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szKnifeMsg, g_pszName[nKiller], g_pszName[nVictim]);
+                                }
+
+                                else
+                                {
+                                    QS_ShowHiddenHudMsg(QS_EVERYONE);
+                                }
+
+                                QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pKnife, random_num(0, g_nKnifeSize - 1)));
+                            }
                         }
 
                         break;
@@ -8226,6 +8577,16 @@ static bool: QS_LoadSettings()
         else if (equali(szKey, "KNIFE MAX DISTANCE") || equali(szKey, "KNIFE MAX UNITS")) /** COMPATIBILITY */
         {
             g_nKnifeMaxDistanceUnits = abs(str_to_num(szVal));
+        }
+
+        else if (equali(szKey, "KNIFE MAX DISTANCE DOD") || equali(szKey, "KNIFE MAX UNITS DOD")) /** COMPATIBILITY */
+        {
+            g_nKnifeMaxDistanceUnitsDoD = abs(str_to_num(szVal));
+        }
+
+        else if (equali(szKey, "KNIFE MAX DISTANCE CSCZ") || equali(szKey, "KNIFE MAX UNITS CSCZ")) /** COMPATIBILITY */
+        {
+            g_nKnifeMaxDistanceUnitsCSCZ = abs(str_to_num(szVal));
         }
 
         else if (equali(szKey, "DECREASE FRAG IN CASE OF 'KILL' COMMAND SUICIDE"))
@@ -10837,11 +11198,7 @@ static bool: QS_SetHudMsg(&nRed, &nGreen, &nBlue, Float: fX, Float: fY, nEffects
     return true;
 }
 
-#if defined FindPlayer_IncludeConnecting
-
-#define QS_PlayerIdByPlayerUserId(%0) find_player_ex(FindPlayer_MatchUserId | FindPlayer_IncludeConnecting, %0)
-
-#else /// defined FindPlayer_IncludeConnecting
+#if !defined FindPlayerFlags
 
 ///
 /// PLAYER ID BY PLAYER USER ID
@@ -10980,6 +11337,81 @@ static QS_TheDistanceBetweenTwoPlayers(&nVictim, &nKiller)
 #endif
 
     return get_distance(pnVictimOrigin, pnKillerOrigin);
+}
+
+///
+/// GETS THE ATTACKER OF A VICTIM
+/// WEAPON AND DAMAGE SPOT ARE OPTIONALLY INCLUDED
+///
+static QS_GetUserAttacker(&nVictim, &nWeapon, &nPlace)
+{
+    static Attacker, pnStats[16], pnBody[16], szWeaponName[QS_WORD_MAX_LEN],
+        szWeaponLogName[QS_WORD_MAX_LEN], nOriginalWeapon;
+
+    if (false == g_bGET_User_AStats_Unavail && false == g_bDOD_WpnLog_To_Id_Unavail)
+    { /// DAY OF DEFEAT WRAPPER ( USEFUL FOR "GARAND BUTT", "K43 BUTT" AND "KAR BAYONET" )
+        Attacker = get_user_attacker(nVictim, nWeapon, nPlace);
+
+        if (QS_IsPlayer(Attacker))
+        {
+            QS_ClearString(szWeaponName);
+
+            if (get_user_astats(nVictim, Attacker, pnStats, pnBody, szWeaponName, charsmax(szWeaponName)) > 0)
+            {
+                if (false == QS_EmptyString(szWeaponName))
+                {
+                    if (QS_DoD_WeapNameToWeapLogName(szWeaponName, szWeaponLogName, charsmax(szWeaponLogName)))
+                    {
+                        nOriginalWeapon = dod_wpnlog_to_id(szWeaponLogName);
+
+                        if (QS_ValidWeapon(nOriginalWeapon))
+                        {
+                            nWeapon = nOriginalWeapon;
+                        }
+                    }
+                }
+            }
+        }
+
+        return Attacker;
+    }
+
+    return get_user_attacker(nVictim, nWeapon, nPlace);
+}
+
+///
+/// GETS DOD ( DAY OF DEFEAT ) WEAPON LOG NAME BY WEAPON NAME
+///
+/// NOT EXACT, BUT WORKS FOR KNIVES AND EXPLOSIVES
+///
+static bool: QS_DoD_WeapNameToWeapLogName(szWeaponName[], szWeaponLogName[], nWeaponLogNameSize)
+{ /// DAY OF DEFEAT ONLY
+    static Iter;
+
+    for (Iter = 0; Iter < sizeof g_pszDoDWeaponNames; Iter++)
+    {
+        if (equali(g_pszDoDWeaponNames[Iter], szWeaponName))
+        {
+            copy(szWeaponLogName, nWeaponLogNameSize, g_pszDoDWeaponLogNames[Iter]);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+///
+/// GETS THE WEAPON OF A PLAYER
+///
+static QS_GetUserWeapon(&nPlayer)
+{
+    if (false == g_bDOD_GET_UserWeapon_Unavail)
+    { /// DAY OF DEFEAT WRAPPER
+        return dod_get_user_weapon(nPlayer);
+    }
+
+    return get_user_weapon(nPlayer);
 }
 
 ///
