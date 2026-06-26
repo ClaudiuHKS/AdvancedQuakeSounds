@@ -33,10 +33,10 @@
 
 	"globalvars.server.txt"
 	{
-        "game" "cstrike"
-        "game" "czero"
-        "game" "dod"
-        "game" "valve"
+		"game" "cstrike"
+		"game" "czero"
+		"game" "dod"
+		"game" "valve"
 	}
 
 	//
