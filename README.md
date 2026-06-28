@@ -30,7 +30,7 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
 
 **`CS/ CZ`**
 
-![CS/ CZ](https://hattrick.go.ro/aqs-cscz.png)
+![CS/ CZ](https://i.ibb.co/xtBm5f4H/Half-Life-Screenshot-2026-06-28-18-58-26-22.png)
 
 **`DOD`**
 
