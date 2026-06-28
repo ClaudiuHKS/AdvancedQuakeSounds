@@ -34,4 +34,4 @@ Type **`AQS.amxx`** in **`/addons/amxmodx/configs/plugins.ini`**
 
 **`DOD`**
 
-![DOD](https://hattrick.go.ro/aqs-dod.png)
+![DOD](https://i.ibb.co/Tq8058yb/Half-Life-Screenshot-2026-06-28-19-31-15-05.png)
