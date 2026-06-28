@@ -4,6 +4,8 @@
 
 Advanced Quake Sounds For AMX Mod X — **https://forums.alliedmods.net/**
 
+![AQS](https://i.ibb.co/vxQRshVM/aqs.jpg)
+
 **https://forums.alliedmods.net/showthread.php?t=152034**
 
 ## Installation ##
