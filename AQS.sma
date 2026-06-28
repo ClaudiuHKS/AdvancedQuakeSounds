@@ -234,7 +234,7 @@ enum Array
 ///
 /// THE PLUGIN'S VERSION
 ///
-#define QS_PLUGIN_VERSION ( "8.1" ) /// "8.1"
+#define QS_PLUGIN_VERSION ( "8.2" ) /// "8.2"
 
 ///
 /// ###################################################################################################
@@ -882,6 +882,15 @@ enum Array
 ///
 
 ///
+/// OFFSET(S)
+///
+#define m_CBaseMonster_LastHitGroup_DoD 153 /// int CBaseMonster::m_LastHitGroup
+
+///
+/// ###################################################################################################
+///
+
+///
 /// DEATHMSG USER MESSAGE'S 'BYTE' STATUSES
 ///
 enum /** DEATHMSG USER MESSAGE'S 'BYTE' STATUS */
@@ -1453,6 +1462,13 @@ static g_nKnifeMaxDistanceUnitsDoD = QS_KNIFE_MAX_DISTANCE_UNITS;
 ///
 /// KNIFE MAXIMUM DISTANCE IN UNITS BETWEEN THE TWO PLAYERS IN ORDER TO TRIGGER THE "KNIFE KILL" EVENT
 ///
+/// ( TEAM FORTRESS CLASSIC GAME )
+///
+static g_nKnifeMaxDistanceUnitsTFC = QS_KNIFE_MAX_DISTANCE_UNITS;
+
+///
+/// KNIFE MAXIMUM DISTANCE IN UNITS BETWEEN THE TWO PLAYERS IN ORDER TO TRIGGER THE "KNIFE KILL" EVENT
+///
 /// ( COUNTER-STRIKE/ CONDITION ZERO GAME )
 ///
 static g_nKnifeMaxDistanceUnitsCSCZ = QS_KNIFE_MAX_DISTANCE_UNITS;
@@ -1848,6 +1864,11 @@ static bool: g_bCSCZ = false;
 /// DOD RUNNING
 ///
 static bool: g_bDOD = false;
+
+///
+/// TFC RUNNING
+///
+static bool: g_bTFC = false;
 
 ///
 /// KILLS THIS ROUND
@@ -3283,6 +3304,11 @@ public plugin_init()
     /// DAY OF DEFEAT [[[ DOD ]]]
     ///
     g_bDOD = QS_DODRunning();
+
+    ///
+    /// TEAM FORTRESS CLASSIC [[[ TFC ]]]
+    ///
+    g_bTFC = QS_TFCRunning();
 
     ///
     /// CSTRIKE OR CZERO
@@ -5157,7 +5183,15 @@ public client_death(nKiller, nVictim, nWeapon, nPlace, nTeamKill)
     ///
     /// CACHES THE HIT PLACE ID
     ///
-    g_pnPlace[nVictim] = nPlace;
+    if (g_bDOD)
+    {
+        g_pnPlace[nVictim] = ((pev_valid(nVictim) > 1) ? get_pdata_int(nVictim, m_CBaseMonster_LastHitGroup_DoD /** int */) : nPlace);
+    }
+
+    else
+    {
+        g_pnPlace[nVictim] = nPlace;
+    }
 
     ///
     /// CACHES THE TEAM KILL BOOLEAN
@@ -6461,7 +6495,23 @@ public QS_FM_OnWriteString_POST(szBuffer[])
             { /// GOOD DATA
                 copy(szWeapon, charsmax(szWeapon), "weapon_");
 
-                add(szWeapon, charsmax(szWeapon), szBuffer);
+                if (g_bCSCZ)
+                {
+                    if (equali(szBuffer, "grenade"))
+                    { /// C4 DOES NOT SEEM TO INTEFERE (THAT'S PERFECT)
+                        add(szWeapon, charsmax(szWeapon), "hegrenade");
+                    }
+
+                    else
+                    {
+                        add(szWeapon, charsmax(szWeapon), szBuffer);
+                    }
+                }
+
+                else
+                {
+                    add(szWeapon, charsmax(szWeapon), szBuffer);
+                }
 
                 g_nWeapon = get_weaponid(szWeapon);
 
@@ -7629,8 +7679,8 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     switch (g_bCSCZ)
     {
         case false:
-        {
-            if (g_bDeathMsgOnly || bReExec || !QS_ValidPlace(g_pnPlace[nVictim]))
+        { /// DOD ALREADY USES `m_CBaseMonster_LastHitGroup_DoD`
+            if (!g_bDOD && (g_bDeathMsgOnly || bReExec || !QS_ValidPlace(g_pnPlace[nVictim])))
             {
                 if (!QS_ValidPlace(nOrigPlace))
                 {
@@ -7669,7 +7719,7 @@ public QS_ProcessDeathMsg(pnInfo[], nTaskIndex)
     ///
     /// `client_death ( ... )` GIVES WRONG WEAPON INDEX SOME TIMES ( CS/ CZ :: USING AWP TO KILL THEN FAST SWITCHING TO KNIFE )
     ///
-    if (bDeathMsgWpn)
+    if (bDeathMsgWpn) /// THIS CONDITION CAN ONLY BE TRUE IN CS/ CZ AT THE MOMENT
     { /// ONLY IF "DEATH MSG" CAME WITH A WEAPON INDEX
         if (QS_ValidWeapon(nOrigWeapon))
         {
@@ -8272,6 +8322,24 @@ static bool: QS_ProcessPlayerDeath(nKiller, &nVictim, &nWeapon, &nPlace, &nTeamK
                             }
                         }
 
+                        else if (g_bTFC)
+                        {
+                            if (QS_TheDistanceBetweenTwoPlayers(nVictim, nKiller) <= g_nKnifeMaxDistanceUnitsTFC)
+                            {
+                                if (g_bKnifeMsg)
+                                {
+                                    QS_ShowHudMsg(QS_EVERYONE, g_pnHudMsgObj[QS_HUD_EVENT], g_szKnifeMsg, g_pszName[nKiller], g_pszName[nVictim]);
+                                }
+
+                                else
+                                {
+                                    QS_ShowHiddenHudMsg(QS_EVERYONE);
+                                }
+
+                                QS_ClientCmd(QS_EVERYONE, "SPK \"%a\"", ArrayGetStringHandle(g_pKnife, random_num(0, g_nKnifeSize - 1)));
+                            }
+                        }
+
                         else
                         {
                             if (QS_TheDistanceBetweenTwoPlayers(nVictim, nKiller) <= g_nKnifeMaxDistanceUnits)
@@ -8582,6 +8650,11 @@ static bool: QS_LoadSettings()
         else if (equali(szKey, "KNIFE MAX DISTANCE DOD") || equali(szKey, "KNIFE MAX UNITS DOD")) /** COMPATIBILITY */
         {
             g_nKnifeMaxDistanceUnitsDoD = abs(str_to_num(szVal));
+        }
+
+        else if (equali(szKey, "KNIFE MAX DISTANCE TFC") || equali(szKey, "KNIFE MAX UNITS TFC")) /** COMPATIBILITY */
+        {
+            g_nKnifeMaxDistanceUnitsTFC = abs(str_to_num(szVal));
         }
 
         else if (equali(szKey, "KNIFE MAX DISTANCE CSCZ") || equali(szKey, "KNIFE MAX UNITS CSCZ")) /** COMPATIBILITY */
@@ -10515,6 +10588,16 @@ static bool: QS_DODRunning()
     QS_CheckMod();
 
     return bool: equali(g_szMod, "DOD", 3);
+}
+
+///
+/// TEAM FORTRESS CLASSIC RUNNING
+///
+static bool: QS_TFCRunning()
+{
+    QS_CheckMod();
+
+    return bool: equali(g_szMod, "TFC", 3);
 }
 
 ///
